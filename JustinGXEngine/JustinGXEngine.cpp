@@ -75,18 +75,33 @@ ID3D11DepthStencilView* zBufferView;
 // Constant
 ID3D11Buffer* constantBuffer;
 
+
+
+
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+HINSTANCE       hInst;                                // current instance
+HWND            hWnd = nullptr;
+WCHAR           szTitle[MAX_LOADSTRING];                  // The title bar text
+WCHAR           szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 // Forward declarations of functions included in this code module:
+//--------------------------------------------------------------------------------------
+// Forward declarations
+//--------------------------------------------------------------------------------------
+HRESULT             InitDevice();
+HRESULT             InitContent();
+void                CleanUp();
+void                ExecutePipeline();
+
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -96,8 +111,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
-
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_JUSTINGXENGINE, szWindowClass, MAX_LOADSTRING);
@@ -105,8 +118,19 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
-    {
         return FALSE;
+
+    // TODO: Place code here.
+    if (FAILED(InitDevice()))
+    {
+        CleanUp();
+        return 0;
+    }
+
+    if (FAILED(InitContent()))
+    {
+        CleanUp();
+        return 0;
     }
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_JUSTINGXENGINE));
@@ -124,110 +148,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
 
-        // rendering here (create function)
-        immediateContext->ClearRenderTargetView(RTV, Colors::Aqua);
-        immediateContext->ClearDepthStencilView(zBufferView, D3D11_CLEAR_DEPTH, 1, 0);
-
-        // setup pipeline
-        // output merger
-        ID3D11RenderTargetView* tempRTV[] = { RTV };
-        immediateContext->OMSetRenderTargets(1, tempRTV, zBufferView);
-        // rasterizer
-        immediateContext->RSSetViewports(1, &vPort);
-        // input assembler
-        immediateContext->IASetInputLayout(vertexLayout);
-
-        ID3D11Buffer* tempVB[] = { vertexBuffer };
-        UINT strides[] = { sizeof(VERTEX_4) };    // distance b/w 2 verts
-        UINT offsets[] = { 0 };     // where to start from in the array
-        immediateContext->IASetVertexBuffers(0, 1, tempVB, strides, offsets);
-        immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        // Vertex shader stage
-        immediateContext->VSSetShader(vShader, 0, 0);
-        // Pixel shader stage
-        immediateContext->PSSetShader(pShader, 0, 0);
-
-        // draw
-        //immediateContext->Draw(numOfVerts, 0);
-
-        // make triangle 3D _check
-            // turn into a pyramid _check
-            // day 4 make world, view, & projection matrix
-
-        //static float rot = 0; rot += 0.01f;
-        //XMMATRIX temp = XMMatrixRotationY(rot);
-        XMMATRIX temp = XMMatrixTranslation(0, 5.0f, -15.0f);
-        ConstantBuffer cb = {};
-        cb.mWorld = XMMatrixTranspose(
-            XMMatrixMultiply(
-                XMMatrixRotationY(45.0f * (XM_PI/180.0f)), temp));
-        cb.mView = XMMatrixTranspose(
-            XMMatrixLookAtLH({ 0, 7.0f, -20.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 }));
-        cb.mProjection = XMMatrixTranspose(
-            XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f));
-        WVP wvp = {};
-        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-        XMStoreFloat4x4(&wvp.sView, cb.mView);
-        XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
-
-            // upload matrices to video card
-                // Create and update a constant buffer (move variables from C++ to shaders)
-        D3D11_MAPPED_SUBRESOURCE gpuBuffer;
-        HRESULT hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-        immediateContext->Unmap(constantBuffer, 0);
-
-
-            // Apply matrix math in vertex shader _check
-            // connect constant buffer to pipeline
-        ID3D11Buffer* constants[] = { constantBuffer };
-        immediateContext->VSSetConstantBuffers(0, 1, constants);
-
-        // draw
-        immediateContext->Draw(numOfVerts, 0);
-
-        // get more complex pre-made mesh (FBX, OBJ, custom header) _check
-        // load it onto the card (vertex buffer, index buffer, 
-        // makes sure our shaders can process it
-        // place it somewhere else in the environment
-
-        // set pipeline
-        ID3D11Buffer* meshVB[] = { vertexBufferMesh };
-        UINT mesh_strides[] = { sizeof(_OBJ_VERT_) };    // distance b/w 2 verts
-        UINT mesh_offsets[] = { 0 };     // where to start from in the array
-        immediateContext->IASetVertexBuffers(0, 1, meshVB, mesh_strides, mesh_offsets);
-        immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
-        immediateContext->IASetInputLayout(vertexMeshLayout);
-        immediateContext->VSSetShader(vMeshShader, 0, 0);
-
-        // modify world matrix b4 drawing next object
-        cb.mWorld = XMMatrixIdentity();
-        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-        // send to Card
-        hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-        immediateContext->Unmap(constantBuffer, 0);
-
-        // draw it
-        immediateContext->DrawIndexed(2532, 0, 0);
-        // cahnge 1 to 0
-        swapChain->Present(1, 0);
+        ExecutePipeline();
     }
 
     // release all our D3D11 interfaces
-    RTV->Release();
-    vertexBuffer->Release();
-    vertexLayout->Release();
-    vertexBufferMesh->Release();
-    indexBufferMesh->Release();
-    vertexMeshLayout->Release();
-    vMeshShader->Release();
-    constantBuffer->Release();
-    vShader->Release();
-    pShader->Release();
-    myDevice->Release();
-    swapChain->Release();
-    immediateContext->Release();
+    CleanUp();
 
 
     return (int) msg.wParam;
@@ -273,11 +198,10 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-    HRESULT hr = S_OK;
     hInst = hInstance; // Store instance handle in our global variable
 
     // find resize stuff
-    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
     if (!hWnd)
@@ -287,6 +211,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
+
+    return TRUE;
+}
+
+
+HRESULT InitDevice()
+{
+    HRESULT hr = S_OK;
 
     RECT rc;
     GetClientRect(hWnd, &rc);
@@ -311,6 +243,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
+    // Create Swap Chain and Device
     DXGI_SWAP_CHAIN_DESC sd = {};
     sd.BufferCount = 1;
     sd.BufferDesc.Width = width;
@@ -324,21 +257,60 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-    hr = D3D11CreateDeviceAndSwapChain(  NULL, driverType, NULL, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &sd,
-                                    &swapChain, &myDevice, 0, &immediateContext);
+    hr = D3D11CreateDeviceAndSwapChain(NULL, driverType, NULL, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &sd,
+        &swapChain, &myDevice, 0, &immediateContext);
+    if (FAILED(hr))
+        return hr;
 
-    ID3D11Resource* backbuffer;
+    // Create Render Target View
+    ID3D11Resource* backbuffer = nullptr;
     hr = swapChain->GetBuffer(0, __uuidof(backbuffer), reinterpret_cast<void**>(&backbuffer));
+    if (FAILED(hr))
+        return hr;
 
     hr = myDevice->CreateRenderTargetView(backbuffer, NULL, &RTV);
-
     backbuffer->Release();
+    if (FAILED(hr))
+        return hr;
 
+
+    // create zbuffer & view
+    D3D11_TEXTURE2D_DESC zd;
+    ZeroMemory(&zd, sizeof(zd));
+    zd.Width = width;
+    zd.Height = height;
+    zd.MipLevels = 1;
+    zd.ArraySize = 1;
+    zd.Format = DXGI_FORMAT_D32_FLOAT;
+    zd.SampleDesc.Count = 1;
+    zd.Usage = D3D11_USAGE_DEFAULT;
+    zd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    hr = myDevice->CreateTexture2D(&zd, nullptr, &zBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    // Create the depth stencil view
+    //D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+    //descDSV.Format = descDepth.Format;
+    //descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    //descDSV.Texture2D.MipSlice = 0;
+    hr = myDevice->CreateDepthStencilView(zBuffer, nullptr, &zBufferView);
+    if (FAILED(hr))
+        return hr;
+
+    // Setup viewport
     vPort.Width = width;
     vPort.Height = height;
     vPort.TopLeftX = vPort.TopLeftY = 0;
     vPort.MinDepth = 0;
     vPort.MaxDepth = 1;
+
+    return hr;
+}
+
+HRESULT InitContent()
+{
+    HRESULT hr = S_OK;
 
     VERTEX_4 triangle[] =
     {
@@ -446,23 +418,31 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     hr = myDevice->CreateInputLayout(meshLayout, numOfElements, MeshVertexShader, sizeof(MeshVertexShader), &vertexMeshLayout);
 
-    // create zbuffer & view
-    D3D11_TEXTURE2D_DESC zd;
-    ZeroMemory(&zd, sizeof(zd));
-    zd.Width = width;
-    zd.Height = height;
-    zd.MipLevels = 1;
-    zd.ArraySize = 1;
-    zd.Format = DXGI_FORMAT_D32_FLOAT;
-    zd.SampleDesc.Count = 1;
-    zd.Usage = D3D11_USAGE_DEFAULT;
-    zd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    return hr;
+}
 
-    hr = myDevice->CreateTexture2D(&zd, nullptr, &zBuffer);
+/// <summary>
+/// Cleans up and releases any objects that were created
+/// </summary>
+void CleanUp()
+{
+    if (immediateContext) immediateContext->ClearState();
 
-    hr = myDevice->CreateDepthStencilView(zBuffer, nullptr, &zBufferView);
-
-    return TRUE;
+    if (RTV) RTV->Release();
+    if (vertexBuffer) vertexBuffer->Release();
+    if (vertexLayout) vertexLayout->Release();
+    if (vertexBufferMesh) vertexBufferMesh->Release();
+    if (indexBufferMesh) indexBufferMesh->Release();
+    if (vertexMeshLayout) vertexMeshLayout->Release();
+    if (vMeshShader) vMeshShader->Release();
+    if (zBuffer) zBuffer->Release();
+    if (zBufferView) zBufferView->Release();
+    if (constantBuffer) constantBuffer->Release();
+    if (vShader) vShader->Release();
+    if (pShader) pShader->Release();
+    if (swapChain) swapChain->Release();
+    if (immediateContext) immediateContext->Release();
+    if (myDevice) myDevice->Release();
 }
 
 //
@@ -531,4 +511,99 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+void ExecutePipeline()
+{
+    // rendering here (create function)
+    immediateContext->ClearRenderTargetView(RTV, Colors::Aqua);
+    immediateContext->ClearDepthStencilView(zBufferView, D3D11_CLEAR_DEPTH, 1, 0);
+
+    // setup pipeline
+        // IA (Input Assembler)
+        // VS (Vertex Shader)
+        // RS (Rasterizer Stage)
+        // PS (Pixel Shader)
+        // OM (Output Merger)
+
+    // output merger
+    ID3D11RenderTargetView* tempRTV[] = { RTV };
+    immediateContext->OMSetRenderTargets(1, tempRTV, zBufferView);
+    // rasterizer
+    immediateContext->RSSetViewports(1, &vPort);
+    // input assembler
+    immediateContext->IASetInputLayout(vertexLayout);
+
+    ID3D11Buffer* tempVB[] = { vertexBuffer };
+    UINT strides[] = { sizeof(VERTEX_4) };    // distance b/w 2 verts
+    UINT offsets[] = { 0 };     // where to start from in the array
+    immediateContext->IASetVertexBuffers(0, 1, tempVB, strides, offsets);
+    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // Vertex shader stage
+    immediateContext->VSSetShader(vShader, 0, 0);
+    // Pixel shader stage
+    immediateContext->PSSetShader(pShader, 0, 0);
+
+    // make triangle 3D _check
+        // turn into a pyramid _check
+        // day 4 make world, view, & projection matrix
+
+    //static float rot = 0; rot += 0.01f;
+    //XMMATRIX temp = XMMatrixRotationY(rot);
+    XMMATRIX temp = XMMatrixTranslation(0, 5.0f, -15.0f);
+    ConstantBuffer cb = {};
+    cb.mWorld = XMMatrixTranspose(
+        XMMatrixMultiply(
+            XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp));
+    cb.mView = XMMatrixTranspose(
+        XMMatrixLookAtLH({ 0, 7.0f, -20.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 }));
+    cb.mProjection = XMMatrixTranspose(
+        XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f));
+    WVP wvp = {};
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    XMStoreFloat4x4(&wvp.sView, cb.mView);
+    XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
+
+    // upload matrices to video card
+        // Create and update a constant buffer (move variables from C++ to shaders)
+    D3D11_MAPPED_SUBRESOURCE gpuBuffer;
+    HRESULT hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+
+    // Apply matrix math in vertex shader _check
+    // connect constant buffer to pipeline
+    ID3D11Buffer* constants[] = { constantBuffer };
+    immediateContext->VSSetConstantBuffers(0, 1, constants);
+
+    // draw
+    immediateContext->Draw(numOfVerts, 0);
+
+    // get more complex pre-made mesh (FBX, OBJ, custom header) _check
+    // load it onto the card (vertex buffer, index buffer, 
+    // makes sure our shaders can process it
+    // place it somewhere else in the environment
+
+    // set pipeline
+    ID3D11Buffer* meshVB[] = { vertexBufferMesh };
+    UINT mesh_strides[] = { sizeof(_OBJ_VERT_) };    // distance b/w 2 verts
+    UINT mesh_offsets[] = { 0 };     // where to start from in the array
+    immediateContext->IASetVertexBuffers(0, 1, meshVB, mesh_strides, mesh_offsets);
+    immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
+    immediateContext->IASetInputLayout(vertexMeshLayout);
+    immediateContext->VSSetShader(vMeshShader, 0, 0);
+
+    // modify world matrix b4 drawing next object
+    cb.mWorld = XMMatrixIdentity();
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+    // draw it
+    immediateContext->DrawIndexed(2532, 0, 0);
+    // cahnge 1 to 0
+    swapChain->Present(1, 0);
 }

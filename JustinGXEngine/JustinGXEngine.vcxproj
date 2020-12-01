@@ -166,11 +166,14 @@
     <ClInclude Include="Assets\headers\StoneHenge.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="JustinGXEngine.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="MeshUtils.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JustinGXEngine.cpp" />
+    <ClCompile Include="Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="JustinGXEngine.rc" />
