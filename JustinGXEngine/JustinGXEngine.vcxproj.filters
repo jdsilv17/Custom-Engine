@@ -27,10 +27,7 @@
     <ClInclude Include="JustinGXEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PixelShader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VertexShader.h">
+    <ClInclude Include="Assets\headers\StoneHenge.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -55,5 +52,6 @@
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl" />
     <FxCompile Include="PixelShader.hlsl" />
+    <FxCompile Include="MeshVertexShader.hlsl" />
   </ItemGroup>
 </Project>
