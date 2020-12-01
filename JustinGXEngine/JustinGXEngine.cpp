@@ -4,8 +4,8 @@
 #include "framework.h"
 #include "JustinGXEngine.h"
 
-#include "VertexShader.csh"
-#include "PixelShader.csh"
+#include "VertexShader.h"
+#include "PixelShader.h"
 
 #include <d3d11.h>
 #include <directxmath.h>
@@ -22,6 +22,25 @@ ID3D11DeviceContext* immediateContext;
 // for drawing
 ID3D11RenderTargetView* RTV;
 D3D11_VIEWPORT vPort;
+float aspectRatio = 1;
+
+struct ConstantBuffer
+{
+    XMMATRIX mWorld;
+    XMMATRIX mView;
+    XMMATRIX mProjection;
+    //XMFLOAT4 vLightDir[2];
+    //XMFLOAT4 vLightColor[2];
+    //XMFLOAT4 vOutputColor;
+};
+
+// storage value for math
+struct WVP
+{
+    XMFLOAT4X4 sWorld;
+    XMFLOAT4X4 sView;
+    XMFLOAT4X4 sProjection;
+};
 
 struct VERTEX_4
 {
@@ -31,10 +50,17 @@ struct VERTEX_4
     //XMFLOAT2 uv;
 };
 
+UINT numOfElements = 0;
+UINT numOfVerts = 0;
+
+// Shader variables
 ID3D11Buffer* vertexBuffer;
 ID3D11InputLayout* vertexLayout;
 ID3D11VertexShader* vShader;
 ID3D11PixelShader* pShader;
+
+// Constant
+ID3D11Buffer* constantBuffer;
 
 #define MAX_LOADSTRING 100
 
@@ -86,7 +112,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 
         // rendering here (create function)
-        immediateContext->ClearRenderTargetView(RTV, Colors::DarkGoldenrod);
+        immediateContext->ClearRenderTargetView(RTV, Colors::Black);
 
         // setup pipeline
         // output merger
@@ -108,15 +134,48 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         immediateContext->PSSetShader(pShader, 0, 0);
 
         // draw
-        immediateContext->Draw(3, 0);
+        //immediateContext->Draw(numOfVerts, 0);
 
-        // make triangle 3D
-            // turn into a pyramid
+        // make triangle 3D _check
+            // turn into a pyramid _check
             // day 4 make world, view, & projection matrix
+
+        //static float rot = 0; rot += 0.01f;
+        //XMMATRIX temp = XMMatrixRotationY(rot);
+
+        ConstantBuffer cb = {};
+        cb.mWorld = XMMatrixTranspose(
+            XMMatrixRotationY(45.0f * (XM_PI/180.0f)));
+        cb.mView = XMMatrixTranspose(
+            XMMatrixLookAtLH({ 0, 1.5f, -3 }, { 0, 0, 0 }, { 0,1,0 }));
+        cb.mProjection = XMMatrixTranspose(
+            XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f));
+        WVP wvp = {};
+        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        XMStoreFloat4x4(&wvp.sView, cb.mView);
+        XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
+
             // upload matrices to video card
                 // Create and update a constant buffer (move variables from C++ to shaders)
-            // Apply matrix math in vertex shader
+        D3D11_MAPPED_SUBRESOURCE gpuBuffer;
+        HRESULT hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+        immediateContext->Unmap(constantBuffer, 0);
 
+
+            // Apply matrix math in vertex shader _check
+            // connect constant buffer to pipeline
+        ID3D11Buffer* constants[] = { constantBuffer };
+        immediateContext->VSSetConstantBuffers(0, 1, constants);
+
+        // draw
+        immediateContext->Draw(numOfVerts, 0);
+
+        // get more complex pre-made mesh
+        // load it onto the card
+        // makes sure our shaders can process it
+        // place it somewhere else in the environment
+        // draw it
 
         // cahnge 1 to 0
         swapChain->Present(1, 0);
@@ -126,6 +185,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     RTV->Release();
     vertexBuffer->Release();
     vertexLayout->Release();
+    constantBuffer->Release();
     vShader->Release();
     pShader->Release();
     myDevice->Release();
@@ -196,6 +256,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
 
+    aspectRatio = width / float(height);
+
     // attach d3d11 to window
     D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
     D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
@@ -243,15 +305,29 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     VERTEX_4 triangle[] =
     {
-        { XMFLOAT4(0.0f, 0.5f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(0.5f, -0.5f, 0.0f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(-0.5f, -0.5f, 0.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        // FRONT
+        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(-0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        // RIGHT FACE
+        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        // BACK FACE
+        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(-0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        // LEFT FACE
+        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(-0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+        { XMFLOAT4(-0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
     };
+    numOfVerts = ARRAYSIZE(triangle);
 
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = sizeof(VERTEX_4) * 3;
+    bd.ByteWidth = sizeof(VERTEX_4) * numOfVerts;
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bd.CPUAccessFlags = 0;
@@ -276,9 +352,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
-    UINT numOfElements = ARRAYSIZE(layout);
+    numOfElements = ARRAYSIZE(layout);
 
     hr = myDevice->CreateInputLayout(layout, numOfElements, VertexShader, sizeof(VertexShader), &vertexLayout);
+
+    // create constant buffer
+    ZeroMemory(&bd, sizeof(bd));
+    bd.ByteWidth = sizeof(WVP);
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    bd.MiscFlags = 0;
+
+    hr = myDevice->CreateBuffer(&bd, nullptr, &constantBuffer);
+    if (FAILED(hr))
+        return hr;
 
 
     return TRUE;
