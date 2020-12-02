@@ -365,15 +365,15 @@ HRESULT InitContent()
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = sizeof(VERTEX_4) * numOfVerts;
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    bd.MiscFlags = 0;
+    //bd.ByteWidth = sizeof(VERTEX_4) * numOfVerts;
+    //bd.Usage = D3D11_USAGE_DEFAULT;
+    //bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    //bd.CPUAccessFlags = 0;
+    //bd.MiscFlags = 0;
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    subData.pSysMem = &cube.VertexList;
+    //subData.pSysMem = &cube.VertexList;
 
     //hr = myDevice->CreateBuffer( &bd, &subData, cube.VertexBuffer.ReleaseAndGetAddressOf() );
     //if (FAILED(hr))
@@ -430,13 +430,13 @@ HRESULT InitContent()
     };
 
     // index buffer
-    bd.ByteWidth = sizeof(int) * cube.IndicesList.size();
-    bd.Usage = D3D11_USAGE_IMMUTABLE;
-    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    bd.MiscFlags = 0;
+    //bd.ByteWidth = sizeof(int) * cube.IndicesList.size();
+    //bd.Usage = D3D11_USAGE_IMMUTABLE;
+    //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    //bd.CPUAccessFlags = 0;
+    //bd.MiscFlags = 0;
 
-    subData.pSysMem = &cube.IndicesList;
+    //subData.pSysMem = &cube.IndicesList;
 
     //hr = myDevice->CreateBuffer(&bd, &subData, cube.IndexBuffer.ReleaseAndGetAddressOf());
     //if (FAILED(hr))
@@ -593,7 +593,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 void ExecutePipeline()
 {
     // rendering here (create function)
-    immediateContext->ClearRenderTargetView(RTV, Colors::Aqua);
+    immediateContext->ClearRenderTargetView(RTV, Colors::DarkBlue);
     immediateContext->ClearDepthStencilView(zBufferView, D3D11_CLEAR_DEPTH, 1, 0);
 
     // setup pipeline
@@ -635,7 +635,7 @@ void ExecutePipeline()
             XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp2));
     cb.mView = XMMatrixTranspose(
         XMMatrixMultiply(
-            XMMatrixLookAtLH({ 0, 5.0f, -15.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 }), temp));
+            temp, XMMatrixLookAtLH({ 0, 5.0f, -20.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 })));
     cb.mProjection = XMMatrixTranspose(
         XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f));
     WVP wvp = {};

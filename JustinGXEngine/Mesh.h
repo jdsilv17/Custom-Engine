@@ -19,6 +19,9 @@ public:
 	std::vector<T> VertexList;
 	std::vector<int> IndicesList;
 
+	int vertexCount = NULL;
+	int indexCount = NULL;
+
 	ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
 	ComPtr<ID3D11Buffer> IndexBuffer = nullptr;
 	ComPtr<ID3D11InputLayout> InputLayout = nullptr;
