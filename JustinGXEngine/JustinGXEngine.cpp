@@ -8,9 +8,17 @@
 #include "PixelShader.h"
 #include "MeshVertexShader.h"
 
-#include "./Assets/headers/StoneHenge.h"
+#ifndef MeshUtils
+    #include "MeshUtils.h"
+    #define MeshUtils
+#endif // MeshUtils
 
-#include <d3d11.h>
+#include "Mesh.h"
+
+#include "./Assets/headers/StoneHenge.h"
+#include "./Assets/headers/test pyramid.h"
+
+#include <d3d11_1.h>
 #include <directxmath.h>
 #include <directxcolors.h>
 #pragma comment(lib, "d3d11.lib")
@@ -37,7 +45,7 @@ struct ConstantBuffer
     //XMFLOAT4 vOutputColor;
 };
 
-// storage value for math
+ //storage value for math
 struct WVP
 {
     XMFLOAT4X4 sWorld;
@@ -45,19 +53,15 @@ struct WVP
     XMFLOAT4X4 sProjection;
 };
 
-struct VERTEX_4
-{
-    XMFLOAT4 pos;
-    XMFLOAT4 color;
-    //XMFLOAT4 norm;
-    //XMFLOAT2 uv;
-};
+//Mesh<VERTEX_4> tempMesh;
+Mesh<VERTEX_4> cube;
 
 UINT numOfElements = 0;
 UINT numOfVerts = 0;
 
 // Shader variables
 ID3D11Buffer* vertexBuffer;
+ID3D11Buffer* indexBuffer;
 ID3D11InputLayout* vertexLayout;
 ID3D11VertexShader* vShader;
 ID3D11PixelShader* pShader;
@@ -257,7 +261,7 @@ HRESULT InitDevice()
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
-    hr = D3D11CreateDeviceAndSwapChain(NULL, driverType, NULL, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &sd,
+    hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, NULL, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &sd,
         &swapChain, &myDevice, 0, &immediateContext);
     if (FAILED(hr))
         return hr;
@@ -299,8 +303,8 @@ HRESULT InitDevice()
         return hr;
 
     // Setup viewport
-    vPort.Width = width;
-    vPort.Height = height;
+    vPort.Width = static_cast<FLOAT>(width);
+    vPort.Height = static_cast<FLOAT>(height);
     vPort.TopLeftX = vPort.TopLeftY = 0;
     vPort.MinDepth = 0;
     vPort.MaxDepth = 1;
@@ -311,27 +315,52 @@ HRESULT InitDevice()
 HRESULT InitContent()
 {
     HRESULT hr = S_OK;
-
-    VERTEX_4 triangle[] =
+    
+    cube.VertexList =
     {
-        // FRONT
-        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(-0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-        // RIGHT FACE
-        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-        // BACK FACE
-        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(-0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-        // LEFT FACE
-        { XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(-0.25f, -0.25f, -0.25f, 1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-        { XMFLOAT4(-0.25f, -0.25f, 0.25f, 1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
+        //// TOP
+        //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },  // back left
+        //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },    // back right
+        //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },     // front right
+        //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(-1.0f, 1.0f) },  // front left
+        //// BOTTOM
+        //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }, // back left
+        //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) }, // back right
+        //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },  // front right
+        //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front left
+        //// LEFT SIDE
+        //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front bottom
+        //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },// 
+        //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },
+        //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+        //// RIGHT SIDE
+        //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },
+        //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+        //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+        //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f)  },
+        //// BACK
+        //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+        //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 1.0f) },
+        //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 0.0f) },
+        //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+        //// FRONT
+        //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 1.0f) },
+        //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+        //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+        //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 0.0f) },
+
+        //    // front face
+        //{{-0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //0 top left
+        //{{0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //1 top right
+        //{{0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //2 bottom right
+        //{{-0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //3 bottom left
+        ////// back face
+        //{{-0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //4 back top left
+        //{{0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //5 back top right
+        //{{0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //6 back bottom right
+        //{{-0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //7 back bottom left
     };
-    numOfVerts = ARRAYSIZE(triangle);
+    numOfVerts = cube.VertexList.size();
 
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
@@ -344,11 +373,11 @@ HRESULT InitContent()
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    subData.pSysMem = triangle;
+    subData.pSysMem = &cube.VertexList;
 
-    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBuffer);
-    if (FAILED(hr))
-        return hr;
+    //hr = myDevice->CreateBuffer( &bd, &subData, cube.VertexBuffer.ReleaseAndGetAddressOf() );
+    //if (FAILED(hr))
+    //    return hr;
 
     // write, compile & load our shaders
     hr = myDevice->CreateVertexShader(VertexShader, sizeof(VertexShader), nullptr, &vShader);
@@ -359,11 +388,12 @@ HRESULT InitContent()
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0},
     };
     numOfElements = ARRAYSIZE(layout);
 
-    hr = myDevice->CreateInputLayout(layout, numOfElements, VertexShader, sizeof(VertexShader), &vertexLayout);
+    //hr = myDevice->CreateInputLayout(layout, numOfElements, VertexShader, sizeof(VertexShader), cube.InputLayout.ReleaseAndGetAddressOf());
 
     // create constant buffer
     ZeroMemory(&bd, sizeof(bd));
@@ -377,31 +407,78 @@ HRESULT InitContent()
     if (FAILED(hr))
         return hr;
 
-    // load complex mesh on card
-    // vertex buffer
-    bd.ByteWidth = sizeof(StoneHenge_data);
-    bd.Usage = D3D11_USAGE_IMMUTABLE;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    bd.MiscFlags = 0;
 
-    subData.pSysMem = StoneHenge_data;
+    cube.IndicesList =
+    {
+        0,1,3,
+        2,1,3,
 
-    // vertex buffer
-    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferMesh);
-    if (FAILED(hr))
-        return hr;
+        6,4,5,
+        7,4,6,
+
+        11,9,8,
+        10,9,11,
+
+        14,12,13,
+        15,12,14,
+
+        19,17,16,
+        18,17,19,
+
+        22,20,21,
+        23,20,22
+    };
 
     // index buffer
-    bd.ByteWidth = sizeof(StoneHenge_indicies);
+    bd.ByteWidth = sizeof(int) * cube.IndicesList.size();
     bd.Usage = D3D11_USAGE_IMMUTABLE;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
 
-    subData.pSysMem = StoneHenge_indicies;
+    subData.pSysMem = &cube.IndicesList;
+
+    //hr = myDevice->CreateBuffer(&bd, &subData, cube.IndexBuffer.ReleaseAndGetAddressOf());
+    //if (FAILED(hr))
+    //    return hr;
+
+    // load complex mesh on card=================================================================================
+    // vertex buffer
+    bd.ByteWidth = sizeof(test_pyramid_data);
+    bd.Usage = D3D11_USAGE_IMMUTABLE;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    bd.MiscFlags = 0;
+
+    subData.pSysMem = test_pyramid_data;
+
+    // Create vertex buffer
+    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferMesh);
+    if (FAILED(hr))
+        return hr;
+
+    bd.ByteWidth = sizeof(StoneHenge_data);
+    subData.pSysMem = StoneHenge_data;
+    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    // index buffer
+    bd.ByteWidth = sizeof(test_pyramid_indicies);
+    bd.Usage = D3D11_USAGE_IMMUTABLE;
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    bd.MiscFlags = 0;
+
+    subData.pSysMem = test_pyramid_indicies;
 
     hr = myDevice->CreateBuffer(&bd, &subData, &indexBufferMesh);
+    if (FAILED(hr))
+        return hr;
+
+    bd.ByteWidth = sizeof(StoneHenge_indicies);
+    subData.pSysMem = StoneHenge_indicies;
+    hr = myDevice->CreateBuffer(&bd, &subData, &indexBuffer);
     if (FAILED(hr))
         return hr;
 
@@ -532,12 +609,13 @@ void ExecutePipeline()
     // rasterizer
     immediateContext->RSSetViewports(1, &vPort);
     // input assembler
-    immediateContext->IASetInputLayout(vertexLayout);
+    immediateContext->IASetInputLayout(cube.InputLayout.Get());
 
-    ID3D11Buffer* tempVB[] = { vertexBuffer };
+    //ID3D11Buffer* tempVB[] = { cube.VertexBuffer.GetAddressOf() };
     UINT strides[] = { sizeof(VERTEX_4) };    // distance b/w 2 verts
     UINT offsets[] = { 0 };     // where to start from in the array
-    immediateContext->IASetVertexBuffers(0, 1, tempVB, strides, offsets);
+    immediateContext->IASetVertexBuffers(0, 1, cube.VertexBuffer.GetAddressOf()/*tempVB*/, strides, offsets);
+    immediateContext->IASetIndexBuffer(cube.IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     // Vertex shader stage
     immediateContext->VSSetShader(vShader, 0, 0);
@@ -548,15 +626,16 @@ void ExecutePipeline()
         // turn into a pyramid _check
         // day 4 make world, view, & projection matrix
 
-    //static float rot = 0; rot += 0.01f;
-    //XMMATRIX temp = XMMatrixRotationY(rot);
-    XMMATRIX temp = XMMatrixTranslation(0, 5.0f, -15.0f);
+    static float rot = 0; rot += 0.001f;
+    XMMATRIX temp = XMMatrixRotationY(rot);
+    XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
     ConstantBuffer cb = {};
     cb.mWorld = XMMatrixTranspose(
         XMMatrixMultiply(
-            XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp));
+            XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp2));
     cb.mView = XMMatrixTranspose(
-        XMMatrixLookAtLH({ 0, 7.0f, -20.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 }));
+        XMMatrixMultiply(
+            XMMatrixLookAtLH({ 0, 5.0f, -15.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 }), temp));
     cb.mProjection = XMMatrixTranspose(
         XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f));
     WVP wvp = {};
@@ -578,24 +657,25 @@ void ExecutePipeline()
     immediateContext->VSSetConstantBuffers(0, 1, constants);
 
     // draw
-    immediateContext->Draw(numOfVerts, 0);
+    //immediateContext->DrawIndexed(cube.IndicesList.size(), 0, 0);
 
+    //======================================================================================================================
     // get more complex pre-made mesh (FBX, OBJ, custom header) _check
     // load it onto the card (vertex buffer, index buffer, 
     // makes sure our shaders can process it
     // place it somewhere else in the environment
 
-    // set pipeline
-    ID3D11Buffer* meshVB[] = { vertexBufferMesh };
+    ID3D11Buffer* meshVB[] = { vertexBuffer };
     UINT mesh_strides[] = { sizeof(_OBJ_VERT_) };    // distance b/w 2 verts
     UINT mesh_offsets[] = { 0 };     // where to start from in the array
     immediateContext->IASetVertexBuffers(0, 1, meshVB, mesh_strides, mesh_offsets);
-    immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
+    immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
     immediateContext->IASetInputLayout(vertexMeshLayout);
     immediateContext->VSSetShader(vMeshShader, 0, 0);
 
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixIdentity();
+    cb.mWorld = XMMatrixTranspose(
+        XMMatrixTranslation(0, 0, 0));
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
@@ -604,6 +684,26 @@ void ExecutePipeline()
 
     // draw it
     immediateContext->DrawIndexed(2532, 0, 0);
+
+    // set pipeline
+    ID3D11Buffer* VB[] = { vertexBufferMesh };
+
+    immediateContext->IASetVertexBuffers(0, 1, VB, mesh_strides, mesh_offsets);
+    immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
+    immediateContext->IASetInputLayout(vertexMeshLayout);
+    immediateContext->VSSetShader(vMeshShader, 0, 0);
+
+    // modify world matrix b4 drawing next object
+    cb.mWorld = XMMatrixTranspose(
+        XMMatrixTranslation(0, 3.0f, 0));
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+    // draw it
+    immediateContext->DrawIndexed(1674, 0, 0);
     // cahnge 1 to 0
     swapChain->Present(1, 0);
 }

@@ -164,6 +164,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Assets\headers\StoneHenge.h" />
+    <ClInclude Include="Assets\headers\test pyramid.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="JustinGXEngine.h" />
     <ClInclude Include="Mesh.h" />
@@ -173,7 +174,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JustinGXEngine.cpp" />
-    <ClCompile Include="Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="JustinGXEngine.rc" />
