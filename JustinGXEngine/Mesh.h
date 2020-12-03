@@ -22,11 +22,6 @@ public:
 	int vertexCount = NULL;
 	int indexCount = NULL;
 
-	ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
-	ComPtr<ID3D11Buffer> IndexBuffer = nullptr;
-	ComPtr<ID3D11InputLayout> InputLayout = nullptr;
-
-
 	Mesh() {}
 
 	~Mesh();								
@@ -34,6 +29,9 @@ public:
 	Mesh<T>& operator=(const Mesh<T>& that);		
 
 private:
+	ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
+	ComPtr<ID3D11Buffer> IndexBuffer = nullptr;
+	ComPtr<ID3D11InputLayout> InputLayout = nullptr;
 
 };
 

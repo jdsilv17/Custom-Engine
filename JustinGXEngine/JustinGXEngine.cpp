@@ -18,20 +18,22 @@
 #include "./Assets/headers/StoneHenge.h"
 #include "./Assets/headers/test pyramid.h"
 
+#include "DDSTextureLoader.h"
 #include <d3d11_1.h>
 #include <directxmath.h>
 #include <directxcolors.h>
+#include <fstream>
 #pragma comment(lib, "d3d11.lib")
 
 using namespace DirectX;
 
 // for init
-ID3D11Device* myDevice;
-IDXGISwapChain* swapChain;
-ID3D11DeviceContext* immediateContext;
+ID3D11Device* myDevice = nullptr;
+IDXGISwapChain* swapChain = nullptr;
+ID3D11DeviceContext* immediateContext = nullptr;
 
 // for drawing
-ID3D11RenderTargetView* RTV;
+ID3D11RenderTargetView* RTV = nullptr;
 D3D11_VIEWPORT vPort;
 float aspectRatio = 1;
 
@@ -53,32 +55,39 @@ struct WVP
     XMFLOAT4X4 sProjection;
 };
 
-//Mesh<VERTEX_4> tempMesh;
-Mesh<VERTEX_4> cube;
+
+//Mesh<VERTEX_4> cube;
 
 UINT numOfElements = 0;
 UINT numOfVerts = 0;
 
 // Shader variables
-ID3D11Buffer* vertexBuffer;
-ID3D11Buffer* indexBuffer;
-ID3D11InputLayout* vertexLayout;
-ID3D11VertexShader* vShader;
-ID3D11PixelShader* pShader;
+ID3D11Buffer* vertexBuffer = nullptr;
+ID3D11Buffer* indexBuffer = nullptr;
+ID3D11InputLayout* vertexLayout = nullptr;
+ID3D11VertexShader* vShader = nullptr;
+ID3D11PixelShader* pShader = nullptr;
+// Texturing
+ID3D11SamplerState* samplerState = nullptr;
+//ID3D11Texture2D* tex_Stonehenge;
+ID3D11ShaderResourceView* SRV = nullptr;
+ID3D11ShaderResourceView* SRV_2 = nullptr;
 
 // mash data
-ID3D11Buffer* vertexBufferMesh;
-ID3D11Buffer* indexBufferMesh;
-ID3D11InputLayout* vertexMeshLayout;
-ID3D11VertexShader* vMeshShader;
+ID3D11Buffer* vertexBufferMesh = nullptr;
+ID3D11Buffer* indexBufferMesh = nullptr;
+ID3D11InputLayout* vertexMeshLayout = nullptr;
+ID3D11VertexShader* vMeshShader = nullptr;
 
 // z buffer
-ID3D11Texture2D* zBuffer;
-ID3D11DepthStencilView* zBufferView;
+ID3D11Texture2D* zBuffer = nullptr;
+ID3D11DepthStencilView* zBufferView = nullptr;
 
 // Constant
-ID3D11Buffer* constantBuffer;
-
+ID3D11Buffer* constantBuffer = nullptr;
+#ifdef _DEBUG
+ID3D11Debug* debug = nullptr;
+#endif
 
 
 
@@ -112,6 +121,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //	_CrtSetBreakAlloc(187);
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -158,6 +170,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // release all our D3D11 interfaces
     CleanUp();
 
+#ifdef _DEBUG
+    debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+    debug->Release();
+#endif
 
     return (int) msg.wParam;
 }
@@ -261,10 +277,17 @@ HRESULT InitDevice()
     sd.SampleDesc.Quality = 0;
     sd.Windowed = TRUE;
 
+
+
     hr = D3D11CreateDeviceAndSwapChain(nullptr, driverType, NULL, createDeviceFlags, &featureLevel, 1, D3D11_SDK_VERSION, &sd,
         &swapChain, &myDevice, 0, &immediateContext);
     if (FAILED(hr))
         return hr;
+
+#ifdef _DEBUG
+    hr = myDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&debug);
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
     // Create Render Target View
     ID3D11Resource* backbuffer = nullptr;
@@ -276,6 +299,10 @@ HRESULT InitDevice()
     backbuffer->Release();
     if (FAILED(hr))
         return hr;
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
 
     // create zbuffer & view
@@ -293,6 +320,10 @@ HRESULT InitDevice()
     if (FAILED(hr))
         return hr;
 
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
     // Create the depth stencil view
     //D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
     //descDSV.Format = descDepth.Format;
@@ -302,12 +333,22 @@ HRESULT InitDevice()
     if (FAILED(hr))
         return hr;
 
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
     // Setup viewport
     vPort.Width = static_cast<FLOAT>(width);
     vPort.Height = static_cast<FLOAT>(height);
     vPort.TopLeftX = vPort.TopLeftY = 0;
     vPort.MinDepth = 0;
     vPort.MaxDepth = 1;
+
+    
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
     return hr;
 }
@@ -316,51 +357,51 @@ HRESULT InitContent()
 {
     HRESULT hr = S_OK;
     
-    cube.VertexList =
-    {
-        //// TOP
-        //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },  // back left
-        //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },    // back right
-        //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },     // front right
-        //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(-1.0f, 1.0f) },  // front left
-        //// BOTTOM
-        //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }, // back left
-        //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) }, // back right
-        //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },  // front right
-        //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front left
-        //// LEFT SIDE
-        //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front bottom
-        //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },// 
-        //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },
-        //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        //// RIGHT SIDE
-        //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },
-        //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-        //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-        //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f)  },
-        //// BACK
-        //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-        //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 1.0f) },
-        //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 0.0f) },
-        //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
-        //// FRONT
-        //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 1.0f) },
-        //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
-        //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
-        //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 0.0f) },
+    //cube.VertexList =
+    //{
+    //    //// TOP
+    //    //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },  // back left
+    //    //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },    // back right
+    //    //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },     // front right
+    //    //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(-1.0f, 1.0f) },  // front left
+    //    //// BOTTOM
+    //    //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }, // back left
+    //    //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) }, // back right
+    //    //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },  // front right
+    //    //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front left
+    //    //// LEFT SIDE
+    //    //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front bottom
+    //    //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },// 
+    //    //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },
+    //    //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    //    //// RIGHT SIDE
+    //    //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },
+    //    //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+    //    //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+    //    //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f)  },
+    //    //// BACK
+    //    //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+    //    //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 1.0f) },
+    //    //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 0.0f) },
+    //    //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+    //    //// FRONT
+    //    //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 1.0f) },
+    //    //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+    //    //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+    //    //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 0.0f) },
 
-        //    // front face
-        //{{-0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //0 top left
-        //{{0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //1 top right
-        //{{0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //2 bottom right
-        //{{-0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //3 bottom left
-        ////// back face
-        //{{-0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //4 back top left
-        //{{0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //5 back top right
-        //{{0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //6 back bottom right
-        //{{-0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //7 back bottom left
-    };
-    numOfVerts = cube.VertexList.size();
+    //    //    // front face
+    //    //{{-0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //0 top left
+    //    //{{0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //1 top right
+    //    //{{0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //2 bottom right
+    //    //{{-0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //3 bottom left
+    //    ////// back face
+    //    //{{-0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //4 back top left
+    //    //{{0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //5 back top right
+    //    //{{0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //6 back bottom right
+    //    //{{-0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //7 back bottom left
+    //};
+    //numOfVerts = cube.VertexList.size();
 
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
@@ -380,8 +421,17 @@ HRESULT InitContent()
     //    return hr;
 
     // write, compile & load our shaders
-    hr = myDevice->CreateVertexShader(VertexShader, sizeof(VertexShader), nullptr, &vShader);
+    hr = myDevice->CreateVertexShader(VertexShader, sizeof(VertexShader), nullptr, &vShader);    
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
     hr = myDevice->CreatePixelShader(PixelShader, sizeof(PixelShader), nullptr, &pShader);
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
     // describe it to D3D11
     // create input layout
@@ -407,40 +457,45 @@ HRESULT InitContent()
     if (FAILED(hr))
         return hr;
 
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
-    cube.IndicesList =
-    {
-        0,1,3,
-        2,1,3,
-
-        6,4,5,
-        7,4,6,
-
-        11,9,8,
-        10,9,11,
-
-        14,12,13,
-        15,12,14,
-
-        19,17,16,
-        18,17,19,
-
-        22,20,21,
-        23,20,22
-    };
-
-    // index buffer
-    //bd.ByteWidth = sizeof(int) * cube.IndicesList.size();
-    //bd.Usage = D3D11_USAGE_IMMUTABLE;
-    //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    //bd.CPUAccessFlags = 0;
-    //bd.MiscFlags = 0;
-
-    //subData.pSysMem = &cube.IndicesList;
-
-    //hr = myDevice->CreateBuffer(&bd, &subData, cube.IndexBuffer.ReleaseAndGetAddressOf());
-    //if (FAILED(hr))
-    //    return hr;
+//    #pragma region CUBE INDEX BUFFER
+//    cube.IndicesList =
+//    {
+//        0,1,3,
+//        2,1,3,
+//
+//        6,4,5,
+//        7,4,6,
+//
+//        11,9,8,
+//        10,9,11,
+//
+//        14,12,13,
+//        15,12,14,
+//
+//        19,17,16,
+//        18,17,19,
+//
+//        22,20,21,
+//        23,20,22
+//    };
+//
+//    // index buffer
+//    //bd.ByteWidth = sizeof(int) * cube.IndicesList.size();
+//    //bd.Usage = D3D11_USAGE_IMMUTABLE;
+//    //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+//    //bd.CPUAccessFlags = 0;
+//    //bd.MiscFlags = 0;
+//
+//    //subData.pSysMem = &cube.IndicesList;
+//
+//    //hr = myDevice->CreateBuffer(&bd, &subData, cube.IndexBuffer.ReleaseAndGetAddressOf());
+//    //if (FAILED(hr))
+//    //    return hr;
+//#pragma endregion
 
     // load complex mesh on card=================================================================================
     // vertex buffer
@@ -457,11 +512,19 @@ HRESULT InitContent()
     if (FAILED(hr))
         return hr;
 
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
     bd.ByteWidth = sizeof(StoneHenge_data);
     subData.pSysMem = StoneHenge_data;
     hr = myDevice->CreateBuffer(&bd, &subData, &vertexBuffer);
     if (FAILED(hr))
         return hr;
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
     // index buffer
     bd.ByteWidth = sizeof(test_pyramid_indicies);
@@ -476,14 +539,28 @@ HRESULT InitContent()
     if (FAILED(hr))
         return hr;
 
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
     bd.ByteWidth = sizeof(StoneHenge_indicies);
     subData.pSysMem = StoneHenge_indicies;
     hr = myDevice->CreateBuffer(&bd, &subData, &indexBuffer);
     if (FAILED(hr))
         return hr;
 
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
     // load mesh shader
     hr = myDevice->CreateVertexShader(MeshVertexShader, sizeof(MeshVertexShader), nullptr, &vMeshShader);
+    if (FAILED(hr))
+        return hr;
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
     D3D11_INPUT_ELEMENT_DESC meshLayout[] =
     {
@@ -494,6 +571,50 @@ HRESULT InitContent()
     numOfElements = ARRAYSIZE(meshLayout);
 
     hr = myDevice->CreateInputLayout(meshLayout, numOfElements, MeshVertexShader, sizeof(MeshVertexShader), &vertexMeshLayout);
+    if (FAILED(hr))
+        return hr;
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
+    // TEXTURING ===============================================================================================
+    // Create Texture for Stonehenge
+    //myDevice->CreateShaderResourceView()
+    std::string filename = "./Assets/Textures/StoneHenge.dds";
+    std::wstring widestr = std::wstring(filename.begin(), filename.end());
+    const wchar_t* widecstr = widestr.c_str();
+    hr = CreateDDSTextureFromFile(myDevice, widecstr, nullptr, &SRV);
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
+    filename = "./Assets/Textures/fire_01.dds";
+    widestr = std::wstring(filename.begin(), filename.end());
+    widecstr = widestr.c_str();
+    hr = CreateDDSTextureFromFile(myDevice, widecstr, nullptr, &SRV_2);
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
+
+    // Create Default Sampler State
+    D3D11_SAMPLER_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sd.MinLOD = 0;
+    sd.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = myDevice->CreateSamplerState(&sd, &samplerState);
+    if (FAILED(hr))
+        return hr;
+
+#ifdef _DEBUG
+    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+#endif
 
     return hr;
 }
@@ -507,6 +628,7 @@ void CleanUp()
 
     if (RTV) RTV->Release();
     if (vertexBuffer) vertexBuffer->Release();
+    if (indexBuffer) indexBuffer->Release();
     if (vertexLayout) vertexLayout->Release();
     if (vertexBufferMesh) vertexBufferMesh->Release();
     if (indexBufferMesh) indexBufferMesh->Release();
@@ -515,6 +637,9 @@ void CleanUp()
     if (zBuffer) zBuffer->Release();
     if (zBufferView) zBufferView->Release();
     if (constantBuffer) constantBuffer->Release();
+    if (SRV) SRV->Release();
+    if (SRV_2) SRV_2->Release();
+    if (samplerState) samplerState->Release();
     if (vShader) vShader->Release();
     if (pShader) pShader->Release();
     if (swapChain) swapChain->Release();
@@ -609,17 +734,24 @@ void ExecutePipeline()
     // rasterizer
     immediateContext->RSSetViewports(1, &vPort);
     // input assembler
-    immediateContext->IASetInputLayout(cube.InputLayout.Get());
+    //immediateContext->IASetInputLayout(cube.InputLayout.Get());
 
     //ID3D11Buffer* tempVB[] = { cube.VertexBuffer.GetAddressOf() };
     UINT strides[] = { sizeof(VERTEX_4) };    // distance b/w 2 verts
     UINT offsets[] = { 0 };     // where to start from in the array
-    immediateContext->IASetVertexBuffers(0, 1, cube.VertexBuffer.GetAddressOf()/*tempVB*/, strides, offsets);
-    immediateContext->IASetIndexBuffer(cube.IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    //immediateContext->IASetVertexBuffers(0, 1, cube.VertexBuffer.GetAddressOf()/*tempVB*/, strides, offsets);
+    //immediateContext->IASetIndexBuffer(cube.IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     // Vertex shader stage
-    immediateContext->VSSetShader(vShader, 0, 0);
+    //immediateContext->VSSetShader(vShader, 0, 0);
     // Pixel shader stage
+    ID3D11ShaderResourceView* tempSRV[] =
+    {
+        SRV,
+        SRV_2
+    };
+    immediateContext->PSSetShaderResources(0, 2, tempSRV);
+    immediateContext->PSSetSamplers(0, 1, &samplerState);
     immediateContext->PSSetShader(pShader, 0, 0);
 
     // make triangle 3D _check
@@ -646,15 +778,15 @@ void ExecutePipeline()
     // upload matrices to video card
         // Create and update a constant buffer (move variables from C++ to shaders)
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
-    HRESULT hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    HRESULT hr/* = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap(constantBuffer, 0);
+    immediateContext->Unmap(constantBuffer, 0)*/;
 
 
     // Apply matrix math in vertex shader _check
     // connect constant buffer to pipeline
-    ID3D11Buffer* constants[] = { constantBuffer };
-    immediateContext->VSSetConstantBuffers(0, 1, constants);
+    //ID3D11Buffer* constants[] = { constantBuffer };
+    immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
 
     // draw
     //immediateContext->DrawIndexed(cube.IndicesList.size(), 0, 0);
@@ -672,7 +804,7 @@ void ExecutePipeline()
     immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
     immediateContext->IASetInputLayout(vertexMeshLayout);
     immediateContext->VSSetShader(vMeshShader, 0, 0);
-
+    immediateContext->PSSetSamplers(0, 1, &samplerState);
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
         XMMatrixTranslation(0, 0, 0));

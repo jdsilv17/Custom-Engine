@@ -1,4 +1,5 @@
 #pragma once
+#ifdef RenderUtils
 
 //
 // NOT READY FOR USE
@@ -21,7 +22,7 @@ HRESULT CreateConstantBuffer(ID3D11Device* device, UINT size, ComPtr<ID3D11Buffe
     ZeroMemory(&bd, sizeof(bd));
     bd.ByteWidth = size;
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
 
@@ -113,6 +114,7 @@ void Set_RS_Stage(ID3D11DeviceContext* immediateContext)
 template <typename T>
 void Set_PS_Stage(ID3D11DeviceContext* immediateContext)
 {
+    immediateContext->PSSetSamplers(startslot, numsamplers, ppSamplers);
     immediateContext->PSSetShader(pShader, 0, 0);
 }
 
@@ -121,3 +123,5 @@ void Set_OM_Stage(ID3D11DeviceContext* immediateContext)
 {
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
 }
+
+#endif // !RenderUtils

@@ -22,14 +22,16 @@ struct VS_INPUT
 struct PS_INPUT
 {
 	float4 Pos : SV_POSITION;
-    float4 Color : COLOR;
+    float3 UVW : TEXCOORD;
+    float3 Normal : NORMAL;
 };
 
 PS_INPUT main(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
     output.Pos = float4(input.Pos, 1);
-    output.Color.rgb = input.Normal;
+    output.UVW = input.UVW;
+    output.Normal = input.Normal;
     // search Shader intrinsics for hlsl math stuff
     
     output.Pos = mul(output.Pos, World);
