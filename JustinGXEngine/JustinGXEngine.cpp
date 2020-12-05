@@ -14,13 +14,14 @@
 #endif // MeshUtils
 
 #include "Mesh.h"
+#include "Camera.h"
 
 #include "./Assets/headers/StoneHenge.h"
 #include "./Assets/headers/test pyramid.h"
 
 #include "DDSTextureLoader.h"
 #include <d3d11_1.h>
-#include <directxmath.h>
+#include <DirectXMath.h>
 #include <directxcolors.h>
 #include <fstream>
 #pragma comment(lib, "d3d11.lib")
@@ -90,6 +91,7 @@ ID3D11Debug* debug = nullptr;
 #endif
 
 
+Camera cam;
 
 
 #define MAX_LOADSTRING 100
@@ -107,6 +109,7 @@ WCHAR           szWindowClass[MAX_LOADSTRING];            // the main window cla
 HRESULT             InitDevice();
 HRESULT             InitContent();
 void                CleanUp();
+void                CatchInput();
 void                ExecutePipeline();
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -197,7 +200,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbWndExtra     = 0;
     wcex.hInstance      = hInstance;
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_JUSTINGXENGINE));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hCursor        = LoadCursor(nullptr, IDC_CROSS);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_JUSTINGXENGINE);
     wcex.lpszClassName  = szWindowClass;
@@ -615,7 +618,7 @@ HRESULT InitContent()
 #ifdef _DEBUG
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
-
+    
     return hr;
 }
 
@@ -645,6 +648,38 @@ void CleanUp()
     if (swapChain) swapChain->Release();
     if (immediateContext) immediateContext->Release();
     if (myDevice) myDevice->Release();
+}
+
+/// <summary>
+/// Catches the keyboard and mouse input
+/// </summary>
+void CatchInput()
+{
+    const float cameraSpeed = 0.2f;
+    if (GetAsyncKeyState('W') & 0x8000)
+    {
+        cam.UpdatePosition(cam.GetForwardVector() * cameraSpeed);
+    }
+    if (GetAsyncKeyState('A') & 0x8000)
+    {
+        cam.UpdatePosition(cam.GetLeftVector() * cameraSpeed);
+    }
+    if (GetAsyncKeyState('S') & 0x8000)
+    {
+        cam.UpdatePosition(cam.GetBackwardVector() * cameraSpeed);
+    }
+    if (GetAsyncKeyState('D') & 0x8000)
+    {
+        cam.UpdatePosition(cam.GetRightVector() * cameraSpeed);
+    }
+    if (GetAsyncKeyState(VK_SPACE) & 0x8000)
+    {
+        cam.UpdatePosition(cam.GetUpVector() * cameraSpeed);
+    }
+    if (GetAsyncKeyState('X') & 0x8000)
+    {
+        cam.UpdatePosition(cam.GetUpVector() * -cameraSpeed);
+    }
 }
 
 //
@@ -757,7 +792,8 @@ void ExecutePipeline()
     // make triangle 3D _check
         // turn into a pyramid _check
         // day 4 make world, view, & projection matrix
-
+    CatchInput();
+    
     static float rot = 0; rot += 0.001f;
     XMMATRIX temp = XMMatrixRotationY(rot);
     XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
@@ -765,11 +801,11 @@ void ExecutePipeline()
     cb.mWorld = XMMatrixTranspose(
         XMMatrixMultiply(
             XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp2));
-    cb.mView = XMMatrixTranspose(
-        XMMatrixMultiply(
-            temp, XMMatrixLookAtLH({ 0, 5.0f, -20.0f }, { 0, 0, 0 }, { 0, 1.0f, 0 })));
+    cb.mView = XMMatrixTranspose( XMMatrixMultiply( temp, cam.GetViewMatrix() ));
+    //cam.SetProjectionMatrix(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f);
+    cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
     cb.mProjection = XMMatrixTranspose(
-        XMMatrixPerspectiveFovLH(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f));
+        cam.GetProjectionMatrix());
     WVP wvp = {};
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     XMStoreFloat4x4(&wvp.sView, cb.mView);
@@ -827,7 +863,8 @@ void ExecutePipeline()
 
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
-        XMMatrixTranslation(0, 3.0f, 0));
+        XMMatrixMultiply(
+            temp, XMMatrixTranslation(0, 6.0f, 0)));
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);

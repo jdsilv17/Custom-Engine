@@ -1,6 +1,6 @@
 
+
 Texture2D textures[2] : register(t0);
-//Texture2D detailTexture : register(t1);
 SamplerState samplerState : register(s0);
 
 struct PS_INPUT
@@ -13,6 +13,7 @@ struct PS_INPUT
 
 float4 main(PS_INPUT input) : SV_TARGET
 {
+    
     // get first color for pixel
     float4 baseColor = textures[0].Sample(samplerState, input.UVW.xy);
     // get second color for pixel
@@ -20,8 +21,10 @@ float4 main(PS_INPUT input) : SV_TARGET
     // blend the pixel's color together
     //float4 blendColor = baseColor * detailColor * 2.0f;
     
-    float4 finalColor/* = saturate(blendColor)*/;
+    float4 finalColor /*= saturate(blendColor)*/;
     finalColor = float4(lerp(baseColor.rgb, detailColor.rgb, detailColor.a), baseColor.a);
+    //finalColor = float4(lerp(color[0].rgb, color[1].rgb, color[1].a), color[0].a);
+    
     
     return finalColor;
 }
