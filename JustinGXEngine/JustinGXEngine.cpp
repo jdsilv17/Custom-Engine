@@ -43,9 +43,9 @@ struct ConstantBuffer
     XMMATRIX mWorld;
     XMMATRIX mView;
     XMMATRIX mProjection;
-    //XMFLOAT4 vLightDir[2];
-    //XMFLOAT4 vLightColor[2];
-    //XMFLOAT4 vOutputColor;
+    XMFLOAT4 LightDir[2];
+    XMFLOAT4 LightColor[2];
+    XMFLOAT4 OutputColor;
 };
 
  //storage value for math
@@ -54,6 +54,21 @@ struct WVP
     XMFLOAT4X4 sWorld;
     XMFLOAT4X4 sView;
     XMFLOAT4X4 sProjection;
+    XMFLOAT4 LightDir[2];
+    XMFLOAT4 LightColor[2];
+    XMFLOAT4 OutputColor;
+};
+
+XMVECTOR LightDirs[2] =
+{
+    {-0.577f, 0.577f, -0.577f, 1.0f},
+    { 0.577f, 0.2577f, -0.577f, 1.0f }
+    //{0.0f, 2.0f, -1.0f, 1.0f},
+};
+XMVECTOR LightColors[2] =
+{
+    {0.75f, 0.75f, 0.75f, 1.0f},
+    {1.0f, 1.0f, 1.0f, 1.0f}
 };
 
 
@@ -794,14 +809,14 @@ void ExecutePipeline()
         // day 4 make world, view, & projection matrix
     CatchInput();
     
-    static float rot = 0; rot += 0.001f;
+    static float rot = 0; rot += 0.01f;
     XMMATRIX temp = XMMatrixRotationY(rot);
     XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
     ConstantBuffer cb = {};
-    cb.mWorld = XMMatrixTranspose(
-        XMMatrixMultiply(
-            XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp2));
-    cb.mView = XMMatrixTranspose( XMMatrixMultiply( temp, cam.GetViewMatrix() ));
+    //cb.mWorld = XMMatrixTranspose(
+    //    XMMatrixMultiply(
+    //        XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp2));
+    cb.mView = XMMatrixTranspose( /*XMMatrixMultiply( temp,*/ cam.GetViewMatrix() );
     //cam.SetProjectionMatrix(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f);
     cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
     cb.mProjection = XMMatrixTranspose(
@@ -810,19 +825,23 @@ void ExecutePipeline()
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     XMStoreFloat4x4(&wvp.sView, cb.mView);
     XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
+    XMStoreFloat4(&wvp.LightDir[0], LightDirs[0]);
+    //LightDirs[1] = XMVector4Transform(LightDirs[1], temp);
+    XMStoreFloat4(&wvp.LightDir[1], LightDirs[1]);
+    XMStoreFloat4(&wvp.LightColor[0], LightColors[0]);
+    XMStoreFloat4(&wvp.LightColor[1], LightColors[1]);
 
     // upload matrices to video card
         // Create and update a constant buffer (move variables from C++ to shaders)
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
-    HRESULT hr/* = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap(constantBuffer, 0)*/;
+    HRESULT hr;
 
 
     // Apply matrix math in vertex shader _check
     // connect constant buffer to pipeline
     //ID3D11Buffer* constants[] = { constantBuffer };
     immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
+    immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 
     // draw
     //immediateContext->DrawIndexed(cube.IndicesList.size(), 0, 0);
@@ -861,6 +880,7 @@ void ExecutePipeline()
     immediateContext->IASetInputLayout(vertexMeshLayout);
     immediateContext->VSSetShader(vMeshShader, 0, 0);
 
+    // Draw pyramid
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
         XMMatrixMultiply(
@@ -873,6 +893,36 @@ void ExecutePipeline()
 
     // draw it
     immediateContext->DrawIndexed(1674, 0, 0);
+
+    // Draw Directional Light
+    // modify world matrix b4 drawing next object
+    cb.mWorld = XMMatrixTranspose( XMMatrixTranslationFromVector( 5.0f * LightDirs[0] ) );
+    XMMATRIX mLightScale = XMMatrixScaling(5.0f, 5.0f, 5.0f);
+    cb.mWorld = mLightScale * cb.mWorld;
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+    // draw it
+    immediateContext->DrawIndexed(1674, 0, 0);
+
+    // Draw Point Light Light
+    // modify world matrix b4 drawing next object
+    cb.mWorld = XMMatrixTranspose(
+            XMMatrixTranslationFromVector( 5.0f * LightDirs[1]));
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+    // draw it
+    immediateContext->DrawIndexed(1674, 0, 0);
+
+
     // cahnge 1 to 0
     swapChain->Present(1, 0);
 }

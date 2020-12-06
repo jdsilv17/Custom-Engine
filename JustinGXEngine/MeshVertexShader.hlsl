@@ -6,9 +6,9 @@ cbuffer ConstantBuffer : register(b0) // b for buffer
     float4x4 World;
     float4x4 View;
     float4x4 Projection;
-    //float4 vLightDir[2];
-    //float4 vLightColor[2];
-    //float4 vOutputColor;
+    float4 LightDir[2];
+    float4 LightColor[2];
+    float4 OutputColor;
 }
 
 // rule of 3 
@@ -31,10 +31,9 @@ PS_INPUT main(VS_INPUT input)
     PS_INPUT output = (PS_INPUT) 0;
     output.Pos = float4(input.Pos, 1);
     output.UVW = input.UVW;
-    output.Normal = input.Normal;
-    // search Shader intrinsics for hlsl math stuff
     
     output.Pos = mul(output.Pos, World);
+    output.Normal = mul(input.Normal, (float3x3) World);
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
     
