@@ -8,22 +8,24 @@ cbuffer ConstantBuffer : register(b0) // b for buffer
     float4x4 World;
     float4x4 View;
     float4x4 Projection;
-    float4 LightDir[2];
-    float4 LightColor[2];
+    float4 LightDir[3];
+    float4 LightColor[3];
     float4 OutputColor;
 }
 
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
+    float4 wPos : POSITION;
     float3 UVW : TEXCOORD;
     float3 Normal : NORMAL;
 };
 
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse);
 float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse);
-float CalcAttenuation(float4 lPos, float lRadius, float4 sPos);
-float CalcAttenuation(float innerConeRatio, float outerConeRatio, float surfaceRatio);
+float4 CalcSpotLight(float4 lPos, float4 lColor, float4 sPos, float3 sNormal, float4 tDiffuse);
+float CalcLinearAttenuation(float4 lPos, float lRadius, float4 sPos);
+float CalcLinearAttenuation(float innerConeRatio, float outerConeRatio, float surfaceRatio);
 
 float4 PS_MultiTexturing(PS_INPUT input);
 float4 PS_SingleTexture(PS_INPUT input);
@@ -33,13 +35,15 @@ float4 main(PS_INPUT input) : SV_TARGET
 {
     
     float4 texColor = PS_MultiTexturing(input);
+    float4 finalColor;
+    finalColor = CalcDirectinalLight(LightDir[0].xyz, LightColor[0], input.Normal, texColor);
     
-    float4 finalColor = CalcDirectinalLight(LightDir[0].xyz, LightColor[0], input.Normal, texColor);
+    float pntRadius = 8.0f;
+    finalColor += CalcPointLight(LightDir[1], LightColor[1], pntRadius, input.wPos, input.Normal, texColor);
     
-    float pntRadius = 0.5f;
-    finalColor += CalcPointLight(LightDir[1], LightColor[1], pntRadius, input.Pos.xyzw, input.Normal, finalColor);
+    finalColor += CalcSpotLight(LightDir[2], LightColor[2], input.wPos, input.Normal, texColor);
     
-    return texColor * finalColor;
+    return finalColor;
 }
 
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse)
@@ -49,48 +53,82 @@ float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tD
     if (length(lDir) != 1.0f)
         lDir = normalize(lDir);
     
-    float ambientTerm = 0.7f;
+    float ambientTerm = 0.3f;
+    float4 ambientColor = lColor /** ambientTerm*/;
     
-    // directional lightratio
-    float lightRatio = saturate(dot(-1.0f * lDir, sNormal) + ambientTerm);
+    float angularAttenuation = dot(-lDir, sNormal) + ambientTerm;
     
-    //float4 finalColor = saturate(dot(-1.0f * lDir, sNormal) * tDiffuse);
-    //finalColor += tDiffuse * lColor;
-    //finalColor *= texColor;
-    //finalColor.a = 1.0f;
-    
-    // lerp from light color to black by the light ratio
-    float4 finalColor = lerp(0, LightColor[0], lightRatio);
+    float4 finalColor = tDiffuse * ambientColor * angularAttenuation;
     
     return finalColor;
 }
 
 float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse)
 {
-    //if (length(sPos) != 1.0f)
-    //    sPos = normalize(sPos);
+    if (length(sPos) != 1.0f)
+        sPos = normalize(sPos);
+    if (length(lPos) != 1.0f)
+        lPos = normalize(lPos);
     
-    float ambientTerm = 0.5f;
+    float4 lightDir = lPos - sPos;
+    float dist = length(lightDir);
+    lightDir = normalize(lightDir);
+    lightDir /= dist;
     
-    float4 lightDir = normalize(lPos - sPos);
+    float ambientTerm = 0.9f;
+    float4 ambientColor = lColor /** ambientTerm*/;
     
-    float lightRatio = saturate(dot(lightDir.xyz, sNormal) + ambientTerm);
+    float angularAttenuation = dot(lightDir.xyz, sNormal) + ambientTerm;
+    float rangeAttenuation = pow(1.0f - (dist / lRadius), 2.0f); // lightrange
     
-    float attenuation = CalcAttenuation(lPos, lRadius, sPos);
+    float linearAttenuation = CalcLinearAttenuation(lPos, lRadius, sPos);
     
-    float4 finalColor = lerp(0, lColor, lightRatio * attenuation);
+    float4 finalColor = tDiffuse * ambientColor * angularAttenuation * rangeAttenuation /** linearAttenuation*/;
     
     return finalColor;
 }
 
-float CalcAttenuation(float4 lPos, float lRadius, float4 sPos)
+float4 CalcSpotLight(float4 lPos, float4 lColor, float4 sPos, float3 sNormal, float4 tDiffuse)
 {
-    return pow(1.0f - saturate(length(lPos - sPos) / lRadius), 2.0f);
+    //if (length(sPos) != 1.0f)
+    //    sPos = normalize(sPos);
+    //if (length(lPos) != 1.0f)
+    //    lPos = normalize(lPos);
+    
+    float4 lightDir = normalize(lPos - sPos);
+    
+    float ambientTerm = 0.4f;
+    float4 ambientColor = lColor /** ambientTerm*/;
+    
+    float surfaceRatio = dot(-lightDir.xyz, float3(1.0f, -1.0, 0.0f));
+    
+    float outerConeRatio = 0.5f;
+    float innerConeRatio = 0.8f;
+    
+    float angularAttenuation = dot(lightDir.xyz, sNormal) + ambientTerm;
+    
+    float linearAttenuation = CalcLinearAttenuation(innerConeRatio, outerConeRatio, surfaceRatio); // replaces spotfactor
+    
+    float4 finalColor = tDiffuse * ambientColor * angularAttenuation * linearAttenuation;
+    
+    return finalColor;
 }
 
-float CalcAttenuation(float innerConeRatio, float outerConeRatio, float surfaceRatio)
+float CalcLinearAttenuation(float4 lPos, float lRadius, float4 sPos)
 {
-    return pow( 1.0f - saturate( (innerConeRatio - surfaceRatio) / (innerConeRatio - outerConeRatio) ), 2.0f );
+    //float attenuation = length(lPos - sPos);
+    //attenuation = attenuation / lRadius;
+    //attenuation = saturate(attenuation);
+    //attenuation = 1.0f - attenuation;
+    //attenuation = pow(attenuation, 2.0f);
+    float attenuation = pow(1.0f - saturate(length(lPos - sPos) / lRadius), 2.0f);
+    return attenuation;
+}
+
+float CalcLinearAttenuation(float innerConeRatio, float outerConeRatio, float surfaceRatio)
+{
+    float attenuation = pow(1.0f - saturate((innerConeRatio - surfaceRatio) / (innerConeRatio - outerConeRatio)), 2.0f);
+    return attenuation;
 }
 
 float4 PS_MultiTexturing(PS_INPUT input)

@@ -43,8 +43,8 @@ struct ConstantBuffer
     XMMATRIX mWorld;
     XMMATRIX mView;
     XMMATRIX mProjection;
-    XMFLOAT4 LightDir[2];
-    XMFLOAT4 LightColor[2];
+    XMFLOAT4 LightDir[3];
+    XMFLOAT4 LightColor[3];
     XMFLOAT4 OutputColor;
 };
 
@@ -54,21 +54,22 @@ struct WVP
     XMFLOAT4X4 sWorld;
     XMFLOAT4X4 sView;
     XMFLOAT4X4 sProjection;
-    XMFLOAT4 LightDir[2];
-    XMFLOAT4 LightColor[2];
+    XMFLOAT4 LightDir[3];
+    XMFLOAT4 LightColor[3];
     XMFLOAT4 OutputColor;
 };
 
-XMVECTOR LightDirs[2] =
+XMVECTOR LightDirs[3] =
 {
     {-0.577f, 0.577f, -0.577f, 1.0f},
-    { 0.577f, 0.2577f, -0.577f, 1.0f }
-    //{0.0f, 2.0f, -1.0f, 1.0f},
+    {-5.0f, 5.0f, 0.0f, 1.0f},
+    {5.0f, 5.0f, 0.0f, 1.0f}
 };
-XMVECTOR LightColors[2] =
+XMVECTOR LightColors[3] =
 {
     {0.75f, 0.75f, 0.75f, 1.0f},
-    {1.0f, 1.0f, 1.0f, 1.0f}
+    {1.0f, 0.0f, 0.0f, 1.0f},
+    {0.0f, 1.0f, 0.0f, 1.0f}
 };
 
 
@@ -828,8 +829,10 @@ void ExecutePipeline()
     XMStoreFloat4(&wvp.LightDir[0], LightDirs[0]);
     //LightDirs[1] = XMVector4Transform(LightDirs[1], temp);
     XMStoreFloat4(&wvp.LightDir[1], LightDirs[1]);
+    XMStoreFloat4(&wvp.LightDir[2], LightDirs[2]);
     XMStoreFloat4(&wvp.LightColor[0], LightColors[0]);
     XMStoreFloat4(&wvp.LightColor[1], LightColors[1]);
+    XMStoreFloat4(&wvp.LightColor[2], LightColors[2]);
 
     // upload matrices to video card
         // Create and update a constant buffer (move variables from C++ to shaders)
@@ -862,7 +865,7 @@ void ExecutePipeline()
     immediateContext->PSSetSamplers(0, 1, &samplerState);
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
-        XMMatrixTranslation(0, 0, 0));
+        temp);
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
@@ -896,9 +899,9 @@ void ExecutePipeline()
 
     // Draw Directional Light
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixTranspose( XMMatrixTranslationFromVector( 5.0f * LightDirs[0] ) );
-    XMMATRIX mLightScale = XMMatrixScaling(5.0f, 5.0f, 5.0f);
-    cb.mWorld = mLightScale * cb.mWorld;
+    cb.mWorld = XMMatrixTranspose( XMMatrixTranslationFromVector( LightDirs[0] ) );
+    //XMMATRIX mLightScale = XMMatrixScaling(5.0f, 5.0f, 5.0f);
+    //cb.mWorld = mLightScale * cb.mWorld;
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
@@ -906,12 +909,25 @@ void ExecutePipeline()
     immediateContext->Unmap(constantBuffer, 0);
 
     // draw it
-    immediateContext->DrawIndexed(1674, 0, 0);
+    //immediateContext->DrawIndexed(1674, 0, 0);
 
     // Draw Point Light Light
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
-            XMMatrixTranslationFromVector( 5.0f * LightDirs[1]));
+            XMMatrixTranslationFromVector( LightDirs[1]));
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+    // draw it
+    immediateContext->DrawIndexed(1674, 0, 0);
+
+    // Draw Spot Light
+    cb.mWorld = XMMatrixTranspose(
+        XMMatrixTranslationFromVector(LightDirs[2]));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -923,6 +939,7 @@ void ExecutePipeline()
     immediateContext->DrawIndexed(1674, 0, 0);
 
 
-    // cahnge 1 to 0
-    swapChain->Present(1, 0);
+    // change 1 to 0 vsync
+    bool vysnc = true;
+    swapChain->Present(vysnc, 0);
 }
