@@ -6,14 +6,15 @@
 
 #include "VertexShader.h"
 #include "PixelShader.h"
+#include "PS_Solid.h"
 #include "MeshVertexShader.h"
 
-#ifndef MeshUtils
+#ifndef MeshUtils_h_
     #include "MeshUtils.h"
-    #define MeshUtils
-#endif // MeshUtils
+    #define MeshUtils_h_
+#endif // MeshUtils_h_
 
-#include "Mesh.h"
+//#include "Mesh.h"
 #include "Camera.h"
 
 #include "./Assets/headers/StoneHenge.h"
@@ -43,6 +44,7 @@ struct ConstantBuffer
     XMMATRIX mWorld;
     XMMATRIX mView;
     XMMATRIX mProjection;
+    XMFLOAT4 LightPos[3];
     XMFLOAT4 LightDir[3];
     XMFLOAT4 LightColor[3];
     XMFLOAT4 OutputColor;
@@ -54,16 +56,23 @@ struct WVP
     XMFLOAT4X4 sWorld;
     XMFLOAT4X4 sView;
     XMFLOAT4X4 sProjection;
+    XMFLOAT4 LightPos[3];
     XMFLOAT4 LightDir[3];
     XMFLOAT4 LightColor[3];
     XMFLOAT4 OutputColor;
 };
 
+XMVECTOR LightPositions[3] =
+{
+    {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
+    {-10.0f, 5.0f, 0.0f, 1.0f}, // point
+    {5.0f, 5.0f, 0.0f, 1.0f} // spot
+};
 XMVECTOR LightDirs[3] =
 {
-    {-0.577f, 0.577f, -0.577f, 1.0f},
-    {-5.0f, 5.0f, 0.0f, 1.0f},
-    {5.0f, 5.0f, 0.0f, 1.0f}
+    {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
+    {-10.0f, 5.0f, 0.0f, 1.0f}, // point
+    {1.0f, -1.0f, 0.0f, 1.0f} // spot
 };
 XMVECTOR LightColors[3] =
 {
@@ -72,21 +81,20 @@ XMVECTOR LightColors[3] =
     {0.0f, 1.0f, 0.0f, 1.0f}
 };
 
-
-//Mesh<VERTEX_4> cube;
-
 UINT numOfElements = 0;
 UINT numOfVerts = 0;
 
 // Shader variables
 ID3D11Buffer* vertexBuffer = nullptr;
+ID3D11Buffer* vertexBufferGrid = nullptr;
 ID3D11Buffer* indexBuffer = nullptr;
 ID3D11InputLayout* vertexLayout = nullptr;
+ID3D11InputLayout* vertexLayoutGrid = nullptr;
 ID3D11VertexShader* vShader = nullptr;
 ID3D11PixelShader* pShader = nullptr;
+ID3D11PixelShader* ps_Solid = nullptr;
 // Texturing
 ID3D11SamplerState* samplerState = nullptr;
-//ID3D11Texture2D* tex_Stonehenge;
 ID3D11ShaderResourceView* SRV = nullptr;
 ID3D11ShaderResourceView* SRV_2 = nullptr;
 
@@ -108,6 +116,7 @@ ID3D11Debug* debug = nullptr;
 
 
 Camera cam;
+//Mesh<VERTEX> m;
 
 
 #define MAX_LOADSTRING 100
@@ -425,19 +434,9 @@ HRESULT InitContent()
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
-    //bd.ByteWidth = sizeof(VERTEX_4) * numOfVerts;
-    //bd.Usage = D3D11_USAGE_DEFAULT;
-    //bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    //bd.CPUAccessFlags = 0;
-    //bd.MiscFlags = 0;
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    //subData.pSysMem = &cube.VertexList;
-
-    //hr = myDevice->CreateBuffer( &bd, &subData, cube.VertexBuffer.ReleaseAndGetAddressOf() );
-    //if (FAILED(hr))
-    //    return hr;
 
     // write, compile & load our shaders
     hr = myDevice->CreateVertexShader(VertexShader, sizeof(VertexShader), nullptr, &vShader);    
@@ -452,17 +451,27 @@ HRESULT InitContent()
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
 
-    // describe it to D3D11
-    // create input layout
-    D3D11_INPUT_ELEMENT_DESC layout[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    };
-    numOfElements = ARRAYSIZE(layout);
+    hr = myDevice->CreatePixelShader(PS_Solid, sizeof(PS_Solid), nullptr, &ps_Solid);
 
-    //hr = myDevice->CreateInputLayout(layout, numOfElements, VertexShader, sizeof(VertexShader), cube.InputLayout.ReleaseAndGetAddressOf());
+    MakeGrid(20.0f, 26);
+
+    // vertex buffer
+    bd.ByteWidth = sizeof(VERTEX) * lines.size();
+    bd.Usage = D3D11_USAGE_IMMUTABLE;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    bd.MiscFlags = 0;
+
+    subData.pSysMem = lines.data();
+
+    // Create vertex buffer
+    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferGrid);
+    if (FAILED(hr))
+        return hr;
+    // create input layout
+    hr = myDevice->CreateInputLayout(vertexInputLayout, ARRAYSIZE(vertexInputLayout), VertexShader, sizeof(VertexShader), &vertexLayoutGrid);
+    if (FAILED(hr))
+        return hr;
 
     // create constant buffer
     ZeroMemory(&bd, sizeof(bd));
@@ -479,42 +488,6 @@ HRESULT InitContent()
 #ifdef _DEBUG
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
-
-//    #pragma region CUBE INDEX BUFFER
-//    cube.IndicesList =
-//    {
-//        0,1,3,
-//        2,1,3,
-//
-//        6,4,5,
-//        7,4,6,
-//
-//        11,9,8,
-//        10,9,11,
-//
-//        14,12,13,
-//        15,12,14,
-//
-//        19,17,16,
-//        18,17,19,
-//
-//        22,20,21,
-//        23,20,22
-//    };
-//
-//    // index buffer
-//    //bd.ByteWidth = sizeof(int) * cube.IndicesList.size();
-//    //bd.Usage = D3D11_USAGE_IMMUTABLE;
-//    //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-//    //bd.CPUAccessFlags = 0;
-//    //bd.MiscFlags = 0;
-//
-//    //subData.pSysMem = &cube.IndicesList;
-//
-//    //hr = myDevice->CreateBuffer(&bd, &subData, cube.IndexBuffer.ReleaseAndGetAddressOf());
-//    //if (FAILED(hr))
-//    //    return hr;
-//#pragma endregion
 
     // load complex mesh on card=================================================================================
     // vertex buffer
@@ -647,8 +620,10 @@ void CleanUp()
 
     if (RTV) RTV->Release();
     if (vertexBuffer) vertexBuffer->Release();
+    if (vertexBufferGrid) vertexBufferGrid->Release();
     if (indexBuffer) indexBuffer->Release();
     if (vertexLayout) vertexLayout->Release();
+    if (vertexLayoutGrid) vertexLayoutGrid->Release();
     if (vertexBufferMesh) vertexBufferMesh->Release();
     if (indexBufferMesh) indexBufferMesh->Release();
     if (vertexMeshLayout) vertexMeshLayout->Release();
@@ -661,6 +636,7 @@ void CleanUp()
     if (samplerState) samplerState->Release();
     if (vShader) vShader->Release();
     if (pShader) pShader->Release();
+    if (ps_Solid) ps_Solid->Release();
     if (swapChain) swapChain->Release();
     if (immediateContext) immediateContext->Release();
     if (myDevice) myDevice->Release();
@@ -774,28 +750,18 @@ void ExecutePipeline()
 
     // setup pipeline
         // IA (Input Assembler)
-        // VS (Vertex Shader)
-        // RS (Rasterizer Stage)
-        // PS (Pixel Shader)
-        // OM (Output Merger)
-
-    // output merger
-    ID3D11RenderTargetView* tempRTV[] = { RTV };
-    immediateContext->OMSetRenderTargets(1, tempRTV, zBufferView);
-    // rasterizer
-    immediateContext->RSSetViewports(1, &vPort);
-    // input assembler
-    //immediateContext->IASetInputLayout(cube.InputLayout.Get());
-
-    //ID3D11Buffer* tempVB[] = { cube.VertexBuffer.GetAddressOf() };
-    UINT strides[] = { sizeof(VERTEX_4) };    // distance b/w 2 verts
-    UINT offsets[] = { 0 };     // where to start from in the array
-    //immediateContext->IASetVertexBuffers(0, 1, cube.VertexBuffer.GetAddressOf()/*tempVB*/, strides, offsets);
-    //immediateContext->IASetIndexBuffer(cube.IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    ID3D11Buffer* meshVB[] = { vertexBuffer, vertexBufferMesh, vertexBufferGrid };
+    UINT mesh_strides[] = { sizeof(_OBJ_VERT_), sizeof(VERTEX) };    // distance b/w 2 verts
+    UINT mesh_offsets[] = { 0 };     // where to start from in the array
     immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // Vertex shader stage
-    //immediateContext->VSSetShader(vShader, 0, 0);
-    // Pixel shader stage
+    immediateContext->IASetInputLayout(vertexMeshLayout);
+        // VS (Vertex Shader)
+    immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
+    immediateContext->VSSetShader(vMeshShader, 0, 0);
+        // RS (Rasterizer Stage)
+    immediateContext->RSSetViewports(1, &vPort);
+        // PS (Pixel Shader)
+    immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
     ID3D11ShaderResourceView* tempSRV[] =
     {
         SRV,
@@ -804,50 +770,52 @@ void ExecutePipeline()
     immediateContext->PSSetShaderResources(0, 2, tempSRV);
     immediateContext->PSSetSamplers(0, 1, &samplerState);
     immediateContext->PSSetShader(pShader, 0, 0);
-
-    // make triangle 3D _check
-        // turn into a pyramid _check
-        // day 4 make world, view, & projection matrix
-    CatchInput();
-    
-    static float rot = 0; rot += 0.01f;
-    XMMATRIX temp = XMMatrixRotationY(rot);
-    XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
-    ConstantBuffer cb = {};
-    //cb.mWorld = XMMatrixTranspose(
-    //    XMMatrixMultiply(
-    //        XMMatrixRotationY(45.0f * (XM_PI / 180.0f)), temp2));
-    cb.mView = XMMatrixTranspose( /*XMMatrixMultiply( temp,*/ cam.GetViewMatrix() );
-    //cam.SetProjectionMatrix(XM_PIDIV4, aspectRatio, 0.01f, 1000.0f);
-    cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
-    cb.mProjection = XMMatrixTranspose(
-        cam.GetProjectionMatrix());
-    WVP wvp = {};
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    XMStoreFloat4x4(&wvp.sView, cb.mView);
-    XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
-    XMStoreFloat4(&wvp.LightDir[0], LightDirs[0]);
-    //LightDirs[1] = XMVector4Transform(LightDirs[1], temp);
-    XMStoreFloat4(&wvp.LightDir[1], LightDirs[1]);
-    XMStoreFloat4(&wvp.LightDir[2], LightDirs[2]);
-    XMStoreFloat4(&wvp.LightColor[0], LightColors[0]);
-    XMStoreFloat4(&wvp.LightColor[1], LightColors[1]);
-    XMStoreFloat4(&wvp.LightColor[2], LightColors[2]);
+    immediateContext->PSSetSamplers(0, 1, &samplerState);
+        // OM (Output Merger)
+    ID3D11RenderTargetView* tempRTV[] = { RTV };
+    immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
 
     // upload matrices to video card
         // Create and update a constant buffer (move variables from C++ to shaders)
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
     HRESULT hr;
 
+    CatchInput();
+    
+    static float rot = 0; rot += 0.005f;
+    XMMATRIX temp = XMMatrixRotationY(rot);
 
-    // Apply matrix math in vertex shader _check
-    // connect constant buffer to pipeline
-    //ID3D11Buffer* constants[] = { constantBuffer };
-    immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
-    immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
+    XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
+    ConstantBuffer cb = {};
 
-    // draw
-    //immediateContext->DrawIndexed(cube.IndicesList.size(), 0, 0);
+    cb.mView = XMMatrixTranspose( /*XMMatrixMultiply( temp,*/ cam.GetViewMatrix() );
+    cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
+    cb.mProjection = XMMatrixTranspose(
+        cam.GetProjectionMatrix());
+
+    WVP wvp = {};
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    XMStoreFloat4x4(&wvp.sView, cb.mView);
+    XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
+    XMMATRIX temp_LtRotY = XMMatrixRotationY(-0.01f);
+    for (size_t i = 0; i < 3; ++i)
+    {
+        LightPositions[i] = XMVector3Transform(LightPositions[i], temp_LtRotY);
+    }
+    XMStoreFloat4(&wvp.LightPos[0], LightPositions[0]);
+    XMStoreFloat4(&wvp.LightPos[1], LightPositions[1]);
+    XMStoreFloat4(&wvp.LightPos[2], LightPositions[2]);
+    XMMATRIX temp_LtRotZ = XMMatrixRotationZ(-0.01f);
+    LightDirs[0] = XMVector3Transform(LightDirs[0], temp_LtRotZ);
+    XMStoreFloat4(&wvp.LightDir[0], LightDirs[0]);
+    XMStoreFloat4(&wvp.LightDir[1], LightDirs[1]);
+    LightDirs[2] = XMVector3Transform(LightDirs[2], temp_LtRotY);
+    XMStoreFloat4(&wvp.LightDir[2], LightDirs[2]);
+    XMStoreFloat4(&wvp.LightColor[0], LightColors[0]);
+    XMStoreFloat4(&wvp.LightColor[1], LightColors[1]);
+    XMStoreFloat4(&wvp.LightColor[2], LightColors[2]);
+
+
 
     //======================================================================================================================
     // get more complex pre-made mesh (FBX, OBJ, custom header) _check
@@ -855,14 +823,9 @@ void ExecutePipeline()
     // makes sure our shaders can process it
     // place it somewhere else in the environment
 
-    ID3D11Buffer* meshVB[] = { vertexBuffer };
-    UINT mesh_strides[] = { sizeof(_OBJ_VERT_) };    // distance b/w 2 verts
-    UINT mesh_offsets[] = { 0 };     // where to start from in the array
-    immediateContext->IASetVertexBuffers(0, 1, meshVB, mesh_strides, mesh_offsets);
+
+    immediateContext->IASetVertexBuffers(0, 1, &meshVB[0], mesh_strides, mesh_offsets);
     immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-    immediateContext->IASetInputLayout(vertexMeshLayout);
-    immediateContext->VSSetShader(vMeshShader, 0, 0);
-    immediateContext->PSSetSamplers(0, 1, &samplerState);
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
         temp);
@@ -871,18 +834,11 @@ void ExecutePipeline()
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
     immediateContext->Unmap(constantBuffer, 0);
-
     // draw it
     immediateContext->DrawIndexed(2532, 0, 0);
 
-    // set pipeline
-    ID3D11Buffer* VB[] = { vertexBufferMesh };
-
-    immediateContext->IASetVertexBuffers(0, 1, VB, mesh_strides, mesh_offsets);
+    immediateContext->IASetVertexBuffers(0, 1, &meshVB[1], &mesh_strides[0], mesh_offsets);
     immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
-    immediateContext->IASetInputLayout(vertexMeshLayout);
-    immediateContext->VSSetShader(vMeshShader, 0, 0);
-
     // Draw pyramid
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
@@ -893,28 +849,26 @@ void ExecutePipeline()
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
     immediateContext->Unmap(constantBuffer, 0);
-
     // draw it
     immediateContext->DrawIndexed(1674, 0, 0);
 
     // Draw Directional Light
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixTranspose( XMMatrixTranslationFromVector( LightDirs[0] ) );
-    //XMMATRIX mLightScale = XMMatrixScaling(5.0f, 5.0f, 5.0f);
-    //cb.mWorld = mLightScale * cb.mWorld;
+    cb.mWorld = XMMatrixTranspose( 
+        XMMatrixTranslationFromVector( LightDirs[0] ) );
+
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
     hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
     immediateContext->Unmap(constantBuffer, 0);
 
-    // draw it
     //immediateContext->DrawIndexed(1674, 0, 0);
 
     // Draw Point Light Light
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
-            XMMatrixTranslationFromVector( LightDirs[1]));
+            XMMatrixTranslationFromVector( LightPositions[1]));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -927,7 +881,7 @@ void ExecutePipeline()
 
     // Draw Spot Light
     cb.mWorld = XMMatrixTranspose(
-        XMMatrixTranslationFromVector(LightDirs[2]));
+        XMMatrixTranslationFromVector(LightPositions[2]));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -937,6 +891,23 @@ void ExecutePipeline()
 
     // draw it
     immediateContext->DrawIndexed(1674, 0, 0);
+
+    // Draw Grid=====================================================================================
+    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+    immediateContext->IASetVertexBuffers(0, 1, &meshVB[2], &mesh_strides[1], mesh_offsets);
+    immediateContext->IASetInputLayout(vertexLayoutGrid);
+    immediateContext->VSSetShader(vShader, 0, 0);
+    immediateContext->PSSetShader(ps_Solid, 0, 0);
+
+    cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector({0.0f, 1.0f, 0.0f, 1.0f}));
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
+
+    immediateContext->Draw(lines.size(), 0);
 
 
     // change 1 to 0 vsync

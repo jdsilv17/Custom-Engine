@@ -11,6 +11,7 @@ public:
 	//Camera(const Camera& that);
 	//Camera& operator=(const Camera& that);
 
+	const DirectX::XMMATRIX& GetWorldMatrix() const;
 	const DirectX::XMMATRIX& GetViewMatrix() const;
 	const DirectX::XMMATRIX& GetProjectionMatrix() const;
 	const DirectX::XMVECTOR& GetPositionVector() const;
@@ -23,6 +24,7 @@ public:
 	const DirectX::XMVECTOR& GetLeftVector() const;
 	const DirectX::XMVECTOR& GetRightVector() const;
 
+	void SetWorldMatrix(const DirectX::XMMATRIX& mat);
 	void SetProjectionMatrix(float fovDegree, float aspectRatio, float nearZ, float farZ);
 	void SetPosition(const DirectX::XMVECTOR& pos);
 	void SetPosition(float x, float y, float z);
@@ -36,6 +38,7 @@ public:
 
 
 private:
+	DirectX::XMMATRIX World_M;
 	DirectX::XMMATRIX View_M;
 	DirectX::XMMATRIX Projection_M;
 

@@ -1,12 +1,12 @@
 #pragma once
-#ifdef RenderUtils
-
+#ifndef RenderUtils_h_
+#define RenderUtils_h_
 //
 // NOT READY FOR USE
 //
 
 #include <d3d11_1.h>
-#include <d3dcompiler.h>
+//#include <d3dcompiler.h>
 #include <directxmath.h>
 #include <wrl/client.h>
 #include <vector>
@@ -26,16 +26,15 @@ HRESULT CreateConstantBuffer(ID3D11Device* device, UINT size, ComPtr<ID3D11Buffe
     bd.CPUAccessFlags = 0;
     bd.MiscFlags = 0;
 
-    hr = device->CreateBuffer(&bd, nullptr, &constantBuffer);
+    hr = device->CreateBuffer(&bd, nullptr, constantBuffer.GetAddressOf());
 
     return hr;
 }
 
 template <typename T>
-HRESULT CreateVertexBuffer(ID3D11Device* device, std::vector<T>& vertexList)
+HRESULT CreateVertexBuffer(ID3D11Device* device, int vertexCount, T vertexList, ComPtr<ID3D11Buffer>& vertexBuffer)
 {
 	HRESULT hr = S_OK;
-    int vertexCount = vertexList.size();
 
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
@@ -47,18 +46,17 @@ HRESULT CreateVertexBuffer(ID3D11Device* device, std::vector<T>& vertexList)
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    subData.pSysMem = vertexList.data();
+    subData.pSysMem = vertexList;
 
-    hr = device->CreateBuffer(&bd, &subData, /*cube.VertexBuffer.ReleaseAndGetAddressOf()*/);
+    hr = device->CreateBuffer(&bd, &subData, vertexBuffer.GetAddressOf());
 
     return hr;
 }
 
 template <typename T>
-HRESULT CreateIndexBuffer(ID3D11Device* device, std::vector<int>& indicesList)
+HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, T indicesList, ComPtr<ID3D11Buffer>& indexBuffer)
 {
     HRESULT hr = S_OK;
-    int indexCount = indicesList.size();
 
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
@@ -70,9 +68,9 @@ HRESULT CreateIndexBuffer(ID3D11Device* device, std::vector<int>& indicesList)
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    subData.pSysMem = vertexList.data();
+    subData.pSysMem = indicesList;
 
-    hr = device->CreateBuffer(&bd, &subData, /*cube.VertexBuffer.ReleaseAndGetAddressOf()*/);
+    hr = device->CreateBuffer(&bd, &subData, indexBuffer.GetAddressOf());
 
     return hr;
 }
@@ -124,4 +122,4 @@ void Set_OM_Stage(ID3D11DeviceContext* immediateContext)
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
 }
 
-#endif // !RenderUtils
+#endif // RenderUtils_h_

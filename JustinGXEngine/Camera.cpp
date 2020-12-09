@@ -134,11 +134,6 @@ void Camera::UpdateViewMatrix()
 {
 	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationRollPitchYawFromVector(this->Rot_V);
 
-	//DirectX::XMVECTOR target = DirectX::XMVectorMultiply( this->FORWARD, rotation.r[2]);
-
-	//DirectX::XMVECTOR upDir = this->UP;
-	
-
 	DirectX::XMVECTOR target = DirectX::XMVector3TransformCoord(this->FORWARD, rotation);
 
 	target = DirectX::XMVectorAdd(this->Pos_V, target);

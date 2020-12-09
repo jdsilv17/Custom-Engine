@@ -6,6 +6,7 @@ cbuffer ConstantBuffer : register(b0) // b for buffer
     float4x4 World;
     float4x4 View;
     float4x4 Projection;
+    float4 LightPos[3];
     float4 LightDir[3];
     float4 LightColor[3];
     float4 OutputColor;
