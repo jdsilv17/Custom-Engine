@@ -1,7 +1,3 @@
-//#ifndef Object_h_
-//#define Object_h_
-
-
 #pragma once
 
 #include <DirectXMath.h>
@@ -9,14 +5,6 @@
 class Object
 {
 public:
-
-	typedef union JXMVECTOR
-	{
-		DirectX::XMVECTOR v;
-
-		DirectX::XMFLOAT4 fv;
-	}*PJXMVECTOR;
-
 	Object();
 
 	// Transform
@@ -62,11 +50,15 @@ public:
 	void UpdateScale(float x, float y, float z);
 
 private:
-	DirectX::XMMATRIX Transform_M; DirectX::XMFLOAT4X4 Transform_F;
+	DirectX::XMMATRIX Transform_M; 
+	DirectX::XMFLOAT4X4 Transform_F;
 
-	DirectX::XMVECTOR Pos_V; DirectX::XMFLOAT4 Pos_F4;
-	DirectX::XMVECTOR Rot_V; DirectX::XMFLOAT3 Rot_F3;
-	DirectX::XMVECTOR Scale_V; DirectX::XMFLOAT3 Scale_F3;
+	DirectX::XMVECTOR Pos_V; 
+	DirectX::XMFLOAT4 Pos_F4;
+	DirectX::XMVECTOR Rot_V; 
+	DirectX::XMFLOAT3 Rot_F3;
+	DirectX::XMVECTOR Scale_V; 
+	DirectX::XMFLOAT3 Scale_F3;
 
 	const DirectX::XMVECTOR FORWARD = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	const DirectX::XMVECTOR BACKWARD = DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
@@ -76,5 +68,3 @@ private:
 
 	void UpdateTransform();
 };
-
-//#endif // !Object_h_

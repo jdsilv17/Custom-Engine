@@ -1,5 +1,7 @@
 #pragma once
 
+//#include "Object.h"
+
 #ifndef MeshUtils_h_
 	#include "MeshUtils.h"
 	#define MeshUtils_h_
@@ -9,6 +11,7 @@
 	#include "RenderUtils.h"
 	#define RenderUtils_h_
 #endif // !RenderUtils_h_
+
 
 
 #include <d3d11_1.h>
@@ -22,12 +25,18 @@ class Mesh
 {
 public:
 	
-	std::vector<T> VertexList;
-	std::vector<int> IndicesList;
 
-	int vertexCount = NULL;
-	int indexCount = NULL;
+
 	Mesh() {} // maybe by default it is a cube
+	Mesh(	ID3D11Device* device, 
+			ID3D11DeviceContext* deviceContext, 
+			std::vector<T>& _vertexList, 
+			std::vector<int>& _indicesList,
+			//D3D11_INPUT_ELEMENT_DESC* _inputLayout,
+			D3D_PRIMITIVE_TOPOLOGY _primitive	);
+	Mesh(	ID3D11Device* device,
+			ID3D11DeviceContext* deviceContext,
+			std::vector<T>& _vertexList	);
 
 	~Mesh();								
 	Mesh(const Mesh<T>& that);					
@@ -36,7 +45,7 @@ public:
 	void InitMesh(ID3D11Device* device);
 	void Draw();
 
-	ID3D11Buffer* GetVertexBuffer() /*const*/;
+	ID3D11Buffer* GetVertexBuffer();
 	ID3D11Buffer* const* GetAddressOfVB();
 	ID3D11Buffer* GetIndexBuffer();
 	ID3D11Buffer* const* GetAddressOfIB();
@@ -44,11 +53,51 @@ public:
 	ID3D11InputLayout* const* GetAddressOfIL();
 
 private:
+	ID3D11DeviceContext* DeviceContext = nullptr;
 	ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
 	ComPtr<ID3D11Buffer> IndexBuffer = nullptr;
 	ComPtr<ID3D11InputLayout> InputLayout = nullptr;
+	D3D_PRIMITIVE_TOPOLOGY Primitive = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	std::vector<T> Textures;
+
+	std::vector<T> VertexList;
+	std::vector<int> IndicesList;
+
+	int vertexCount = NULL;
+	int indexCount = NULL;
 
 };
+
+template<typename T>
+Mesh<T>::Mesh(	ID3D11Device* _device, 
+				ID3D11DeviceContext* _deviceContext, 
+				std::vector<T>& _vertexList, 
+				std::vector<int>& _indicesList, 
+				//D3D11_INPUT_ELEMENT_DESC* _inputLayout, 
+				D3D_PRIMITIVE_TOPOLOGY _primitive	)
+{
+	this->DeviceContext = _deviceContext;
+	this->VertexList = _vertexList;
+	vertexCount = _vertexList.size();
+	indexCount = _indicesList.size();
+	this->IndicesList = _indicesList;
+	this->Primitive = _primitive;
+	this->InitMesh(_device);
+}
+
+template<typename T>
+Mesh<T>::Mesh(ID3D11Device* _device,
+	ID3D11DeviceContext* _deviceContext,
+	std::vector<T>& _vertexList )
+{
+	this->DeviceContext = _deviceContext;
+	this->VertexList = _vertexList;
+	this->vertexCount = _vertexList.size();
+	this->Primitive = D3D10_PRIMITIVE_TOPOLOGY_LINELIST;
+
+	this->InitMesh(_device);
+}
 
 template<typename T>
 Mesh<T>::~Mesh()
@@ -85,8 +134,29 @@ Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 template<typename T>
 void Mesh<T>::InitMesh(ID3D11Device* device)
 {
-	CreateVertexBuffer(device, this->vertexCount, this->VertexList.data(), this->VertexBuffer);
-	CreateIndexBuffer(device, this->indexCount, this->IndicesList.data(), this->IndexBuffer);
+	HRESULT hr;
+	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList.data(), this->VertexBuffer);
+	if (this->Primitive != D3D10_PRIMITIVE_TOPOLOGY_LINELIST)
+		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList.data(), this->IndexBuffer);
+}
+
+template<typename T>
+void Mesh<T>::Draw()
+{
+	UINT offset = 0;
+	UINT strides = sizeof(T);
+	this->DeviceContext->IASetVertexBuffers(0, 1, this->VertexBuffer.GetAddressOf(), &strides, &offset);
+	if (this->Primitive != D3D10_PRIMITIVE_TOPOLOGY_LINELIST)
+	{
+		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		this->DeviceContext->IASetIndexBuffer(this->IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+		this->DeviceContext->DrawIndexed(this->indexCount, 0, 0);
+	}
+	else
+	{
+		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		this->DeviceContext->Draw(this->vertexCount, 0);
+	}
 }
 
 template<typename T>
@@ -120,7 +190,7 @@ ID3D11InputLayout* Mesh<T>::GetInputLayout()
 }
 
 template<typename T>
-ID3D11Buffer* const* Mesh<T>::GetAddressOfIL()
+ID3D11InputLayout* const* Mesh<T>::GetAddressOfIL()
 {
 	return InputLayout.GetAddressOf();
 }

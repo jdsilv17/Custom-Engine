@@ -75,51 +75,51 @@ HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, T indicesList, C
     return hr;
 }
 
-template <typename T>
-void Set_Pipeline(ID3D11DeviceContext* immediateContext)
-{
-    Set_IA_Stage(immediateContext);
-    Set_VS_Stage(immediateContext);
-    Set_RS_Stage(immediateContext);
-    Set_PS_Stage(immediateContext);
-    Set_OM_Stage(immediateContext);
-}
-
-template <typename T>
-void Set_IA_Stage(ID3D11DeviceContext* immediateContext)
-{
-    UINT stride = sizeof(T);
-    UINT offset = 0;
-
-    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    immediateContext->IASetVertexBuffers(0, 1, meshVB, &stride, &offset);
-    immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-    immediateContext->IASetInputLayout(vertexMeshLayout);
-}
-
-template <typename T>
-void Set_VS_Stage(ID3D11DeviceContext* immediateContext)
-{
-    immediateContext->VSSetShader(vShader, 0, 0);
-}
-
-template <typename T>
-void Set_RS_Stage(ID3D11DeviceContext* immediateContext)
-{
-    immediateContext->RSSetViewports(1, &vPort);
-}
-
-template <typename T>
-void Set_PS_Stage(ID3D11DeviceContext* immediateContext)
-{
-    immediateContext->PSSetSamplers(startslot, numsamplers, ppSamplers);
-    immediateContext->PSSetShader(pShader, 0, 0);
-}
-
-template <typename T>
-void Set_OM_Stage(ID3D11DeviceContext* immediateContext)
-{
-    immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
-}
+//template <typename T>
+//void Set_Pipeline(ID3D11DeviceContext* immediateContext)
+//{
+//    Set_IA_Stage(immediateContext);
+//    Set_VS_Stage(immediateContext);
+//    Set_RS_Stage(immediateContext);
+//    Set_PS_Stage(immediateContext);
+//    Set_OM_Stage(immediateContext);
+//}
+//
+//template <typename T>
+//void Set_IA_Stage(ID3D11DeviceContext* immediateContext)
+//{
+//    UINT stride = sizeof(T);
+//    UINT offset = 0;
+//
+//    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//    immediateContext->IASetVertexBuffers(0, 1, meshVB, &stride, &offset);
+//    immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+//    immediateContext->IASetInputLayout(vertexMeshLayout);
+//}
+//
+//template <typename T>
+//void Set_VS_Stage(ID3D11DeviceContext* immediateContext)
+//{
+//    immediateContext->VSSetShader(vShader, 0, 0);
+//}
+//
+//template <typename T>
+//void Set_RS_Stage(ID3D11DeviceContext* immediateContext)
+//{
+//    immediateContext->RSSetViewports(1, &vPort);
+//}
+//
+//template <typename T>
+//void Set_PS_Stage(ID3D11DeviceContext* immediateContext)
+//{
+//    immediateContext->PSSetSamplers(startslot, numsamplers, ppSamplers);
+//    immediateContext->PSSetShader(pShader, 0, 0);
+//}
+//
+//template <typename T>
+//void Set_OM_Stage(ID3D11DeviceContext* immediateContext)
+//{
+//    immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
+//}
 
 #endif // RenderUtils_h_
