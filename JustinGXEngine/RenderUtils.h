@@ -32,10 +32,10 @@ HRESULT CreateConstantBuffer(ID3D11Device* device, UINT size, ComPtr<ID3D11Buffe
 }
 
 template <typename T>
-HRESULT CreateVertexBuffer(ID3D11Device* device, int vertexCount, T vertexList, ComPtr<ID3D11Buffer>& vertexBuffer)
+HRESULT CreateVertexBuffer(ID3D11Device* device, int vertexCount, std::vector<T>& vertexList, ComPtr<ID3D11Buffer>& vertexBuffer)
 {
 	HRESULT hr = S_OK;
-
+    auto v = sizeof(T);
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
     bd.ByteWidth = sizeof(T) * vertexCount;
@@ -46,7 +46,7 @@ HRESULT CreateVertexBuffer(ID3D11Device* device, int vertexCount, T vertexList, 
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    subData.pSysMem = vertexList;
+    subData.pSysMem = vertexList.data();
 
     hr = device->CreateBuffer(&bd, &subData, vertexBuffer.GetAddressOf());
 
@@ -54,13 +54,13 @@ HRESULT CreateVertexBuffer(ID3D11Device* device, int vertexCount, T vertexList, 
 }
 
 template <typename T>
-HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, T indicesList, ComPtr<ID3D11Buffer>& indexBuffer)
+HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, std::vector<T>& indicesList, ComPtr<ID3D11Buffer>& indexBuffer)
 {
     HRESULT hr = S_OK;
 
     D3D11_BUFFER_DESC bd;
     ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = sizeof(int) * indexCount;
+    bd.ByteWidth = sizeof(T) * indexCount;
     bd.Usage = D3D11_USAGE_DEFAULT;
     bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
     bd.CPUAccessFlags = 0;
@@ -68,7 +68,7 @@ HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, T indicesList, C
 
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
-    subData.pSysMem = indicesList;
+    subData.pSysMem = indicesList.data();
 
     hr = device->CreateBuffer(&bd, &subData, indexBuffer.GetAddressOf());
 

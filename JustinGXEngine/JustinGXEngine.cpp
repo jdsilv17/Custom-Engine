@@ -16,6 +16,7 @@
 
 #include "Mesh.h"
 #include "Camera.h"
+#include "Light.h"
 
 #include "./Assets/headers/StoneHenge.h"
 #include "./Assets/headers/test pyramid.h"
@@ -115,9 +116,13 @@ ID3D11Buffer* constantBuffer = nullptr;
 ID3D11Debug* debug = nullptr;
 #endif
 
-
+// Objects
 Camera cam;
 Mesh<VERTEX> grid;
+DirectionalLight dirLight;
+PointLight pntLight;
+SpotLight sptLight;
+
 
 
 #define MAX_LOADSTRING 100
@@ -454,8 +459,8 @@ HRESULT InitContent()
 
     hr = myDevice->CreatePixelShader(PS_Solid, sizeof(PS_Solid), nullptr, &ps_Solid);
 
-    //MakeGrid(20.0f, 25);
-    //grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
+    MakeGrid(20.0f, 25);
+    grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
 
     // vertex buffer
     //bd.ByteWidth = sizeof(VERTEX) * lines.size();
@@ -466,14 +471,14 @@ HRESULT InitContent()
 
     //subData.pSysMem = lines.data();
 
-    //// Create vertex buffer
+    // Create vertex buffer
     //hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferGrid);
     //if (FAILED(hr))
     //    return hr;
     // create input layout
-    //hr = myDevice->CreateInputLayout(vertexInputLayout, ARRAYSIZE(vertexInputLayout), VertexShader, sizeof(VertexShader), &vertexLayoutGrid);
-    //if (FAILED(hr))
-    //    return hr;
+    hr = myDevice->CreateInputLayout(vertexInputLayout, ARRAYSIZE(vertexInputLayout), VertexShader, sizeof(VertexShader), &vertexLayoutGrid);
+    if (FAILED(hr))
+        return hr;
 
     // create constant buffer
     ZeroMemory(&bd, sizeof(bd));
@@ -791,6 +796,7 @@ void ExecutePipeline()
     ConstantBuffer cb = {};
 
     cb.mView = XMMatrixTranspose( cam.GetViewMatrix() );
+
     cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
     cb.mProjection = XMMatrixTranspose(
         cam.GetProjectionMatrix());
@@ -900,19 +906,19 @@ void ExecutePipeline()
     //immediateContext->IASetVertexBuffers(0, 1, &meshVB[2], &mesh_strides[1], mesh_offsets);
     //MakeGrid(20.0f, 25);
     //grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
-    //immediateContext->IASetInputLayout(vertexLayoutGrid);
-    //immediateContext->VSSetShader(vShader, 0, 0);
-    //immediateContext->PSSetShader(ps_Solid, 0, 0);
+    immediateContext->IASetInputLayout(vertexLayoutGrid);
+    immediateContext->VSSetShader(vShader, 0, 0);
+    immediateContext->PSSetShader(ps_Solid, 0, 0);
 
-    //cb.mWorld = XMMatrixTranspose(XMMatrixIdentity()/*XMMatrixTranslationFromVector({0.0f, 1.0f, 0.0f, 1.0f})*/);
+    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity()/*XMMatrixTranslationFromVector({0.0f, 1.0f, 0.0f, 1.0f})*/);
 
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap(constantBuffer, 0);
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap(constantBuffer, 0);
 
-    //grid.Draw();
+    grid.Draw();
     //immediateContext->Draw(lines.size(), 0);
 
 

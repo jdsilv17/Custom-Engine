@@ -24,15 +24,11 @@ template <typename T>
 class Mesh
 {
 public:
-	
-
-
 	Mesh() {} // maybe by default it is a cube
 	Mesh(	ID3D11Device* device, 
 			ID3D11DeviceContext* deviceContext, 
 			std::vector<T>& _vertexList, 
 			std::vector<int>& _indicesList,
-			//D3D11_INPUT_ELEMENT_DESC* _inputLayout,
 			D3D_PRIMITIVE_TOPOLOGY _primitive	);
 	Mesh(	ID3D11Device* device,
 			ID3D11DeviceContext* deviceContext,
@@ -53,7 +49,7 @@ public:
 	ID3D11InputLayout* const* GetAddressOfIL();
 
 private:
-	ID3D11DeviceContext* DeviceContext = nullptr;
+	ComPtr<ID3D11DeviceContext> DeviceContext = nullptr;
 	ComPtr<ID3D11Buffer> VertexBuffer = nullptr;
 	ComPtr<ID3D11Buffer> IndexBuffer = nullptr;
 	ComPtr<ID3D11InputLayout> InputLayout = nullptr;
@@ -73,8 +69,7 @@ template<typename T>
 Mesh<T>::Mesh(	ID3D11Device* _device, 
 				ID3D11DeviceContext* _deviceContext, 
 				std::vector<T>& _vertexList, 
-				std::vector<int>& _indicesList, 
-				//D3D11_INPUT_ELEMENT_DESC* _inputLayout, 
+				std::vector<int>& _indicesList,
 				D3D_PRIMITIVE_TOPOLOGY _primitive	)
 {
 	this->DeviceContext = _deviceContext;
@@ -120,13 +115,22 @@ Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 		this->VertexList.reserve(that.VertexList.capacity());
 		this->IndicesList.reserve(that.IndicesList.capacity());
 
-		this->VertexList.resize(that.VertexList.size());
-		this->IndicesList.resize(that.IndicesList.size());
+		//this->VertexList.resize(that.VertexList.size());
+		//this->IndicesList.resize(that.IndicesList.size());
 		for (size_t i = 0; i < that.VertexList.size(); ++i)
 			this->VertexList.push_back(that.VertexList[i]);
 
 		for (size_t i = 0; i < that.IndicesList.size(); ++i)
 			this->IndicesList.push_back(that.IndicesList[i]);
+
+		this->DeviceContext = that.DeviceContext;
+		this->VertexBuffer = that.VertexBuffer;
+		this->IndexBuffer = that.IndexBuffer;
+
+		this->vertexCount = that.VertexList.size();
+		this->indexCount = that.IndicesList.size();
+
+		this->Primitive = that.Primitive;
 	}
 	return *this;
 }
@@ -135,9 +139,10 @@ template<typename T>
 void Mesh<T>::InitMesh(ID3D11Device* device)
 {
 	HRESULT hr;
-	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList.data(), this->VertexBuffer);
+	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList, this->VertexBuffer);
+
 	if (this->Primitive != D3D10_PRIMITIVE_TOPOLOGY_LINELIST)
-		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList.data(), this->IndexBuffer);
+		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList, this->IndexBuffer);
 }
 
 template<typename T>
@@ -154,7 +159,7 @@ void Mesh<T>::Draw()
 	}
 	else
 	{
-		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
 		this->DeviceContext->Draw(this->vertexCount, 0);
 	}
 }

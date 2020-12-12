@@ -49,8 +49,6 @@ float4 main(PS_INPUT input) : SV_TARGET
 
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse)
 {
-    //if (length(sNormal) != 1.0f)
-    //    sNormal = normalize(sNormal);
     if (length(lDir) != 1.0f)
         lDir = normalize(lDir);
     
