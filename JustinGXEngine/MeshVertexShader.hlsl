@@ -1,32 +1,7 @@
 
+#include "ConstantBuffers.hlsli"
+
 //#pragma pack_matrix(row_major)
-
-cbuffer ConstantBuffer : register(b0) // b for buffer
-{
-    float4x4 World;
-    float4x4 View;
-    float4x4 Projection;
-    float4 LightPos[3];
-    float4 LightDir[3];
-    float4 LightColor[3];
-    float4 OutputColor;
-}
-
-// rule of 3 
-struct VS_INPUT
-{
-    float3 Pos : POSITION;
-    float3 UVW : TEXCOORD;
-    float3 Normal : NORMAL;
-};
-
-struct PS_INPUT
-{
-	float4 Pos : SV_POSITION;
-    float4 wPos : POSITION;
-    float3 UVW : TEXCOORD;
-    float3 Normal : NORMAL;
-};
 
 PS_INPUT main(VS_INPUT input)
 {

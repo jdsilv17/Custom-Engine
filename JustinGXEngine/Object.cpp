@@ -7,6 +7,16 @@ Object::Object()
 	this->SetScale(0.0f, 0.0f, 0.0f);
 }
 
+const DirectX::XMMATRIX& Object::GetWorldMatrix() const
+{
+	return this->World_M;
+}
+
+const DirectX::XMFLOAT4X4& Object::GetWorldFloat4X4() const
+{
+	return this->World_F;
+}
+
 const DirectX::XMVECTOR& Object::GetPositionVector() const
 {
 	return this->Pos_V;
@@ -60,6 +70,18 @@ const DirectX::XMVECTOR& Object::GetLeftVector() const
 const DirectX::XMVECTOR& Object::GetRightVector() const
 {
 	return this->RIGHT;
+}
+
+void Object::SetWorld(const DirectX::XMMATRIX& mat)
+{
+	this->World_M = mat;
+	DirectX::XMStoreFloat4x4(&this->World_F, this->World_M);
+}
+
+void Object::SetWorld(DirectX::XMFLOAT4X4 mat)
+{
+	this->World_F = mat;
+	this->World_M = DirectX::XMLoadFloat4x4(&this->World_F);
 }
 
 void Object::SetPosition(const DirectX::XMVECTOR& pos)

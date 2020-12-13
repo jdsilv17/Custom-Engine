@@ -9,12 +9,17 @@
 #include "PS_Solid.h"
 #include "MeshVertexShader.h"
 
-#ifndef MeshUtils_h_
-    #include "MeshUtils.h"
-    #define MeshUtils_h_
-#endif // MeshUtils_h_
+//#ifndef MeshUtils_h_
+//    #include "MeshUtils.h"
+//    #define MeshUtils_h_
+//#endif // MeshUtils_h_
 
-#include "Mesh.h"
+//#ifndef Mesh_h_
+//    #include "Mesh.h"
+//    #define Mesh_h_
+//#endif // Mesh_h_
+
+#include "Cube.h"
 #include "Camera.h"
 #include "Light.h"
 
@@ -60,6 +65,7 @@ struct WVP
     XMFLOAT4 LightPos[3];
     XMFLOAT4 LightDir[3];
     XMFLOAT4 LightColor[3];
+    XMFLOAT4 CamPos;
     XMFLOAT4 OutputColor;
 };
 
@@ -92,12 +98,16 @@ ID3D11Buffer* indexBuffer = nullptr;
 ID3D11InputLayout* vertexLayout = nullptr;
 ID3D11InputLayout* vertexLayoutGrid = nullptr;
 ID3D11VertexShader* vShader = nullptr;
+ID3D11VertexShader* skyBox_vs = nullptr;
 ID3D11PixelShader* pShader = nullptr;
 ID3D11PixelShader* ps_Solid = nullptr;
+ID3D11PixelShader* skyBox_ps = nullptr;
+
 // Texturing
 ID3D11SamplerState* samplerState = nullptr;
 ID3D11ShaderResourceView* SRV = nullptr;
 ID3D11ShaderResourceView* SRV_2 = nullptr;
+ID3D11ShaderResourceView* SRV_skyBox = nullptr;
 
 // mash data
 ID3D11Buffer* vertexBufferMesh = nullptr;
@@ -109,6 +119,9 @@ ID3D11VertexShader* vMeshShader = nullptr;
 ID3D11Texture2D* zBuffer = nullptr;
 ID3D11DepthStencilView* zBufferView = nullptr;
 
+ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
+ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
+
 // Constant
 ID3D11Buffer* constantBuffer = nullptr;
 
@@ -119,6 +132,7 @@ ID3D11Debug* debug = nullptr;
 // Objects
 Camera cam;
 Mesh<VERTEX> grid;
+Cube<VERTEX_BASIC> skyBox;
 DirectionalLight dirLight;
 PointLight pntLight;
 SpotLight sptLight;
@@ -390,52 +404,6 @@ HRESULT InitDevice()
 HRESULT InitContent()
 {
     HRESULT hr = S_OK;
-    
-    //cube.VertexList =
-    //{
-    //    //// TOP
-    //    //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },  // back left
-    //    //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },    // back right
-    //    //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },     // front right
-    //    //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 1.0f, 0.0f),  XMFLOAT2(-1.0f, 1.0f) },  // front left
-    //    //// BOTTOM
-    //    //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) }, // back left
-    //    //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) }, // back right
-    //    //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },  // front right
-    //    //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front left
-    //    //// LEFT SIDE
-    //    //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },  // front bottom
-    //    //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },// 
-    //    //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f) },
-    //    //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-    //    //// RIGHT SIDE
-    //    //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 1.0f) },
-    //    //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-    //    //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
-    //    //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(-1.0f, 0.0f)  },
-    //    //// BACK
-    //    //{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-    //    //{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 1.0f) },
-    //    //{ XMFLOAT4(1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(-1.0f, 0.0f) },
-    //    //{ XMFLOAT4(-1.0f, 1.0f, -1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
-    //    //// FRONT
-    //    //{ XMFLOAT4(-1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 1.0f) },
-    //    //{ XMFLOAT4(1.0f, -1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
-    //    //{ XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
-    //    //{ XMFLOAT4(-1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(-1.0f, 0.0f) },
-
-    //    //    // front face
-    //    //{{-0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //0 top left
-    //    //{{0.25f, 0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //1 top right
-    //    //{{0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //2 bottom right
-    //    //{{-0.25f, -0.25f, -0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //3 bottom left
-    //    ////// back face
-    //    //{{-0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}, //4 back top left
-    //    //{{0.25f, 0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}, //5 back top right
-    //    //{{0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}, //6 back bottom right
-    //    //{{-0.25f, -0.25f, 0.25f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}, //7 back bottom left
-    //};
-    //numOfVerts = cube.VertexList.size();
 
     // Create vertex buffer
     D3D11_BUFFER_DESC bd;
@@ -456,11 +424,30 @@ HRESULT InitContent()
 #ifdef _DEBUG
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
-
-    hr = myDevice->CreatePixelShader(PS_Solid, sizeof(PS_Solid), nullptr, &ps_Solid);
+    auto blob = load_binary_blob("./Debug/PS_Solid.cso");
+    hr = myDevice->CreatePixelShader(blob.data(), blob.size(), nullptr, &ps_Solid);
 
     MakeGrid(20.0f, 25);
     grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
+
+    skyBox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skyBox._vertexList, skyBox._indicesList);
+
+    // initialize Directional Light
+    dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
+    dirLight.SetDirection(-0.577f, 0.577f, -0.577f);
+    dirLight.SetLightColor(0.75f, 0.75f, 0.75f, 1.0f);
+    dirLight.SetAmbientTerm(0.3f);
+    // initialize Point Light
+    pntLight.SetPosition(-10.0f, 5.0f, 0.0f);
+    pntLight.SetLightColor(1.0f, 0.0f, 0.0f, 1.0f);
+    pntLight.SetAmbientTerm(0.9f);
+    pntLight.SetPointRadius(35.0f);
+    // initialize Spot Light
+    sptLight.SetPosition(5.0f, 5.0f, 0.0f);
+    sptLight.SetDirection(1.0f, -1.0f, 0.0f);
+    sptLight.SetLightColor(0.0f, 1.0f, 0.0f, 1.0f);
+    sptLight.SetAmbientTerm(0.1f);
+    sptLight.SetOuterInnerConeRatios(0.5f, 0.8f);
 
     // vertex buffer
     //bd.ByteWidth = sizeof(VERTEX) * lines.size();
@@ -561,15 +548,8 @@ HRESULT InitContent()
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 #endif
 
-    D3D11_INPUT_ELEMENT_DESC meshLayout[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-    numOfElements = ARRAYSIZE(meshLayout);
-
-    hr = myDevice->CreateInputLayout(meshLayout, numOfElements, MeshVertexShader, sizeof(MeshVertexShader), &vertexMeshLayout);
+    numOfElements = ARRAYSIZE(objLayout);
+    hr = myDevice->CreateInputLayout(objLayout, numOfElements, MeshVertexShader, sizeof(MeshVertexShader), &vertexMeshLayout);
     if (FAILED(hr))
         return hr;
 
@@ -640,10 +620,13 @@ void CleanUp()
     if (constantBuffer) constantBuffer->Release();
     if (SRV) SRV->Release();
     if (SRV_2) SRV_2->Release();
+    if (SRV_skyBox) SRV_skyBox->Release();
     if (samplerState) samplerState->Release();
     if (vShader) vShader->Release();
+    if (skyBox_vs) skyBox_vs->Release();
     if (pShader) pShader->Release();
     if (ps_Solid) ps_Solid->Release();
+    if (skyBox_ps) skyBox_ps->Release();
     if (swapChain) swapChain->Release();
     if (immediateContext) immediateContext->Release();
     if (myDevice) myDevice->Release();
@@ -805,23 +788,24 @@ void ExecutePipeline()
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     XMStoreFloat4x4(&wvp.sView, cb.mView);
     XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
+
     XMMATRIX temp_LtRotY = XMMatrixRotationY(-0.01f);
-    for (size_t i = 0; i < 3; ++i)
-    {
-        LightPositions[i] = XMVector3Transform(LightPositions[i], temp_LtRotY);
-    }
-    XMStoreFloat4(&wvp.LightPos[0], LightPositions[0]);
-    XMStoreFloat4(&wvp.LightPos[1], LightPositions[1]);
-    XMStoreFloat4(&wvp.LightPos[2], LightPositions[2]);
+    pntLight.SetPosition(XMVector3Transform(pntLight.GetPositionVector(), temp_LtRotY));
+    sptLight.SetPosition(XMVector3Transform(sptLight.GetPositionVector(), temp_LtRotY));
+    XMStoreFloat4(&wvp.LightPos[0], dirLight.GetPositionVector());
+    XMStoreFloat4(&wvp.LightPos[1], pntLight.GetPositionVector());
+    XMStoreFloat4(&wvp.LightPos[2], sptLight.GetPositionVector());
+
     XMMATRIX temp_LtRotZ = XMMatrixRotationZ(-0.01f);
-    LightDirs[0] = XMVector3Transform(LightDirs[0], temp_LtRotZ);
-    XMStoreFloat4(&wvp.LightDir[0], LightDirs[0]);
-    XMStoreFloat4(&wvp.LightDir[1], LightDirs[1]);
-    LightDirs[2] = XMVector3Transform(LightDirs[2], temp_LtRotY);
-    XMStoreFloat4(&wvp.LightDir[2], LightDirs[2]);
-    XMStoreFloat4(&wvp.LightColor[0], LightColors[0]);
-    XMStoreFloat4(&wvp.LightColor[1], LightColors[1]);
-    XMStoreFloat4(&wvp.LightColor[2], LightColors[2]);
+    dirLight.SetDirection(XMVector3Transform(dirLight.GetDirectionVector(), temp_LtRotZ));
+    sptLight.SetDirection(XMVector3Transform(sptLight.GetConeDirectionVector(), temp_LtRotY));
+    XMStoreFloat4(&wvp.LightDir[0], dirLight.GetDirectionVector());
+    XMStoreFloat4(&wvp.LightDir[1], sptLight.GetConeDirectionVector());
+
+    XMStoreFloat4(&wvp.LightColor[0], dirLight.GetLightColorVector());
+    XMStoreFloat4(&wvp.LightColor[1], pntLight.GetLightColorVector());
+    XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
+    XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
 
 
 
@@ -864,7 +848,7 @@ void ExecutePipeline()
     // Draw Directional Light
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose( 
-        XMMatrixTranslationFromVector( LightDirs[0] ) );
+        XMMatrixTranslationFromVector( dirLight.GetPositionVector() ) );
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -877,7 +861,7 @@ void ExecutePipeline()
     // Draw Point Light Light
     // modify world matrix b4 drawing next object
     cb.mWorld = XMMatrixTranspose(
-            XMMatrixTranslationFromVector( LightPositions[1]));
+            XMMatrixTranslationFromVector( pntLight.GetPositionVector() ));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -890,7 +874,7 @@ void ExecutePipeline()
 
     // Draw Spot Light
     cb.mWorld = XMMatrixTranspose(
-        XMMatrixTranslationFromVector(LightPositions[2]));
+        XMMatrixTranslationFromVector( sptLight.GetPositionVector() ));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card

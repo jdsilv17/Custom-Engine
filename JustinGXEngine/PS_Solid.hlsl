@@ -1,11 +1,7 @@
 
-struct PS_INPUT //VS_OUTPUT
-{
-    float4 Pos : SV_POSITION;
-    float4 Color : COLOR;
-};
+#include "ConstantBuffers.hlsli"
 
-float4 main(PS_INPUT input) : SV_TARGET
+float4 main(PS_SOLID_INPUT input) : SV_TARGET
 {
 	return input.Color;
 }

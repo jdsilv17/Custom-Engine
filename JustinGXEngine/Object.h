@@ -7,6 +7,9 @@ class Object
 public:
 	Object();
 
+
+	const DirectX::XMMATRIX& GetWorldMatrix() const;
+	const DirectX::XMFLOAT4X4& GetWorldFloat4X4() const;
 	// Transform
 	const DirectX::XMMATRIX& GetTransformMatrix() const;
 	const DirectX::XMFLOAT4X4& GetTransformFloat4X4() const;
@@ -26,6 +29,9 @@ public:
 	const DirectX::XMVECTOR& GetLeftVector() const;
 	const DirectX::XMVECTOR& GetRightVector() const;
 
+
+	void SetWorld(const DirectX::XMMATRIX& mat);
+	void SetWorld(DirectX::XMFLOAT4X4 mat);
 	// Transform
 	void SetTransform(const DirectX::XMMATRIX& mat);
 	void SetTransform(DirectX::XMFLOAT4X4 mat);
@@ -50,6 +56,9 @@ public:
 	void UpdateScale(float x, float y, float z);
 
 private:
+	DirectX::XMMATRIX World_M;
+	DirectX::XMFLOAT4X4 World_F;
+
 	DirectX::XMMATRIX Transform_M; 
 	DirectX::XMFLOAT4X4 Transform_F;
 

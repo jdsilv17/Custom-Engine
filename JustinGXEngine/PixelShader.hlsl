@@ -1,26 +1,8 @@
 
+#include "ConstantBuffers.hlsli"
 
 Texture2D textures[2] : register(t0);
 SamplerState samplerState : register(s0);
-
-cbuffer ConstantBuffer : register(b0) // b for buffer
-{
-    float4x4 World;
-    float4x4 View;
-    float4x4 Projection;
-    float4 LightPos[3];
-    float4 LightDir[3];
-    float4 LightColor[3];
-    float4 OutputColor;
-}
-
-struct PS_INPUT
-{
-    float4 Pos : SV_POSITION;
-    float4 wPos : POSITION;
-    float3 UVW : TEXCOORD;
-    float3 Normal : NORMAL;
-};
 
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse);
 float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse);
@@ -42,7 +24,7 @@ float4 main(PS_INPUT input) : SV_TARGET
     float pntRadius = 35.0f;
     finalColor += CalcPointLight(LightPos[1], LightColor[1], pntRadius, input.wPos, input.Normal, texColor);
     
-    finalColor += CalcSpotLight(LightPos[2], (float3) LightDir[2], LightColor[2], input.wPos, input.Normal, texColor);
+    finalColor += CalcSpotLight(LightPos[2], (float3) LightDir[1], LightColor[2], input.wPos, input.Normal, texColor);
     
     return finalColor;
 }
@@ -86,7 +68,12 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
 float4 CalcSpotLight(float4 lPos, float3 coneDir, float4 lColor, float4 sPos, float3 sNormal, float4 tDiffuse)
 {
     float4 lightDir = normalize(lPos - sPos);
-    
+    // Specular Component
+    //float4 viewDir = normalize(camPos - sPos);
+    //float4 halfVector = normalize(-lightDir + viewDir);
+    //float specularPower = 2.0f;
+    //float intensity = max(pow( /*clamp(*/dot(sNormal, (float3) halfVector) /*)*/, specularPower), 0);
+
     float ambientTerm = 0.1f;
     //float4 ambientColor = lColor * ambientTerm;
     

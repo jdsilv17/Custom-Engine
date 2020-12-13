@@ -34,6 +34,25 @@ struct VERTEX
 
 };
 
+struct VERTEX_BASIC
+{
+    DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
+    DirectX::XMFLOAT3 normals = { 0, 0, 0 };
+    DirectX::XMFLOAT3 uvw = { 0, 0, 0 };
+
+    VERTEX_BASIC() {}
+    //VERTEX_BASIC(const DirectX::XMFLOAT4& _pos)
+    //    : pos(_pos) {}
+    //VERTEX_BASIC(const DirectX::XMFLOAT3& _norm)
+    //    : normals(_norm) {}
+    //VERTEX_BASIC(const DirectX::XMFLOAT3& _uvw)
+    //    : uvw(_uvw) {}
+    VERTEX_BASIC(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT3& _norm, const DirectX::XMFLOAT3& _uvw)
+        : pos(_pos), normals(_norm), uvw(_uvw) {}
+    //VERTEX_BASIC(float x, float y, float z, float w, float nx, float ny, float nz, float u, float v, float _w)
+    //    : pos(x, y, z, w), normals(nx, ny, nz), uvw(u, v, _w) {}
+};
+
 const D3D11_INPUT_ELEMENT_DESC vertexInputLayout[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -42,15 +61,22 @@ const D3D11_INPUT_ELEMENT_DESC vertexInputLayout[] =
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0},
 };
 
-D3D11_INPUT_ELEMENT_DESC objLayout[] =
+const D3D11_INPUT_ELEMENT_DESC objLayout[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
 };
 
-std::vector<VERTEX> lines;
-void MakeGrid(float gridSize, int lineCount) 
+const D3D11_INPUT_ELEMENT_DESC cubeLayout[] =
+{
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+};
+
+static std::vector<VERTEX> lines;
+static void MakeGrid(float gridSize, int lineCount) 
 {
     // need: size, spacing, linecount, 
     float lineSpacing = gridSize / static_cast<float>(lineCount);

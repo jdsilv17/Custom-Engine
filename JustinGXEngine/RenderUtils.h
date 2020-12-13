@@ -9,9 +9,30 @@
 //#include <d3dcompiler.h>
 #include <directxmath.h>
 #include <wrl/client.h>
+#include <fstream>
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
+
+std::vector<uint8_t> load_binary_blob(const char* path)
+{
+    std::vector<uint8_t> blob;
+
+    std::fstream file{ path, std::ios_base::in | std::ios_base::binary };
+
+    if (file.is_open())
+    {
+        file.seekg(0, std::ios_base::end);
+        blob.resize(file.tellg());
+        file.seekg(0, std::ios_base::beg);
+
+        file.read((char*)blob.data(), blob.size());
+
+        file.close();
+    }
+
+    return std::move(blob);
+}
 
 template <typename T>
 HRESULT CreateConstantBuffer(ID3D11Device* device, UINT size, ComPtr<ID3D11Buffer>& constantBuffer)

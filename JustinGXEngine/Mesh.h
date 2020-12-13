@@ -1,6 +1,6 @@
 #pragma once
 
-//#include "Object.h"
+#include "Object.h"
 
 #ifndef MeshUtils_h_
 	#include "MeshUtils.h"
@@ -21,22 +21,22 @@
 using Microsoft::WRL::ComPtr;
 
 template <typename T>
-class Mesh
+class Mesh : 
+	public Object
 {
 public:
 	Mesh() {} // maybe by default it is a cube
 	Mesh(	ID3D11Device* device, 
 			ID3D11DeviceContext* deviceContext, 
 			std::vector<T>& _vertexList, 
-			std::vector<int>& _indicesList,
-			D3D_PRIMITIVE_TOPOLOGY _primitive	);
+			std::vector<int>& _indicesList );
 	Mesh(	ID3D11Device* device,
 			ID3D11DeviceContext* deviceContext,
 			std::vector<T>& _vertexList	);
 
 	~Mesh();								
 	Mesh(const Mesh<T>& that);					
-	Mesh<T>& operator=(const Mesh<T>& that);	
+	Mesh<T>& operator=(const Mesh<T>& that);
 
 	void InitMesh(ID3D11Device* device);
 	void Draw();
@@ -59,7 +59,6 @@ private:
 
 	std::vector<T> VertexList;
 	std::vector<int> IndicesList;
-
 	int vertexCount = NULL;
 	int indexCount = NULL;
 
@@ -69,15 +68,14 @@ template<typename T>
 Mesh<T>::Mesh(	ID3D11Device* _device, 
 				ID3D11DeviceContext* _deviceContext, 
 				std::vector<T>& _vertexList, 
-				std::vector<int>& _indicesList,
-				D3D_PRIMITIVE_TOPOLOGY _primitive	)
+				std::vector<int>& _indicesList	)
 {
 	this->DeviceContext = _deviceContext;
 	this->VertexList = _vertexList;
 	vertexCount = _vertexList.size();
 	indexCount = _indicesList.size();
 	this->IndicesList = _indicesList;
-	this->Primitive = _primitive;
+	//this->Primitive = _primitive;
 	this->InitMesh(_device);
 }
 
@@ -115,8 +113,6 @@ Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 		this->VertexList.reserve(that.VertexList.capacity());
 		this->IndicesList.reserve(that.IndicesList.capacity());
 
-		//this->VertexList.resize(that.VertexList.size());
-		//this->IndicesList.resize(that.IndicesList.size());
 		for (size_t i = 0; i < that.VertexList.size(); ++i)
 			this->VertexList.push_back(that.VertexList[i]);
 
@@ -139,6 +135,9 @@ template<typename T>
 void Mesh<T>::InitMesh(ID3D11Device* device)
 {
 	HRESULT hr;
+	this->vertexCount = this->VertexList.size();
+	this->indexCount = this->IndicesList.size();
+
 	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList, this->VertexBuffer);
 
 	if (this->Primitive != D3D10_PRIMITIVE_TOPOLOGY_LINELIST)
