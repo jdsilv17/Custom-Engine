@@ -150,7 +150,7 @@ void Mesh<T>::Draw()
 	UINT offset = 0;
 	UINT strides = sizeof(T);
 	this->DeviceContext->IASetVertexBuffers(0, 1, this->VertexBuffer.GetAddressOf(), &strides, &offset);
-	if (this->Primitive != D3D10_PRIMITIVE_TOPOLOGY_LINELIST)
+	if (this->IndexBuffer)
 	{
 		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		this->DeviceContext->IASetIndexBuffer(this->IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);

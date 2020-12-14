@@ -34,6 +34,27 @@ struct VERTEX
 
 };
 
+struct VERTEX_TANGENT
+{
+    DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
+    DirectX::XMFLOAT3 normals = { 0, 0, 0 };
+    DirectX::XMFLOAT4 tangent = { 0, 0, 0 ,0 };
+    DirectX::XMFLOAT2 uv = { 0, 0 };
+
+    VERTEX_TANGENT() {}
+    VERTEX_TANGENT(const DirectX::XMFLOAT4& _pos)
+        : pos(_pos) {}
+    VERTEX_TANGENT(const DirectX::XMFLOAT3& _norm)
+        : normals(_norm) {}
+    VERTEX_TANGENT(const DirectX::XMFLOAT2& _uv)
+        : uv(_uv) {}
+    VERTEX_TANGENT(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT3& _norm, const DirectX::XMFLOAT4& _tang, const DirectX::XMFLOAT2& _uv)
+        : pos(_pos), normals(_norm), tangent(_tang), uv(_uv) {}
+    VERTEX_TANGENT(float x, float y, float z, float w, float nx, float ny, float nz, float tx, float ty, float tz, float tw, float u, float v)
+        : pos(x, y, z, w), normals(nx, ny, nz), tangent(tx, ty, tz, tw), uv(u, v) {}
+
+};
+
 struct VERTEX_BASIC
 {
     DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
@@ -41,19 +62,13 @@ struct VERTEX_BASIC
     DirectX::XMFLOAT3 uvw = { 0, 0, 0 };
 
     VERTEX_BASIC() {}
-    //VERTEX_BASIC(const DirectX::XMFLOAT4& _pos)
-    //    : pos(_pos) {}
-    //VERTEX_BASIC(const DirectX::XMFLOAT3& _norm)
-    //    : normals(_norm) {}
-    //VERTEX_BASIC(const DirectX::XMFLOAT3& _uvw)
-    //    : uvw(_uvw) {}
     VERTEX_BASIC(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT3& _norm, const DirectX::XMFLOAT3& _uvw)
         : pos(_pos), normals(_norm), uvw(_uvw) {}
-    //VERTEX_BASIC(float x, float y, float z, float w, float nx, float ny, float nz, float u, float v, float _w)
-    //    : pos(x, y, z, w), normals(nx, ny, nz), uvw(u, v, _w) {}
+    VERTEX_BASIC(float x, float y, float z, float w, float nx, float ny, float nz, float u, float v, float _w)
+        : pos(x, y, z, w), normals(nx, ny, nz), uvw(u, v, _w) {}
 };
 
-const D3D11_INPUT_ELEMENT_DESC vertexInputLayout[] =
+const D3D11_INPUT_ELEMENT_DESC vertexInputLayoutDesc[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -61,14 +76,22 @@ const D3D11_INPUT_ELEMENT_DESC vertexInputLayout[] =
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0},
 };
 
-const D3D11_INPUT_ELEMENT_DESC objLayout[] =
+const D3D11_INPUT_ELEMENT_DESC tangentInputLayoutDesc[] =
+{
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0},
+};
+
+const D3D11_INPUT_ELEMENT_DESC objLayoutDesc[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
 };
 
-const D3D11_INPUT_ELEMENT_DESC cubeLayout[] =
+const D3D11_INPUT_ELEMENT_DESC cubeLayoutDesc[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
