@@ -17,6 +17,13 @@ struct VS_INPUT
     float3 Normal : NORMAL;
 };
 
+struct VS_SKY_INPUT
+{
+    float4 Pos : POSITION;
+    float3 Normal : NORMAL;
+    float3 UVW : TEXCOORD;
+};
+
 struct VS_DEFAULT_INPUT
 {
     float4 Pos : POSITION;
@@ -43,4 +50,5 @@ struct PS_SKY_INPUT
 {
     float4 Pos : SV_POSITION;
     float3 UVW : TEXCOORD;
+    float3 LPos : POSTION;
 };

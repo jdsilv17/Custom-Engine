@@ -120,7 +120,7 @@ ID3D11VertexShader* vMeshShader = nullptr;
 ID3D11Texture2D* zBuffer = nullptr;
 ID3D11DepthStencilView* zBufferView = nullptr;
 
-ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
+//ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
 ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
 
 // Constant
@@ -209,17 +209,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg = { 0 };
 
-    RAWINPUTDEVICE rid;
-    rid.usUsagePage = 0x01;
-    rid.usUsage = 0x02;
-    rid.dwFlags = 0;
-    rid.hwndTarget = NULL;
+    //RAWINPUTDEVICE rid;
+    //rid.usUsagePage = 0x01;
+    //rid.usUsage = 0x02;
+    //rid.dwFlags = 0;
+    //rid.hwndTarget = NULL;
 
-    if (RegisterRawInputDevices(&rid, 1, sizeof(rid)) == FALSE)
-    {
-        // uh-oh
-        return 0;
-    }
+    //if (RegisterRawInputDevices(&rid, 1, sizeof(rid)) == FALSE)
+    //{
+    //    // uh-oh
+    //    return 0;
+    //}
 
     // Main message loop:
     while (msg.message != WM_QUIT) //GetMessage(&msg, nullptr, 0, 0)) waits for message
@@ -434,8 +434,10 @@ HRESULT InitContent()
 
     // write, compile & load our shaders
     hr = advanced_VS.Initialize(myDevice, "./Debug/MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
+
     hr = default_VS.Initialize(myDevice, "./Debug/VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-    //skybox_VS.Initialize(myDevice, "./Debug/SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
+
+    hr = skybox_VS.Initialize(myDevice, "./Debug/SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
 
     std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
     hr = advanced_PS.Initialize_ALL(myDevice, "./Debug/PixelShader.cso", sizeof(WVP), textures);
@@ -443,13 +445,16 @@ HRESULT InitContent()
 
     hr = solid_PS.Initialize(myDevice, "./Debug/PS_Solid.cso", sizeof(WVP));
     solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
-    //skybox_PS.Initialize(myDevice, "./Debug/SkyBox_PS.cso", sizeof(WVP));// change to include texture
+    
+    hr = skybox_PS.Initialize(myDevice, "./Debug/SkyBox_PS.cso", sizeof(WVP)); // change to include texture
+    hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/Skybox_BlueNebula_1.dds");
+    skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
 
 
     MakeGrid(20.0f, 25);
     grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
 
-    //skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList);
+    skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -527,11 +532,14 @@ HRESULT InitContent()
     //widecstr = widestr.c_str();
     //hr = CreateDDSTextureFromFile(myDevice, widecstr, nullptr, &SRV_skyBox);
 
-    //D3D11_RASTERIZER_DESC rd;
-    //rd.CullMode = D3D11_CULL_NONE;
-    //hr = myDevice->CreateRasterizerState(&rd, &RSCullNone);
-    //D3D11_DEPTH_STENCIL_DESC dssDesc;
-    //hr = myDevice->CreateDepthStencilState()
+    D3D11_RASTERIZER_DESC rd;
+    ZeroMemory(&rd, sizeof(rd));
+    rd.CullMode = D3D11_CULL_NONE;
+    rd.FillMode = D3D11_FILL_SOLID;
+    hr = myDevice->CreateRasterizerState(&rd, &RSCullNone);
+
+    //D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
+    //hr = myDevice->CreateDepthStencilState(&depthStencilDesc, &DSLessEqual);
 
 #ifdef _DEBUG
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
@@ -569,6 +577,7 @@ void CleanUp()
     if (pShader) pShader->Release();
     if (ps_Solid) ps_Solid->Release();
     if (skyBox_ps) skyBox_ps->Release();
+    if (RSCullNone) RSCullNone->Release();
     if (swapChain) swapChain->Release();
     if (immediateContext) immediateContext->Release();
     if (myDevice) myDevice->Release();
@@ -580,6 +589,24 @@ void CleanUp()
 void CatchInput()
 {
     const float cameraSpeed = 0.2f;
+
+    POINT curr_point = { 0,0 };
+    POINT delta_point = { 0,0 };
+
+    GetCursorPos(&curr_point); // grab the curr every frame
+
+    static POINT prev_point = curr_point; // initialize once
+
+    // calc delta of mouse pos with the pos of the previous frame
+    delta_point.x = curr_point.x - prev_point.x;
+    delta_point.y = curr_point.y - prev_point.y;
+
+    prev_point = curr_point; // keep the current pos of the current frame to use in the next frame
+
+    if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
+    {
+        cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.001f, static_cast<float>(delta_point.x) * 0.001f, 0.0f);
+    }
     if (GetAsyncKeyState('W') & 0x8000)
     {
         cam.UpdatePosition(cam.GetForwardVector() * cameraSpeed);
@@ -618,11 +645,14 @@ void CatchInput()
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    //HDC hdc;                       // handle to device context 
-    RECT rcClient;                 // client area rectangle 
-    POINT ptClientUL;              // client upper left corner 
-    POINT ptClientLR;              // client lower right corner 
-    static POINTS mouseCoords;        // beginning point
+    //HDC hdc;
+    //RECT rcClient;                 // client area rectangle 
+    //POINT ptClientUL;              // client upper left corner 
+    //POINT ptClientLR;              // client lower right corner 
+    ////static POINTS mouseCoords;        // beginning point
+    //static POINT prev_point = { 0,0 };
+    //static POINT curr_point = { 0,0 };
+    //static POINT delta_point = { 0,0 };
 
 
     switch (message)
@@ -644,82 +674,93 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
-    case WM_RBUTTONDOWN:
+    //case WM_RBUTTONDOWN:
+    //{
+    //    // Capture mouse input. 
 
-        // Capture mouse input. 
+    //    SetCapture(hWnd);
 
-        SetCapture(hWnd);
+    //    // Retrieve the screen coordinates of the client area, 
+    //    // and convert them into client coordinates. 
 
-        // Retrieve the screen coordinates of the client area, 
-        // and convert them into client coordinates. 
+    //    GetClientRect(hWnd, &rcClient);
+    //    ptClientUL.x = rcClient.left;
+    //    ptClientUL.y = rcClient.top;
 
-        GetClientRect(hWnd, &rcClient);
-        ptClientUL.x = rcClient.left;
-        ptClientUL.y = rcClient.top;
+    //    // Add one to the right and bottom sides, because the 
+    //    // coordinates retrieved by GetClientRect do not 
+    //    // include the far left and lowermost pixels. 
 
-        // Add one to the right and bottom sides, because the 
-        // coordinates retrieved by GetClientRect do not 
-        // include the far left and lowermost pixels. 
+    //    ptClientLR.x = rcClient.right + 1;
+    //    ptClientLR.y = rcClient.bottom + 1;
+    //    ClientToScreen(hWnd, &ptClientUL);
+    //    ClientToScreen(hWnd, &ptClientLR);
 
-        ptClientLR.x = rcClient.right + 1;
-        ptClientLR.y = rcClient.bottom + 1;
-        ClientToScreen(hWnd, &ptClientUL);
-        ClientToScreen(hWnd, &ptClientLR);
+    //    // Copy the client coordinates of the client area 
+    //    // to the rcClient structure. Confine the mouse cursor 
+    //    // to the client area by passing the rcClient structure 
+    //    // to the ClipCursor function. 
 
-        // Copy the client coordinates of the client area 
-        // to the rcClient structure. Confine the mouse cursor 
-        // to the client area by passing the rcClient structure 
-        // to the ClipCursor function. 
+    //    SetRect(&rcClient, ptClientUL.x, ptClientUL.y,
+    //        ptClientLR.x, ptClientLR.y);
+    //    ClipCursor(&rcClient); // confines the cursor within the client area
 
-        SetRect(&rcClient, ptClientUL.x, ptClientUL.y,
-            ptClientLR.x, ptClientLR.y);
-        ClipCursor(&rcClient); // confines the cursor within the client area
+    //    // Convert the cursor coordinates into a POINTS 
+    //    // structure, which defines the beginning point of the 
+    //    // line drawn during a WM_MOUSEMOVE message. 
 
-        // Convert the cursor coordinates into a POINTS 
-        // structure, which defines the beginning point of the 
-        // line drawn during a WM_MOUSEMOVE message. 
+    //    //curr_point.x = LOWORD(lParam);
+    //    //curr_point.y = HIWORD(lParam);
+    //    return 0;
+    //}
+    ////case WM_INPUT:
+    ////    {
+    ////        UINT dataSize;
+    ////        GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, NULL, &dataSize, sizeof(RAWINPUTHEADER));
+    ////        if (dataSize > 0)
+    ////        {
+    ////            std::unique_ptr<BYTE[]> rawData = std::make_unique<BYTE[]>(dataSize);
+    ////            if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, rawData.get(), &dataSize, sizeof(RAWINPUTHEADER)) == dataSize)
+    ////            {
+    ////                RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(rawData.get());
+    ////                if (raw->header.dwType == RIM_TYPEMOUSE) // check if raw data is a mouse data type
+    ////                {
+    ////                    mouseCoords.x = raw->data.mouse.lLastX;
+    ////                    mouseCoords.y = raw->data.mouse.lLastY;
+    ////                }
+    ////            }
+    ////        }
+    ////
+    ////
+    ////        return DefWindowProc(hWnd, message, wParam, lParam);
+    ////    }
+    ////case WM_MOUSEMOVE:
 
-        //mouseCoords = MAKEPOINTS(lParam);
-        return 0;
-    case WM_INPUT:
-        {
-            UINT dataSize;
-            GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, NULL, &dataSize, sizeof(RAWINPUTHEADER));
-            if (dataSize > 0)
-            {
-                std::unique_ptr<BYTE[]> rawData = std::make_unique<BYTE[]>(dataSize);
-                if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, rawData.get(), &dataSize, sizeof(RAWINPUTHEADER)) == dataSize)
-                {
-                    RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(rawData.get());
-                    if (raw->header.dwType == RIM_TYPEMOUSE) // check if raw data is a mouse data type
-                    {
-                        mouseCoords.x = raw->data.mouse.lLastX;
-                        mouseCoords.y = raw->data.mouse.lLastY;
-                    }
-                }
-            }
+    ////    // When moving the mouse, the user must hold down 
+    ////    // the left mouse button to rotate the camera. 
+    ////    //if (wParam & MK_RBUTTON)
+    ////    //{
+    ////    //    prev_point = curr_point;
+    ////    //    curr_point.x = LOWORD(lParam);
+    ////    //    curr_point.y = HIWORD(lParam);
+    ////    //    //GetCursorPos(&curr_point);
+    ////    //    // calc delta of mouse pos
+    ////    //    delta_point.x = curr_point.x - prev_point.x;
+    ////    //    delta_point.y = curr_point.y - prev_point.y;
 
-            return DefWindowProc(hWnd, message, wParam, lParam);
-        }
-    case WM_MOUSEMOVE:
+    ////    //    cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.001f, static_cast<float>(delta_point.x) * 0.001f, 0.0f);
+    ////    //}
 
-        // When moving the mouse, the user must hold down 
-        // the left mouse button to rotate the camera. 
-        if (wParam & MK_RBUTTON)
-        {
-            cam.UpdateRotation(static_cast<float>(mouseCoords.y) * 0.1f, static_cast<float>(mouseCoords.x) * 0.1f, 0.0f);
-        }
+    ////    break;
+    //case WM_RBUTTONUP:
 
-        break;
-    case WM_RBUTTONUP:
+    //    // The user has finished drawing the line. Reset the 
+    //    // previous line flag, release the mouse cursor, and 
+    //    // release the mouse capture. 
 
-        // The user has finished drawing the line. Reset the 
-        // previous line flag, release the mouse cursor, and 
-        // release the mouse capture. 
-
-        ClipCursor(NULL);
-        ReleaseCapture();
-        return 0;
+    //    ClipCursor(NULL);
+    //    ReleaseCapture();
+    //    return 0;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -766,6 +807,7 @@ void ExecutePipeline()
     //immediateContext->VSSetShader(vMeshShader, 0, 0);
         // RS (Rasterizer Stage)
     immediateContext->RSSetViewports(1, &vPort);
+    
         // PS (Pixel Shader)
     //immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
     //ID3D11ShaderResourceView* tempSRV[] =
@@ -903,6 +945,20 @@ void ExecutePipeline()
 
     // draw it
     immediateContext->DrawIndexed(1674, 0, 0);
+
+    skybox_VS.Bind(immediateContext);
+    skybox_PS.Bind_ALL(immediateContext);
+    immediateContext->RSSetState(RSCullNone);
+    cb.mWorld = XMMatrixTranspose(XMMatrixScaling(100.0f, 100.0f, 100.0f));
+    //cb.mWorld.r[3] = cam.GetWorldMatrix().r[3];
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0);
+
+    skybox.cube_mesh.Draw();
 
     // Draw Grid=====================================================================================
     //immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);

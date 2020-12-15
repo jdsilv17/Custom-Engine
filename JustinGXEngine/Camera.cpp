@@ -40,5 +40,6 @@ void Camera::UpdateViewMatrix()
 
 	DirectX::XMVECTOR upDir = DirectX::XMVector3TransformCoord(this->UP, cameraRotation);
 
+	this->SetWorld(DirectX::XMMatrixTranslationFromVector(this->GetPositionVector()));
 	this->View_M = DirectX::XMMatrixLookAtLH(this->GetPositionVector(), target, upDir);
 }

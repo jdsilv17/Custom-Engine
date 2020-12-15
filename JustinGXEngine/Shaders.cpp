@@ -162,6 +162,27 @@ HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::str
     return hr;
 }
 
+HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::string texFilename)
+{
+    HRESULT hr = S_OK;
+
+    std::wstring widestr = std::wstring(texFilename.begin(), texFilename.end());
+    const wchar_t* widecstr = widestr.c_str();
+    hr = DirectX::CreateDDSTextureFromFile(device, widecstr, nullptr, this->ShaderResourceView.GetAddressOf());
+
+    D3D11_SAMPLER_DESC sd;
+    ZeroMemory(&sd, sizeof(sd));
+    sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sd.MinLOD = 0;
+    sd.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = device->CreateSamplerState(&sd, this->SamplerState.GetAddressOf());
+
+    return hr;
+}
+
 HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, std::string texFilename[2])
 {
     HRESULT hr;
