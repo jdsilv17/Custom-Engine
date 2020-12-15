@@ -45,6 +45,11 @@ public:
 	void SetScale(const DirectX::XMVECTOR& scale);
 	void SetScale(float x, float y, float z);
 
+	void SetForwardVector(const DirectX::XMVECTOR& forward);
+	void SetBackwardVector(const DirectX::XMVECTOR& backward);
+	void SetLeftVector(const DirectX::XMVECTOR& left);
+	void SetRightVector(const DirectX::XMVECTOR& right);
+
 	// Postion
 	void UpdatePosition(const DirectX::XMVECTOR& pos);
 	void UpdatePosition(float x, float y, float z);
@@ -54,6 +59,12 @@ public:
 	// Scale
 	void UpdateScale(const DirectX::XMVECTOR& scale);
 	void UpdateScale(float x, float y, float z);
+
+	const DirectX::XMVECTOR FORWARD = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	const DirectX::XMVECTOR BACKWARD = DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
+	const DirectX::XMVECTOR UP = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	const DirectX::XMVECTOR LEFT = DirectX::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f);
+	const DirectX::XMVECTOR RIGHT = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 
 private:
 	DirectX::XMMATRIX World_M;
@@ -69,11 +80,10 @@ private:
 	DirectX::XMVECTOR Scale_V; 
 	DirectX::XMFLOAT3 Scale_F3;
 
-	const DirectX::XMVECTOR FORWARD = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-	const DirectX::XMVECTOR BACKWARD = DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
-	const DirectX::XMVECTOR UP = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	const DirectX::XMVECTOR LEFT = DirectX::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f);
-	const DirectX::XMVECTOR RIGHT = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	DirectX::XMVECTOR foward_V;
+	DirectX::XMVECTOR backward_V;
+	DirectX::XMVECTOR left_V;
+	DirectX::XMVECTOR right_V;
 
 	void UpdateTransform();
 };

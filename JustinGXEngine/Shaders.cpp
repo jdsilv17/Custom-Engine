@@ -78,6 +78,16 @@ const ID3D11Buffer* Shaders::VertexShader::GetConstantBuffer() const
     return this->ShaderConstantBuffer.Get();
 }
 
+//const ID3D11Buffer* const* Shaders::VertexShader::GetAddressOfConstantBuffer() const
+//{
+//    return this->ShaderConstantBuffer.GetAddressOf();
+//}
+//
+//void Shaders::VertexShader::SetConstantBuffer(const ID3D11Buffer* const* buffer)
+//{
+//    this->ShaderConstantBuffer = buffer;
+//}
+
 //
 // Pixel Shader Functions ====================================================================
 //
@@ -206,6 +216,11 @@ const ID3D11Buffer* Shaders::PixelShader::GetConstantBuffer() const
     return this->ShaderConstantBuffer.Get();
 }
 
+//const ID3D11Buffer* const* Shaders::PixelShader::GetAddressOfConstantBuffer() const
+//{
+//    return this->ShaderConstantBuffer.GetAddressOf();
+//}
+
 const ID3D11ShaderResourceView* Shaders::PixelShader::GetShaderResourceView() const
 {
     return this->ShaderResourceView.Get();
@@ -220,3 +235,8 @@ const ID3D11SamplerState* Shaders::PixelShader::GetSamplerState() const
 {
     return this->SamplerState.Get();
 }
+
+//void Shaders::PixelShader::SetConstantBuffer(const ID3D11Buffer* const* buffer)
+//{
+//    this->ShaderConstantBuffer = buffer;
+//}

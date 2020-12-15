@@ -26,13 +26,19 @@ void Camera::SetProjectionMatrix(float fovDegree, float aspectRatio, float nearZ
 
 void Camera::UpdateViewMatrix()
 {
-	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationRollPitchYawFromVector(this->GetRotationVector());
+	DirectX::XMMATRIX cameraRotation = DirectX::XMMatrixRotationRollPitchYawFromVector(this->GetRotationVector());
+	// adjust directions for rotation
+	DirectX::XMMATRIX directionRotation = DirectX::XMMatrixRotationRollPitchYaw(this->GetRotationFloat4().x, this->GetRotationFloat4().y, 0.0f);
+	this->SetForwardVector(DirectX::XMVector3TransformCoord(this->FORWARD, directionRotation));
+	this->SetBackwardVector(DirectX::XMVector3TransformCoord(this->BACKWARD, directionRotation));
+	this->SetLeftVector(DirectX::XMVector3TransformCoord(this->LEFT, directionRotation));
+	this->SetRightVector(DirectX::XMVector3TransformCoord(this->RIGHT, directionRotation));
 
-	DirectX::XMVECTOR target = DirectX::XMVector3TransformCoord(this->GetForwardVector(), rotation);
+	DirectX::XMVECTOR target = DirectX::XMVector3TransformCoord(this->FORWARD, cameraRotation);
 
 	target = DirectX::XMVectorAdd(this->GetPositionVector(), target);
 
-	DirectX::XMVECTOR upDir = DirectX::XMVector3TransformCoord(this->GetUpVector(), rotation);
+	DirectX::XMVECTOR upDir = DirectX::XMVector3TransformCoord(this->UP, cameraRotation);
 
 	this->View_M = DirectX::XMMatrixLookAtLH(this->GetPositionVector(), target, upDir);
 }

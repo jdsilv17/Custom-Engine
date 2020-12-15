@@ -209,6 +209,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg = { 0 };
 
+    RAWINPUTDEVICE rid;
+    rid.usUsagePage = 0x01;
+    rid.usUsage = 0x02;
+    rid.dwFlags = 0;
+    rid.hwndTarget = NULL;
+
+    if (RegisterRawInputDevices(&rid, 1, sizeof(rid)) == FALSE)
+    {
+        // uh-oh
+        return 0;
+    }
+
     // Main message loop:
     while (msg.message != WM_QUIT) //GetMessage(&msg, nullptr, 0, 0)) waits for message
     {
@@ -420,25 +432,17 @@ HRESULT InitContent()
     D3D11_SUBRESOURCE_DATA subData;
     ZeroMemory(&subData, sizeof(subData));
 
-//    // write, compile & load our shaders
-//    //hr = myDevice->CreateVertexShader(VertexShader, sizeof(VertexShader), nullptr, &vShader);
-
-    //auto blob = Shaders::load_binary_blob("./Debug/SkyBox_VS.cso");
-    //hr = myDevice->CreateVertexShader(blob.data(), blob.size(), nullptr, &skyBox_vs);
-    //blob = Shaders::load_binary_blob("./Debug/SkyBox_PS.cso");
-    //hr = myDevice->CreatePixelShader(blob.data(), blob.size(), nullptr, &skyBox_ps);
-
-    //hr = myDevice->CreatePixelShader(PixelShader, sizeof(PixelShader), nullptr, &pShader);
-
-    //hr = myDevice->CreatePixelShader(PS_Solid, sizeof(PS_Solid), nullptr, &ps_Solid);
-
+    // write, compile & load our shaders
     hr = advanced_VS.Initialize(myDevice, "./Debug/MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
     hr = default_VS.Initialize(myDevice, "./Debug/VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
     //skybox_VS.Initialize(myDevice, "./Debug/SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
 
     std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
     hr = advanced_PS.Initialize_ALL(myDevice, "./Debug/PixelShader.cso", sizeof(WVP), textures);
+    advanced_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+
     hr = solid_PS.Initialize(myDevice, "./Debug/PS_Solid.cso", sizeof(WVP));
+    solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
     //skybox_PS.Initialize(myDevice, "./Debug/SkyBox_PS.cso", sizeof(WVP));// change to include texture
 
 
@@ -463,24 +467,6 @@ HRESULT InitContent()
     sptLight.SetLightColor(0.0f, 1.0f, 0.0f, 1.0f);
     sptLight.SetAmbientTerm(0.1f);
     sptLight.SetOuterInnerConeRatios(0.5f, 0.8f);
-
-    // vertex buffer
-    //bd.ByteWidth = sizeof(VERTEX) * lines.size();
-    //bd.Usage = D3D11_USAGE_IMMUTABLE;
-    //bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    //bd.CPUAccessFlags = 0;
-    //bd.MiscFlags = 0;
-
-    //subData.pSysMem = lines.data();
-
-    // Create vertex buffer
-    //hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferGrid);
-    //if (FAILED(hr))
-    //    return hr;
-    // create input layout
- //   //hr = myDevice->CreateInputLayout(vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), VertexShader, sizeof(VertexShader), &vertexLayoutGrid);
-    //if (FAILED(hr))
-    //    return hr;
 
     // create constant buffer
     ZeroMemory(&bd, sizeof(bd));
@@ -534,27 +520,7 @@ HRESULT InitContent()
     if (FAILED(hr))
         return hr;
 
-    // load mesh shader
-    //hr = myDevice->CreateVertexShader(MeshVertexShader, sizeof(MeshVertexShader), nullptr, &vMeshShader);
-    //if (FAILED(hr))
-    //    return hr;
-
-    //numOfElements = ARRAYSIZE(objLayoutDesc);
-    //hr = myDevice->CreateInputLayout(objLayoutDesc, numOfElements, MeshVertexShader, sizeof(MeshVertexShader), &vertexMeshLayout);
-    //if (FAILED(hr))
-    //    return hr;
-
     // TEXTURING ===============================================================================================
-    // Create Texture for Stonehenge
-    //std::string filename = "./Assets/Textures/StoneHenge.dds";
-    //std::wstring widestr = std::wstring(filename.begin(), filename.end());
-    //const wchar_t* widecstr = widestr.c_str();
-    //hr = CreateDDSTextureFromFile(myDevice, widecstr, nullptr, &SRV);
-
-    //filename = "./Assets/Textures/fire_01.dds";
-    //widestr = std::wstring(filename.begin(), filename.end());
-    //widecstr = widestr.c_str();
-    //hr = CreateDDSTextureFromFile(myDevice, widecstr, nullptr, &SRV_2);
 
     //filename = "./Assets/Textures/SpaceCubeMap.dds";
     //widestr = std::wstring(filename.begin(), filename.end());
@@ -566,19 +532,6 @@ HRESULT InitContent()
     //hr = myDevice->CreateRasterizerState(&rd, &RSCullNone);
     //D3D11_DEPTH_STENCIL_DESC dssDesc;
     //hr = myDevice->CreateDepthStencilState()
-
-    // Create Default Sampler State
-    //D3D11_SAMPLER_DESC sd;
-    //ZeroMemory(&sd, sizeof(sd));
-    //sd.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    //sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    //sd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    //sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    //sd.MinLOD = 0;
-    //sd.MaxLOD = D3D11_FLOAT32_MAX;
-    //hr = myDevice->CreateSamplerState(&sd, &samplerState);
-    //if (FAILED(hr))
-    //    return hr;
 
 #ifdef _DEBUG
     hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
@@ -665,6 +618,13 @@ void CatchInput()
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    //HDC hdc;                       // handle to device context 
+    RECT rcClient;                 // client area rectangle 
+    POINT ptClientUL;              // client upper left corner 
+    POINT ptClientLR;              // client lower right corner 
+    static POINTS mouseCoords;        // beginning point
+
+
     switch (message)
     {
     case WM_COMMAND:
@@ -684,6 +644,82 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    case WM_RBUTTONDOWN:
+
+        // Capture mouse input. 
+
+        SetCapture(hWnd);
+
+        // Retrieve the screen coordinates of the client area, 
+        // and convert them into client coordinates. 
+
+        GetClientRect(hWnd, &rcClient);
+        ptClientUL.x = rcClient.left;
+        ptClientUL.y = rcClient.top;
+
+        // Add one to the right and bottom sides, because the 
+        // coordinates retrieved by GetClientRect do not 
+        // include the far left and lowermost pixels. 
+
+        ptClientLR.x = rcClient.right + 1;
+        ptClientLR.y = rcClient.bottom + 1;
+        ClientToScreen(hWnd, &ptClientUL);
+        ClientToScreen(hWnd, &ptClientLR);
+
+        // Copy the client coordinates of the client area 
+        // to the rcClient structure. Confine the mouse cursor 
+        // to the client area by passing the rcClient structure 
+        // to the ClipCursor function. 
+
+        SetRect(&rcClient, ptClientUL.x, ptClientUL.y,
+            ptClientLR.x, ptClientLR.y);
+        ClipCursor(&rcClient); // confines the cursor within the client area
+
+        // Convert the cursor coordinates into a POINTS 
+        // structure, which defines the beginning point of the 
+        // line drawn during a WM_MOUSEMOVE message. 
+
+        //mouseCoords = MAKEPOINTS(lParam);
+        return 0;
+    case WM_INPUT:
+        {
+            UINT dataSize;
+            GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, NULL, &dataSize, sizeof(RAWINPUTHEADER));
+            if (dataSize > 0)
+            {
+                std::unique_ptr<BYTE[]> rawData = std::make_unique<BYTE[]>(dataSize);
+                if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, rawData.get(), &dataSize, sizeof(RAWINPUTHEADER)) == dataSize)
+                {
+                    RAWINPUT* raw = reinterpret_cast<RAWINPUT*>(rawData.get());
+                    if (raw->header.dwType == RIM_TYPEMOUSE) // check if raw data is a mouse data type
+                    {
+                        mouseCoords.x = raw->data.mouse.lLastX;
+                        mouseCoords.y = raw->data.mouse.lLastY;
+                    }
+                }
+            }
+
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+    case WM_MOUSEMOVE:
+
+        // When moving the mouse, the user must hold down 
+        // the left mouse button to rotate the camera. 
+        if (wParam & MK_RBUTTON)
+        {
+            cam.UpdateRotation(static_cast<float>(mouseCoords.y) * 0.1f, static_cast<float>(mouseCoords.x) * 0.1f, 0.0f);
+        }
+
+        break;
+    case WM_RBUTTONUP:
+
+        // The user has finished drawing the line. Reset the 
+        // previous line flag, release the mouse cursor, and 
+        // release the mouse capture. 
+
+        ClipCursor(NULL);
+        ReleaseCapture();
+        return 0;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

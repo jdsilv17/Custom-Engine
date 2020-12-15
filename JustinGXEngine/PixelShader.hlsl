@@ -37,7 +37,7 @@ float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tD
     float ambientTerm = 0.5f;
     //float4 ambientColor = lColor * ambientTerm;
     
-    float angularAttenuation = clamp((dot(-lDir, sNormal) + ambientTerm), 0.0f, 5.0f);
+    float angularAttenuation = saturate((dot(-lDir, sNormal) + ambientTerm));
     
     float4 finalColor = tDiffuse * lColor * angularAttenuation;
     
@@ -54,7 +54,7 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
     float ambientTerm = 0.9f;
     //float4 ambientColor = lColor * ambientTerm;
     
-    float angularAttenuation = clamp((dot(lightDir.xyz, sNormal) + ambientTerm), 0.0f, 5.0f);
+    float angularAttenuation = saturate((dot(lightDir.xyz, sNormal) + ambientTerm));
     
     float rangeAttenuation = pow(1.0f - (dist / lRadius), 2.0f); // lightrange
     
@@ -77,7 +77,7 @@ float4 CalcSpotLight(float4 lPos, float3 coneDir, float4 lColor, float4 sPos, fl
     float ambientTerm = 0.1f;
     //float4 ambientColor = lColor * ambientTerm;
     
-    float angularAttenuation = clamp((dot(lightDir.xyz, sNormal) + ambientTerm), 0.0f, 5.0f);
+    float angularAttenuation = saturate((dot(lightDir.xyz, sNormal) + ambientTerm));
     
     float surfaceRatio = dot(-lightDir.xyz, coneDir);
     

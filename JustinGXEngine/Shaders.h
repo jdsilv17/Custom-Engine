@@ -44,12 +44,16 @@ namespace Shaders
 		const ID3D11VertexShader* GetShader() const;
 		const ID3D11InputLayout* GetInputLayout() const;
 		const ID3D11Buffer* GetConstantBuffer() const;
+		//const ID3D11Buffer* const* GetAddressOfConstantBuffer() const;
+
+		//void SetConstantBuffer(const ID3D11Buffer* const* buffer);
+
+		ComPtr<ID3D11Buffer> ShaderConstantBuffer = nullptr;
 
 	private:
 		ComPtr<ID3D11DeviceContext> DeviceContext = nullptr;
 		ComPtr<ID3D11VertexShader> Shader = nullptr;
 		ComPtr<ID3D11InputLayout> InputLayout = nullptr;
-		ComPtr<ID3D11Buffer> ShaderConstantBuffer = nullptr;
 
 	};
 
@@ -68,14 +72,18 @@ namespace Shaders
 
 		const ID3D11PixelShader* GetShader() const;
 		const ID3D11Buffer* GetConstantBuffer() const;
+		//const ID3D11Buffer* const* GetAddressOfConstantBuffer() const;
 		const ID3D11ShaderResourceView* GetShaderResourceView() const;
 		const ID3D11ShaderResourceView* GetShaderResourceView_1() const;
 		const ID3D11SamplerState* GetSamplerState() const;
 
+		//void SetConstantBuffer(const ID3D11Buffer* const* buffer);
+		
+		ComPtr<ID3D11Buffer> ShaderConstantBuffer = nullptr;
+
 	private:
 		ComPtr<ID3D11DeviceContext> DeviceContext = nullptr;
 		ComPtr<ID3D11PixelShader> Shader = nullptr;
-		ComPtr<ID3D11Buffer> ShaderConstantBuffer = nullptr;
 		ComPtr<ID3D11ShaderResourceView> ShaderResourceView;
 		ComPtr<ID3D11ShaderResourceView> ShaderResourceView_1;
 		ComPtr<ID3D11SamplerState> SamplerState = nullptr;

@@ -177,6 +177,7 @@
     <ClInclude Include="Light.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshUtils.h" />
+    <ClInclude Include="Mouse.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="RenderUtils.h" />
     <ClInclude Include="Resource.h" />
@@ -190,6 +191,7 @@
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="JustinGXEngine.cpp" />
     <ClCompile Include="Light.cpp" />
+    <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="SkyBox.cpp" />
