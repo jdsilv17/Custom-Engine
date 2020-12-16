@@ -118,8 +118,9 @@ ID3D11Debug* debug = nullptr;
 // Objects
 Camera cam;
 Mesh<VERTEX> grid;
-Mesh< _OBJ_VERT_> planet_2;
+Mesh<_OBJ_VERT_> planet_2;
 Cube<VERTEX_BASIC> skybox;
+Cube<VERTEX_BASIC> cube;
 DirectionalLight dirLight;
 PointLight pntLight;
 SpotLight sptLight;
@@ -432,6 +433,7 @@ HRESULT InitContent()
 
     MakeGrid(20.0f, 25);
     grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
+    
 
     std::vector<_OBJ_VERT_> planetVerts;
     numOfVerts = ARRAYSIZE(Planet_2_data);
@@ -445,6 +447,7 @@ HRESULT InitContent()
     planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices);
 
     skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList);
+    cube.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, cube._vertexList, cube._indicesList);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -452,13 +455,13 @@ HRESULT InitContent()
     dirLight.SetLightColor(0.75f, 0.75f, 0.75f, 1.0f);
     dirLight.SetAmbientTerm(0.3f);
     // initialize Point Light
-    pntLight.SetPosition(-10.0f, 5.0f, 0.0f);
+    pntLight.SetPosition(-8.0f, 7.0f, 0.0f);
     pntLight.SetLightColor(1.0f, 0.0f, 0.0f, 1.0f);
     pntLight.SetAmbientTerm(0.9f);
     pntLight.SetPointRadius(35.0f);
     // initialize Spot Light
-    sptLight.SetPosition(5.0f, 5.0f, 0.0f);
-    sptLight.SetDirection(1.0f, -1.0f, 0.0f);
+    sptLight.SetPosition(0.0f, 12.0f, 0.0f);
+    sptLight.SetDirection(0.0f, -1.0f, 0.0f);
     sptLight.SetLightColor(0.0f, 1.0f, 0.0f, 1.0f);
     sptLight.SetAmbientTerm(0.1f);
     sptLight.SetOuterInnerConeRatios(0.5f, 0.8f);
@@ -838,7 +841,7 @@ void ExecutePipeline()
     XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
 
     XMMATRIX temp_LtRotY = XMMatrixRotationY(-0.01f);
-    pntLight.SetPosition(XMVector3Transform(pntLight.GetPositionVector(), temp_LtRotY));
+    //pntLight.SetPosition(XMVector3Transform(pntLight.GetPositionVector(), temp_LtRotY));
     sptLight.SetPosition(XMVector3Transform(sptLight.GetPositionVector(), temp_LtRotY));
     XMStoreFloat4(&wvp.LightPos[0], dirLight.GetPositionVector());
     XMStoreFloat4(&wvp.LightPos[1], pntLight.GetPositionVector());
@@ -930,13 +933,14 @@ void ExecutePipeline()
     //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
     //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
 
-    // draw it
+    //// draw it
     //immediateContext->DrawIndexed(1674, 0, 0);
+
     advanced_VS.Bind(immediateContext);
     singleTex_PS.Bind(immediateContext);
     singleTex_PS.BindShaderResources_1(immediateContext);
 
-    cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixScaling(0.01f, 0.01f, 0.01f));
+    cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixScaling(0.007f, 0.007f, 0.007f));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -946,8 +950,18 @@ void ExecutePipeline()
 
     planet_2.Draw();
 
-    immediateContext->RSSetState(RSCullNone);
-    immediateContext->OMSetDepthStencilState(DSLessEqual, 0);
+    //cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixTranslation(-7.0f, 0.0f, 0.0f));
+
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+
+    //cube.cube_mesh.Draw();
+
+    immediateContext->RSSetState(RSCullNone); // turn back face culling off
+    immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
     skybox_VS.Bind(immediateContext);
     skybox_PS.Bind(immediateContext);
     skybox_PS.BindShaderResources_1(immediateContext);

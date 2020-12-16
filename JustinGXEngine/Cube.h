@@ -16,10 +16,10 @@ public:
 	std::vector<VERTEX_BASIC> _vertexList = 
 	{
 		// TOP
-		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, {-1.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f },  { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, {-1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f },  { -1.0f, 1.0f, 0.0f }),
 		// BOTTOM
 		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
 		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f }, { 0.0f, -1.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
@@ -49,8 +49,8 @@ public:
 
 	std::vector<int> _indicesList =
 	{
-		0,1,3,
-		3,1,2,
+		0,1,2,
+		2,1,3,
 
 		7,6,4,
 		4,6,5,

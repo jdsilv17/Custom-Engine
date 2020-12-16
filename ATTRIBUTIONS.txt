@@ -1,1 +1,5 @@
 OrangeSpace.jpg - https://wallpaperaccess.com/deep-space-hd
+
+Infinite skybox help - 
+	http://terathon.com/gdc07_lengyel.pdf
+	https://www.braynzarsoft.net/viewtutorial/q16390-20-cube-mapping-skybox

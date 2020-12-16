@@ -61,6 +61,7 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
 float4 CalcSpotLight(float4 lPos, float3 coneDir, float4 lColor, float4 sPos, float3 sNormal, float4 tDiffuse);
 float CalcLinearAttenuation(float4 lPos, float lRadius, float4 sPos);
 float CalcLinearAttenuation(float innerConeRatio, float outerConeRatio, float surfaceRatio);
+float4 CalcSpecularComponent(float4 lColor, float3 lDir, float3 sPos, float3 sNormal, float3 camPos, float specularPower, float specularIntensity);
 
 
 float4 PS_MultiTexturing(PS_INPUT input, Texture2D tex[2], SamplerState samplerState);
@@ -84,46 +85,49 @@ float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tD
 
 float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse)
 {
-    float4 lightDir = lPos - sPos;
+    float3 lightDir = lPos.xyz - sPos.xyz;
     float dist = length(lightDir);
     lightDir = normalize(lightDir);
     lightDir /= dist;
     
-    float ambientTerm = 0.9f;
+    // Specular Component
+    float4 ReflectedLight = 0;
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 3.0f, 0.2f);
+    
+    float ambientTerm = 0.5f;
     //float4 ambientColor = lColor * ambientTerm;
     
-    float angularAttenuation = saturate((dot(lightDir.xyz, sNormal) + ambientTerm));
+    float angularAttenuation = saturate((dot(lightDir, sNormal) + ambientTerm));
     
     float rangeAttenuation = pow(1.0f - (dist / lRadius), 2.0f); // lightrange
     
     float linearAttenuation = CalcLinearAttenuation(lPos, lRadius, sPos);
     
-    float4 finalColor = tDiffuse * lColor * angularAttenuation * rangeAttenuation * linearAttenuation;
+    float4 finalColor = tDiffuse * lColor * angularAttenuation * rangeAttenuation * linearAttenuation + ReflectedLight;
     
     return finalColor;
 }
 
 float4 CalcSpotLight(float4 lPos, float3 coneDir, float4 lColor, float4 sPos, float3 sNormal, float4 tDiffuse)
 {
-    float4 lightDir = normalize(lPos - sPos);
-    // Specular Component
-    //float4 viewDir = normalize(camPos - sPos);
-    //float4 halfVector = normalize(-lightDir + viewDir);
-    //float specularPower = 2.0f;
-    //float intensity = max(pow( /*clamp(*/dot(sNormal, (float3) halfVector) /*)*/, specularPower), 0);
+    float3 lightDir = normalize(lPos.xyz - sPos.xyz);
 
+    // Specular Component
+    float4 ReflectedLight = 0;
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 2.0f, 1.0f);
+    
     float ambientTerm = 0.1f;
     //float4 ambientColor = lColor * ambientTerm;
     
-    float angularAttenuation = saturate((dot(lightDir.xyz, sNormal) + ambientTerm));
+    float angularAttenuation = saturate((dot(lightDir, sNormal) + ambientTerm));
     
-    float surfaceRatio = dot(-lightDir.xyz, coneDir);
+    float surfaceRatio = dot(-lightDir, coneDir);
     
     float outerConeRatio = 0.5f;
     float innerConeRatio = 0.8f;
     float linearAttenuation = CalcLinearAttenuation(innerConeRatio, outerConeRatio, surfaceRatio);
     
-    float4 finalColor = tDiffuse * lColor * angularAttenuation * linearAttenuation;
+    float4 finalColor = tDiffuse * lColor * angularAttenuation * linearAttenuation + ReflectedLight;
     
     return finalColor;
 }
@@ -138,6 +142,15 @@ float CalcLinearAttenuation(float innerConeRatio, float outerConeRatio, float su
 {
     float attenuation = pow(1.0f - saturate((innerConeRatio - surfaceRatio) / (innerConeRatio - outerConeRatio)), 2.0f);
     return attenuation;
+}
+
+float4 CalcSpecularComponent(float4 lColor, float3 lDir, float3 sPos, float3 sNormal, float3 camPos, float specularPower, float specularIntensity)
+{
+    float3 viewDir = normalize(camPos - sPos);
+    float3 halfVector = normalize(-lDir + viewDir);
+    float intensity = max(pow(saturate(dot(sNormal, halfVector)), specularPower), 0.0f);
+    
+    return lColor * intensity * specularIntensity;
 }
 
 float4 PS_MultiTexturing(PS_INPUT input, Texture2D tex[2], SamplerState samplerState)
