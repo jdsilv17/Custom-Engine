@@ -12,6 +12,7 @@
 #include "./Assets/headers/StoneHenge.h"
 #include "./Assets/headers/test pyramid.h"
 #include "./Assets/headers/Planet_2.h"
+#include "./Assets/headers/talon.h"
 
 #include <d3d11_1.h>
 #include <DirectXMath.h>
@@ -119,6 +120,7 @@ ID3D11Debug* debug = nullptr;
 Camera cam;
 Mesh<VERTEX> grid;
 Mesh<_OBJ_VERT_> planet_2;
+Mesh<_OBJ_VERT_> talon;
 Cube<VERTEX_BASIC> skybox;
 Cube<VERTEX_BASIC> cube;
 DirectionalLight dirLight;
@@ -131,7 +133,8 @@ Shaders::VertexShader skybox_VS;
 Shaders::PixelShader advanced_PS;
 Shaders::PixelShader solid_PS;
 Shaders::PixelShader skybox_PS;
-Shaders::PixelShader singleTex_PS;
+Shaders::PixelShader planet_2_PS;
+Shaders::PixelShader talon_PS;
 
 
 
@@ -426,28 +429,42 @@ HRESULT InitContent()
     hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/OrangeSpace_CubeMap.dds");
     skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
 
-    hr = singleTex_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = singleTex_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
-    singleTex_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = planet_2_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet_2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
+    planet_2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+
+    hr = talon_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
+    talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
 
     MakeGrid(20.0f, 25);
     grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
     
-
+    // PLANET_2
     std::vector<_OBJ_VERT_> planetVerts;
     numOfVerts = ARRAYSIZE(Planet_2_data);
     for (size_t i = 0; i < numOfVerts; ++i)
         planetVerts.push_back(Planet_2_data[i]);
-
     std::vector<int> planetIndices;
     numOfElements = ARRAYSIZE(Planet_2_indicies);
     for (size_t i = 0; i < numOfElements; ++i)
         planetIndices.push_back(Planet_2_indicies[i]);
     planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices);
+    // TALON
+    std::vector<_OBJ_VERT_> talonVerts;
+    numOfVerts = ARRAYSIZE(talon_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        talonVerts.push_back(talon_data[i]);
+    std::vector<int> talonIndices;
+    numOfElements = ARRAYSIZE(talon_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        talonIndices.push_back(talon_indicies[i]);
+    talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices);
+    
 
     skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList);
-    cube.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, cube._vertexList, cube._indicesList);
+    //cube.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, cube._vertexList, cube._indicesList);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -456,7 +473,7 @@ HRESULT InitContent()
     dirLight.SetAmbientTerm(0.3f);
     // initialize Point Light
     pntLight.SetPosition(-8.0f, 7.0f, 0.0f);
-    pntLight.SetLightColor(1.0f, 0.0f, 0.0f, 1.0f);
+    pntLight.SetLightColor(1.0f, 1.0f, 1.0f, 1.0f);
     pntLight.SetAmbientTerm(0.9f);
     pntLight.SetPointRadius(35.0f);
     // initialize Spot Light
@@ -848,7 +865,7 @@ void ExecutePipeline()
     XMStoreFloat4(&wvp.LightPos[2], sptLight.GetPositionVector());
 
     XMMATRIX temp_LtRotZ = XMMatrixRotationZ(-0.01f);
-    dirLight.SetDirection(XMVector3Transform(dirLight.GetDirectionVector(), temp_LtRotZ));
+    //dirLight.SetDirection(XMVector3Transform(dirLight.GetDirectionVector(), temp_LtRotZ));
     sptLight.SetDirection(XMVector3Transform(sptLight.GetConeDirectionVector(), temp_LtRotY));
     XMStoreFloat4(&wvp.LightDir[0], dirLight.GetDirectionVector());
     XMStoreFloat4(&wvp.LightDir[1], sptLight.GetConeDirectionVector());
@@ -937,8 +954,8 @@ void ExecutePipeline()
     //immediateContext->DrawIndexed(1674, 0, 0);
 
     advanced_VS.Bind(immediateContext);
-    singleTex_PS.Bind(immediateContext);
-    singleTex_PS.BindShaderResources_1(immediateContext);
+    planet_2_PS.Bind(immediateContext);
+    planet_2_PS.BindShaderResources_1(immediateContext);
 
     cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixScaling(0.007f, 0.007f, 0.007f));
 
@@ -950,15 +967,17 @@ void ExecutePipeline()
 
     planet_2.Draw();
 
-    //cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixTranslation(-7.0f, 0.0f, 0.0f));
+    talon_PS.Bind(immediateContext);
+    talon_PS.BindShaderResources_1(immediateContext);
+    cb.mWorld = XMMatrixTranspose(XMMatrixTranslation(0.0f, -0.5f, 2.0f) * cam.GetWorldMatrix());
 
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
 
-    //cube.cube_mesh.Draw();
+    talon.Draw();
 
     immediateContext->RSSetState(RSCullNone); // turn back face culling off
     immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on

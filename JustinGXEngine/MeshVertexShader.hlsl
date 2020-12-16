@@ -11,7 +11,6 @@ PS_INPUT main(VS_INPUT input)
     
     output.Pos = mul(output.Pos, World);
     output.wPos = output.Pos;
-    //output.Normal = input.Normal;
     output.Normal = normalize(mul(float4(input.Normal, 0.0f), World)).xyz;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
