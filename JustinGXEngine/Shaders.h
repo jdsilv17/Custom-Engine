@@ -69,6 +69,7 @@ namespace Shaders
 		HRESULT Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, std::string texFilename[2]);
 		void Bind(ID3D11DeviceContext* deviceContext);
 		void BindShaderResources(ID3D11DeviceContext* deviceContext);
+		void BindShaderResources_1(ID3D11DeviceContext* deviceContext);
 		void Bind_ALL(ID3D11DeviceContext* deviceContext);
 
 		const ID3D11PixelShader* GetShader() const;
@@ -88,7 +89,7 @@ namespace Shaders
 		ComPtr<ID3D11ShaderResourceView> ShaderResourceView = nullptr;
 		ComPtr<ID3D11ShaderResourceView> ShaderResourceView_1 = nullptr;
 		ComPtr<ID3D11SamplerState> SamplerState = nullptr;
-		//ComPtr<ID3D11Resource> Texture = nullptr;
+		//ComPtr<ID3D11Texture2D> Texture = nullptr;
 
 		ComPtr<ID3D11ShaderResourceView> SRVs[2] =
 		{

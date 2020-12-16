@@ -78,16 +78,6 @@ const ID3D11Buffer* Shaders::VertexShader::GetConstantBuffer() const
     return this->ShaderConstantBuffer.Get();
 }
 
-//const ID3D11Buffer* const* Shaders::VertexShader::GetAddressOfConstantBuffer() const
-//{
-//    return this->ShaderConstantBuffer.GetAddressOf();
-//}
-//
-//void Shaders::VertexShader::SetConstantBuffer(const ID3D11Buffer* const* buffer)
-//{
-//    this->ShaderConstantBuffer = buffer;
-//}
-
 //
 // Pixel Shader Functions ====================================================================
 //
@@ -221,6 +211,15 @@ void Shaders::PixelShader::BindShaderResources(ID3D11DeviceContext* deviceContex
         this->DeviceContext->PSSetSamplers(0, 1, this->SamplerState.GetAddressOf());
 }
 
+void Shaders::PixelShader::BindShaderResources_1(ID3D11DeviceContext* deviceContext)
+{
+    this->DeviceContext = deviceContext;
+    if (this->SRVs)
+        this->DeviceContext->PSSetShaderResources(0, 1, this->ShaderResourceView.GetAddressOf());
+    if (this->SamplerState)
+        this->DeviceContext->PSSetSamplers(0, 1, this->SamplerState.GetAddressOf());
+}
+
 void Shaders::PixelShader::Bind_ALL(ID3D11DeviceContext* deviceContext)
 {
     this->Bind(deviceContext);
@@ -237,11 +236,6 @@ const ID3D11Buffer* Shaders::PixelShader::GetConstantBuffer() const
     return this->ShaderConstantBuffer.Get();
 }
 
-//const ID3D11Buffer* const* Shaders::PixelShader::GetAddressOfConstantBuffer() const
-//{
-//    return this->ShaderConstantBuffer.GetAddressOf();
-//}
-
 const ID3D11ShaderResourceView* Shaders::PixelShader::GetShaderResourceView() const
 {
     return this->ShaderResourceView.Get();
@@ -256,8 +250,3 @@ const ID3D11SamplerState* Shaders::PixelShader::GetSamplerState() const
 {
     return this->SamplerState.Get();
 }
-
-//void Shaders::PixelShader::SetConstantBuffer(const ID3D11Buffer* const* buffer)
-//{
-//    this->ShaderConstantBuffer = buffer;
-//}

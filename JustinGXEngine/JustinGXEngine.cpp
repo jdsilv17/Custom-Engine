@@ -4,21 +4,6 @@
 #include "framework.h"
 #include "JustinGXEngine.h"
 
-#include "VertexShader.csh"
-#include "PixelShader.csh"
-#include "PS_Solid.csh"
-#include "MeshVertexShader.csh"
-
-//#ifndef MeshUtils_h_
-//    #include "MeshUtils.h"
-//    #define MeshUtils_h_
-//#endif // MeshUtils_h_
-
-//#ifndef Mesh_h_
-//    #include "Mesh.h"
-//    #define Mesh_h_
-//#endif // Mesh_h_
-
 #include "Cube.h"
 #include "Camera.h"
 #include "Light.h"
@@ -120,7 +105,7 @@ ID3D11VertexShader* vMeshShader = nullptr;
 ID3D11Texture2D* zBuffer = nullptr;
 ID3D11DepthStencilView* zBufferView = nullptr;
 
-//ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
+ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
 ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
 
 // Constant
@@ -133,6 +118,7 @@ ID3D11Debug* debug = nullptr;
 // Objects
 Camera cam;
 Mesh<VERTEX> grid;
+Mesh< _OBJ_VERT_> planet_2;
 Cube<VERTEX_BASIC> skybox;
 DirectionalLight dirLight;
 PointLight pntLight;
@@ -144,6 +130,7 @@ Shaders::VertexShader skybox_VS;
 Shaders::PixelShader advanced_PS;
 Shaders::PixelShader solid_PS;
 Shaders::PixelShader skybox_PS;
+Shaders::PixelShader singleTex_PS;
 
 
 
@@ -238,10 +225,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // release all our D3D11 interfaces
     CleanUp();
 
-#ifdef _DEBUG
-    debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-    debug->Release();
-#endif
+//#ifdef _DEBUG
+//    debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//    debug->Release();
+//#endif
 
     return (int) msg.wParam;
 }
@@ -352,10 +339,10 @@ HRESULT InitDevice()
     if (FAILED(hr))
         return hr;
 
-#ifdef _DEBUG
-    hr = myDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&debug);
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
+//#ifdef _DEBUG
+//    hr = myDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&debug);
+//    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//#endif
 
     // Create Render Target View
     ID3D11Resource* backbuffer = nullptr;
@@ -367,10 +354,6 @@ HRESULT InitDevice()
     backbuffer->Release();
     if (FAILED(hr))
         return hr;
-
-#ifdef _DEBUG
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
 
 
     // create zbuffer & view
@@ -388,10 +371,6 @@ HRESULT InitDevice()
     if (FAILED(hr))
         return hr;
 
-#ifdef _DEBUG
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
-
     // Create the depth stencil view
     //D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
     //descDSV.Format = descDepth.Format;
@@ -400,10 +379,6 @@ HRESULT InitDevice()
     hr = myDevice->CreateDepthStencilView(zBuffer, nullptr, &zBufferView);
     if (FAILED(hr))
         return hr;
-
-#ifdef _DEBUG
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
 
     // Setup viewport
     vPort.Width = static_cast<FLOAT>(width);
@@ -414,9 +389,9 @@ HRESULT InitDevice()
 
     
 
-#ifdef _DEBUG
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
+//#ifdef _DEBUG
+//    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//#endif
 
     return hr;
 }
@@ -439,20 +414,35 @@ HRESULT InitContent()
 
     hr = skybox_VS.Initialize(myDevice, "./Debug/SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
 
-    std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
-    hr = advanced_PS.Initialize_ALL(myDevice, "./Debug/PixelShader.cso", sizeof(WVP), textures);
-    advanced_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
+    //hr = advanced_PS.Initialize_ALL(myDevice, "./Debug/PixelShader.cso", sizeof(WVP), textures);
+    //advanced_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
     hr = solid_PS.Initialize(myDevice, "./Debug/PS_Solid.cso", sizeof(WVP));
     solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
     
     hr = skybox_PS.Initialize(myDevice, "./Debug/SkyBox_PS.cso", sizeof(WVP)); // change to include texture
-    hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/Skybox_BlueNebula_1.dds");
+    hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/OrangeSpace_CubeMap.dds");
     skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
+
+    hr = singleTex_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = singleTex_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
+    singleTex_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
 
     MakeGrid(20.0f, 25);
     grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
+
+    std::vector<_OBJ_VERT_> planetVerts;
+    numOfVerts = ARRAYSIZE(Planet_2_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Planet_2_data[i]);
+
+    std::vector<int> planetIndices;
+    numOfElements = ARRAYSIZE(Planet_2_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Planet_2_indicies[i]);
+    planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices);
 
     skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList);
 
@@ -474,63 +464,58 @@ HRESULT InitContent()
     sptLight.SetOuterInnerConeRatios(0.5f, 0.8f);
 
     // create constant buffer
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = sizeof(WVP);
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = sizeof(WVP);
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
 
-    hr = myDevice->CreateBuffer(&bd, nullptr, &constantBuffer);
-    if (FAILED(hr))
-        return hr;
+    //hr = myDevice->CreateBuffer(&bd, nullptr, &constantBuffer);
+    //if (FAILED(hr))
+    //    return hr;
 
     // load complex mesh on card=================================================================================
     // vertex buffer
-    bd.ByteWidth = sizeof(test_pyramid_data);
-    bd.Usage = D3D11_USAGE_IMMUTABLE;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    bd.MiscFlags = 0;
+    //bd.ByteWidth = sizeof(test_pyramid_data);
+    //bd.Usage = D3D11_USAGE_IMMUTABLE;
+    //bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    //bd.CPUAccessFlags = 0;
+    //bd.MiscFlags = 0;
 
-    subData.pSysMem = test_pyramid_data;
+    //subData.pSysMem = test_pyramid_data;
 
-    // Create vertex buffer
-    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferMesh);
-    if (FAILED(hr))
-        return hr;
+    //// Create vertex buffer
+    //hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferMesh);
+    //if (FAILED(hr))
+    //    return hr;
 
-    bd.ByteWidth = sizeof(StoneHenge_data);
-    subData.pSysMem = StoneHenge_data;
-    hr = myDevice->CreateBuffer(&bd, &subData, &vertexBuffer);
-    if (FAILED(hr))
-        return hr;
+    //bd.ByteWidth = sizeof(StoneHenge_data);
+    //subData.pSysMem = StoneHenge_data;
+    //hr = myDevice->CreateBuffer(&bd, &subData, &vertexBuffer);
+    //if (FAILED(hr))
+    //    return hr;
 
-    // index buffer
-    bd.ByteWidth = sizeof(test_pyramid_indicies);
-    bd.Usage = D3D11_USAGE_IMMUTABLE;
-    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    bd.MiscFlags = 0;
+    //// index buffer
+    //bd.ByteWidth = sizeof(test_pyramid_indicies);
+    //bd.Usage = D3D11_USAGE_IMMUTABLE;
+    //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    //bd.CPUAccessFlags = 0;
+    //bd.MiscFlags = 0;
 
-    subData.pSysMem = test_pyramid_indicies;
+    //subData.pSysMem = test_pyramid_indicies;
 
-    hr = myDevice->CreateBuffer(&bd, &subData, &indexBufferMesh);
-    if (FAILED(hr))
-        return hr;
+    //hr = myDevice->CreateBuffer(&bd, &subData, &indexBufferMesh);
+    //if (FAILED(hr))
+    //    return hr;
 
-    bd.ByteWidth = sizeof(StoneHenge_indicies);
-    subData.pSysMem = StoneHenge_indicies;
-    hr = myDevice->CreateBuffer(&bd, &subData, &indexBuffer);
-    if (FAILED(hr))
-        return hr;
+    //bd.ByteWidth = sizeof(StoneHenge_indicies);
+    //subData.pSysMem = StoneHenge_indicies;
+    //hr = myDevice->CreateBuffer(&bd, &subData, &indexBuffer);
+    //if (FAILED(hr))
+    //    return hr;
 
     // TEXTURING ===============================================================================================
-
-    //filename = "./Assets/Textures/SpaceCubeMap.dds";
-    //widestr = std::wstring(filename.begin(), filename.end());
-    //widecstr = widestr.c_str();
-    //hr = CreateDDSTextureFromFile(myDevice, widecstr, nullptr, &SRV_skyBox);
 
     D3D11_RASTERIZER_DESC rd;
     ZeroMemory(&rd, sizeof(rd));
@@ -538,12 +523,16 @@ HRESULT InitContent()
     rd.FillMode = D3D11_FILL_SOLID;
     hr = myDevice->CreateRasterizerState(&rd, &RSCullNone);
 
-    //D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
-    //hr = myDevice->CreateDepthStencilState(&depthStencilDesc, &DSLessEqual);
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
+    ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
+    depthStencilDesc.DepthEnable = true;
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+    hr = myDevice->CreateDepthStencilState(&depthStencilDesc, &DSLessEqual);
 
-#ifdef _DEBUG
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
+//#ifdef _DEBUG
+//    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//#endif
     
     return hr;
 }
@@ -578,6 +567,7 @@ void CleanUp()
     if (ps_Solid) ps_Solid->Release();
     if (skyBox_ps) skyBox_ps->Release();
     if (RSCullNone) RSCullNone->Release();
+    if (DSLessEqual) DSLessEqual->Release();
     if (swapChain) swapChain->Release();
     if (immediateContext) immediateContext->Release();
     if (myDevice) myDevice->Release();
@@ -605,7 +595,7 @@ void CatchInput()
 
     if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
     {
-        cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.001f, static_cast<float>(delta_point.x) * 0.001f, 0.0f);
+        cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
     }
     if (GetAsyncKeyState('W') & 0x8000)
     {
@@ -794,7 +784,7 @@ void ExecutePipeline()
 {
     // rendering here (create function)
     immediateContext->ClearRenderTargetView(RTV, Colors::DarkBlue);
-    immediateContext->ClearDepthStencilView(zBufferView, D3D11_CLEAR_DEPTH, 1, 0);
+    immediateContext->ClearDepthStencilView(zBufferView, D3D11_CLEAR_DEPTH, 1.0f, 0);
     // setup pipeline
         // IA (Input Assembler)
     ID3D11Buffer* meshVB[] = { vertexBuffer, vertexBufferMesh, vertexBufferGrid };
@@ -807,7 +797,6 @@ void ExecutePipeline()
     //immediateContext->VSSetShader(vMeshShader, 0, 0);
         // RS (Rasterizer Stage)
     immediateContext->RSSetViewports(1, &vPort);
-    
         // PS (Pixel Shader)
     //immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
     //ID3D11ShaderResourceView* tempSRV[] =
@@ -823,8 +812,6 @@ void ExecutePipeline()
     ID3D11RenderTargetView* tempRTV[] = { RTV };
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
 
-    advanced_VS.Bind(immediateContext);
-    advanced_PS.Bind_ALL(immediateContext);
 
     // upload matrices to video card
         // Create and update a constant buffer (move variables from C++ to shaders)
@@ -877,65 +864,79 @@ void ExecutePipeline()
     // place it somewhere else in the environment
 
 
-    immediateContext->IASetVertexBuffers(0, 1, &meshVB[0], mesh_strides, mesh_offsets);
-    immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    //immediateContext->IASetVertexBuffers(0, 1, &meshVB[0], mesh_strides, mesh_offsets);
+    //immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixTranspose(
-        XMMatrixMultiply(
-            temp, XMMatrixTranslationFromVector({ 0.0f, -1.0f, 0.0f, 1.0f })));
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
-    // draw it
-    immediateContext->DrawIndexed(2532, 0, 0);
+    //cb.mWorld = XMMatrixTranspose(
+    //    XMMatrixMultiply(
+    //        temp, XMMatrixTranslationFromVector({ 0.0f, -1.0f, 0.0f, 1.0f })));
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+    //// draw it
+    //immediateContext->DrawIndexed(2532, 0, 0);
 
-    immediateContext->IASetVertexBuffers(0, 1, &meshVB[1], &mesh_strides[0], mesh_offsets);
-    immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
+    //immediateContext->IASetVertexBuffers(0, 1, &meshVB[1], &mesh_strides[0], mesh_offsets);
+    //immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
     // Draw pyramid
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixTranspose(
-        XMMatrixMultiply(
-            temp, XMMatrixTranslation(0, 6.0f, 0)));
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+    //cb.mWorld = XMMatrixTranspose(
+    //    XMMatrixMultiply(
+    //        temp, XMMatrixTranslation(0, 6.0f, 0)));
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
     // draw it
-    immediateContext->DrawIndexed(1674, 0, 0);
+    //immediateContext->DrawIndexed(1674, 0, 0);
 
     // Draw Directional Light
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixTranspose( 
-        XMMatrixTranslationFromVector( dirLight.GetPositionVector() ) );
+    //cb.mWorld = XMMatrixTranspose( 
+    //    XMMatrixTranslationFromVector( dirLight.GetPositionVector() ) );
 
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
 
     //immediateContext->DrawIndexed(1674, 0, 0);
 
     // Draw Point Light Light
     // modify world matrix b4 drawing next object
-    cb.mWorld = XMMatrixTranspose(
-            XMMatrixTranslationFromVector( pntLight.GetPositionVector() ));
+    //cb.mWorld = XMMatrixTranspose(
+    //        XMMatrixTranslationFromVector( pntLight.GetPositionVector() ));
 
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
 
     // draw it
-    immediateContext->DrawIndexed(1674, 0, 0);
+    //immediateContext->DrawIndexed(1674, 0, 0);
 
     // Draw Spot Light
-    cb.mWorld = XMMatrixTranspose(
-        XMMatrixTranslationFromVector( sptLight.GetPositionVector() ));
+    //cb.mWorld = XMMatrixTranspose(
+    //    XMMatrixTranslationFromVector( sptLight.GetPositionVector() ));
+
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+
+    // draw it
+    //immediateContext->DrawIndexed(1674, 0, 0);
+    advanced_VS.Bind(immediateContext);
+    singleTex_PS.Bind(immediateContext);
+    singleTex_PS.BindShaderResources_1(immediateContext);
+
+    cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixScaling(0.01f, 0.01f, 0.01f));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -943,14 +944,14 @@ void ExecutePipeline()
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
     immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
 
-    // draw it
-    immediateContext->DrawIndexed(1674, 0, 0);
+    planet_2.Draw();
 
-    skybox_VS.Bind(immediateContext);
-    skybox_PS.Bind_ALL(immediateContext);
     immediateContext->RSSetState(RSCullNone);
-    cb.mWorld = XMMatrixTranspose(XMMatrixScaling(100.0f, 100.0f, 100.0f));
-    //cb.mWorld.r[3] = cam.GetWorldMatrix().r[3];
+    immediateContext->OMSetDepthStencilState(DSLessEqual, 0);
+    skybox_VS.Bind(immediateContext);
+    skybox_PS.Bind(immediateContext);
+    skybox_PS.BindShaderResources_1(immediateContext);
+    cb.mWorld = XMMatrixTranspose(XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixTranslationFromVector(cam.GetPositionVector()));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -959,13 +960,11 @@ void ExecutePipeline()
     immediateContext->Unmap((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0);
 
     skybox.cube_mesh.Draw();
+    immediateContext->RSSetState(nullptr);
+    immediateContext->OMSetDepthStencilState(nullptr, 0);
 
     // Draw Grid=====================================================================================
-    //immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-    //immediateContext->IASetVertexBuffers(0, 1, &meshVB[2], &mesh_strides[1], mesh_offsets);
-    //immediateContext->IASetInputLayout(vertexLayoutGrid);
-    //immediateContext->VSSetShader(vShader, 0, 0);
-    //immediateContext->PSSetShader(ps_Solid, 0, 0);
+
     default_VS.Bind(immediateContext);
     solid_PS.Bind(immediateContext);
     cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
@@ -977,7 +976,6 @@ void ExecutePipeline()
     immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
 
     grid.Draw();
-    //immediateContext->Draw(lines.size(), 0);
 
 
     // change 1 to 0 vsync

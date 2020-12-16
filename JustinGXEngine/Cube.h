@@ -16,35 +16,35 @@ public:
 	std::vector<VERTEX_BASIC> _vertexList = 
 	{
 		// TOP
-		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, {-1.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f },  { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, {-1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f },  { -1.0f, 1.0f, 0.0f }),
 		// BOTTOM
-		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, -0.5f, 0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f }, { -1.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, -0.5f, 0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f }, { 0.0f, -1.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, -0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f }, { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, -0.5f, 0.5f }, { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
 		// LEFT
-		VERTEX_BASIC({ -0.5f, -0.5f, 0.5f, 0.5f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f, 0.5f }, { -1.0f, 0.0f, 0.0f }, { -1.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f, 0.5f }, { -1.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f, 0.5f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, -0.5f, 0.5f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f }, { -1.0f, 0.0f, 0.0f }, { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f }, { -1.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
 		// RIGHT
-		VERTEX_BASIC({ 0.5f, -0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { -1.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }),
 		// FRONT
-		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, -1.0f }, { -1.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, -1.0f }, { -1.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { -1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 0.0f }),
 		// BACK
-		VERTEX_BASIC({ -0.5f, -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { -1.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }),
-		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }),
-		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { -1.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { -1.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }),
+		VERTEX_BASIC({ 0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }),
+		VERTEX_BASIC({ -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { -1.0f, 0.0f, 0.0f }),
 	};
 
 	std::vector<int> _indicesList =

@@ -57,15 +57,15 @@ struct VERTEX_TANGENT
 
 struct VERTEX_BASIC
 {
-    DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
+    DirectX::XMFLOAT3 pos = { 0, 0, 0 };
     DirectX::XMFLOAT3 normals = { 0, 0, 0 };
     DirectX::XMFLOAT3 uvw = { 0, 0, 0 };
 
     VERTEX_BASIC() {}
-    VERTEX_BASIC(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT3& _norm, const DirectX::XMFLOAT3& _uvw)
+    VERTEX_BASIC(const DirectX::XMFLOAT3& _pos, const DirectX::XMFLOAT3& _norm, const DirectX::XMFLOAT3& _uvw)
         : pos(_pos), normals(_norm), uvw(_uvw) {}
-    VERTEX_BASIC(float x, float y, float z, float w, float nx, float ny, float nz, float u, float v, float _w)
-        : pos(x, y, z, w), normals(nx, ny, nz), uvw(u, v, _w) {}
+    VERTEX_BASIC(float x, float y, float z, float nx, float ny, float nz, float u, float v, float w)
+        : pos(x, y, z), normals(nx, ny, nz), uvw(u, v, w) {}
 };
 
 const D3D11_INPUT_ELEMENT_DESC vertexInputLayoutDesc[] =
@@ -94,7 +94,7 @@ const D3D11_INPUT_ELEMENT_DESC objLayoutDesc[] =
 const D3D11_INPUT_ELEMENT_DESC cubeLayoutDesc[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
 };
 
