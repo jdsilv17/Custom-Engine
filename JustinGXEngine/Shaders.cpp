@@ -214,7 +214,7 @@ void Shaders::PixelShader::BindShaderResources(ID3D11DeviceContext* deviceContex
 void Shaders::PixelShader::BindShaderResources_1(ID3D11DeviceContext* deviceContext)
 {
     this->DeviceContext = deviceContext;
-    if (this->SRVs)
+    if (this->ShaderResourceView)
         this->DeviceContext->PSSetShaderResources(0, 1, this->ShaderResourceView.GetAddressOf());
     if (this->SamplerState)
         this->DeviceContext->PSSetSamplers(0, 1, this->SamplerState.GetAddressOf());
@@ -249,4 +249,78 @@ const ID3D11ShaderResourceView* Shaders::PixelShader::GetShaderResourceView_1() 
 const ID3D11SamplerState* Shaders::PixelShader::GetSamplerState() const
 {
     return this->SamplerState.Get();
+}
+
+//
+// GEOMETRY SHADER FUNCTIONS =========================================================================
+//
+
+HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const char* filename, UINT byteWidth)
+{
+    HRESULT hr = S_OK;
+
+    auto blob = load_binary_blob(filename);
+
+    // Create the vertex Shader
+    hr = device->CreateGeometryShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());
+
+    // Create Constant Buffer
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.ByteWidth = byteWidth;
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    bd.MiscFlags = 0;
+
+    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+
+
+    return hr;
+}
+
+HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth)
+{
+    HRESULT hr = S_OK;
+
+    // Create the vertex Shader
+    hr = device->CreateGeometryShader(shaderByteCode, sizeof(shaderByteCode), nullptr, this->Shader.GetAddressOf());
+
+    // Create Constant Buffer
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.ByteWidth = byteWidth;
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    bd.MiscFlags = 0;
+
+    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+
+
+    return hr;
+}
+
+void Shaders::GeometryShader::Bind(ID3D11DeviceContext* deviceContext)
+{
+    this->DeviceContext = deviceContext;
+    if (this->ShaderConstantBuffer)
+        this->DeviceContext->GSSetConstantBuffers(0, 1, this->ShaderConstantBuffer.GetAddressOf());
+    if (this->Shader)
+        this->DeviceContext->GSSetShader(this->Shader.Get(), nullptr, 0);
+}
+
+const ID3D11GeometryShader* Shaders::GeometryShader::GetShader() const
+{
+    return this->Shader.Get();
+}
+
+const ID3D11InputLayout* Shaders::GeometryShader::GetInputLayout() const
+{
+    return this->InputLayout.Get();
+}
+
+const ID3D11Buffer* Shaders::GeometryShader::GetConstantBuffer() const
+{
+    return this->ShaderConstantBuffer.Get();
 }

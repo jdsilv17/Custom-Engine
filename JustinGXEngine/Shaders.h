@@ -98,4 +98,24 @@ namespace Shaders
 		};
 
 	};
+
+	class GeometryShader
+	{
+	public:
+		HRESULT Initialize(ID3D11Device* device, const char* filename, UINT byteWidth);
+		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth);
+		void Bind(ID3D11DeviceContext* deviceContext);
+
+		const ID3D11GeometryShader* GetShader() const;
+		const ID3D11InputLayout* GetInputLayout() const;
+		const ID3D11Buffer* GetConstantBuffer() const;
+
+		ComPtr<ID3D11Buffer> ShaderConstantBuffer = nullptr;
+
+	private:
+		ComPtr<ID3D11GeometryShader> Shader = nullptr;
+		ComPtr<ID3D11DeviceContext> DeviceContext = nullptr;
+		ComPtr<ID3D11InputLayout> InputLayout = nullptr;
+
+	};
 }

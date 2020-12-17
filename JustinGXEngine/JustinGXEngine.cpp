@@ -11,7 +11,10 @@
 
 #include "./Assets/headers/StoneHenge.h"
 #include "./Assets/headers/test pyramid.h"
+#include "./Assets/headers/Planet_1.h"
 #include "./Assets/headers/Planet_2.h"
+#include "./Assets/headers/Planet_3.h"
+#include "./Assets/headers/Moon.h"
 #include "./Assets/headers/talon.h"
 
 #include <d3d11_1.h>
@@ -119,8 +122,12 @@ ID3D11Debug* debug = nullptr;
 // Objects
 Camera cam;
 Mesh<VERTEX> grid;
+Mesh<_OBJ_VERT_> planet_1;
 Mesh<_OBJ_VERT_> planet_2;
+Mesh<_OBJ_VERT_> planet_3;
+Mesh<_OBJ_VERT_> moon;
 Mesh<_OBJ_VERT_> talon;
+Mesh<VERTEX> point;
 Cube<VERTEX_BASIC> skybox;
 Cube<VERTEX_BASIC> cube;
 DirectionalLight dirLight;
@@ -130,11 +137,19 @@ SpotLight sptLight;
 Shaders::VertexShader advanced_VS;
 Shaders::VertexShader default_VS;
 Shaders::VertexShader skybox_VS;
+Shaders::VertexShader gs_VS;
 Shaders::PixelShader advanced_PS;
 Shaders::PixelShader solid_PS;
 Shaders::PixelShader skybox_PS;
-Shaders::PixelShader planet_2_PS;
+Shaders::PixelShader planet1_PS;
+Shaders::PixelShader planet2_PS;
+Shaders::PixelShader planet3_PS;
+Shaders::PixelShader moon_PS;
 Shaders::PixelShader talon_PS;
+Shaders::GeometryShader pntToQuad_GS;
+
+bool DrawQuad = false;
+bool DrawGrid = false;
 
 
 
@@ -418,6 +433,8 @@ HRESULT InitContent()
 
     hr = skybox_VS.Initialize(myDevice, "./Debug/SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
 
+    hr = gs_VS.Initialize(myDevice, "./Debug/Geo_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
+
     //std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
     //hr = advanced_PS.Initialize_ALL(myDevice, "./Debug/PixelShader.cso", sizeof(WVP), textures);
     //advanced_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
@@ -429,29 +446,75 @@ HRESULT InitContent()
     hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/OrangeSpace_CubeMap.dds");
     skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
 
-    hr = planet_2_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = planet_2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
-    planet_2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = planet1_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet1_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet_Diffuse.dds");
+    planet1_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+
+    hr = planet2_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
+    planet2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+
+    hr = planet3_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet3_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet4_Diffuse.dds");
+    planet3_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+
+    hr = moon_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = moon_PS.InitShaderResources(myDevice, "./Assets/Textures/moon_Diffuse.dds");
+    moon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
     hr = talon_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
     hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
     talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
+    hr = pntToQuad_GS.Initialize(myDevice, "./Debug/PointToQuad_GS.cso", sizeof(WVP));
+    pntToQuad_GS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
+
 
     MakeGrid(20.0f, 25);
-    grid = Mesh<VERTEX>(myDevice, immediateContext, lines);
+    grid = Mesh<VERTEX>(myDevice, immediateContext, lines, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
     
-    // PLANET_2
+
+    // PLANET_1 =================================
     std::vector<_OBJ_VERT_> planetVerts;
+    numOfVerts = ARRAYSIZE(Planet_1_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Planet_1_data[i]);
+    std::vector<int> planetIndices;
+    numOfElements = ARRAYSIZE(Planet_1_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Planet_1_indicies[i]);
+    planet_1 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // PLANET_2 =================================
+    planetVerts.clear();
+    planetIndices.clear();
     numOfVerts = ARRAYSIZE(Planet_2_data);
     for (size_t i = 0; i < numOfVerts; ++i)
         planetVerts.push_back(Planet_2_data[i]);
-    std::vector<int> planetIndices;
     numOfElements = ARRAYSIZE(Planet_2_indicies);
     for (size_t i = 0; i < numOfElements; ++i)
         planetIndices.push_back(Planet_2_indicies[i]);
-    planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices);
-    // TALON
+    planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // PLANET_3 =================================
+    planetVerts.clear();
+    planetIndices.clear();
+    numOfVerts = ARRAYSIZE(Planet_3_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Planet_3_data[i]);
+    numOfElements = ARRAYSIZE(Planet_3_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Planet_3_indicies[i]);
+    planet_3 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // MOON ====================================
+    planetVerts.clear();
+    planetIndices.clear();
+    numOfVerts = ARRAYSIZE(Moon_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Moon_data[i]);
+    numOfElements = ARRAYSIZE(Moon_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Moon_indicies[i]);
+    moon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // TALON ===================================
     std::vector<_OBJ_VERT_> talonVerts;
     numOfVerts = ARRAYSIZE(talon_data);
     for (size_t i = 0; i < numOfVerts; ++i)
@@ -460,10 +523,14 @@ HRESULT InitContent()
     numOfElements = ARRAYSIZE(talon_indicies);
     for (size_t i = 0; i < numOfElements; ++i)
         talonIndices.push_back(talon_indicies[i]);
-    talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices);
-    
+    talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList);
+    std::vector<VERTEX> pnt_Vert;
+    pnt_Vert.push_back(VERTEX({ 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }));
+    point = Mesh<VERTEX>(myDevice, immediateContext, pnt_Vert, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+    skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
     //cube.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, cube._vertexList, cube._indicesList);
 
     // initialize Directional Light
@@ -472,8 +539,8 @@ HRESULT InitContent()
     dirLight.SetLightColor(0.75f, 0.75f, 0.75f, 1.0f);
     dirLight.SetAmbientTerm(0.3f);
     // initialize Point Light
-    pntLight.SetPosition(-8.0f, 7.0f, 0.0f);
-    pntLight.SetLightColor(1.0f, 1.0f, 1.0f, 1.0f);
+    pntLight.SetPosition(0.0f, 0.0f, 0.0f);
+    pntLight.SetLightColor(0.75f, 0.75f, 0.75f, 1.0f);
     pntLight.SetAmbientTerm(0.9f);
     pntLight.SetPointRadius(35.0f);
     // initialize Spot Light
@@ -482,58 +549,6 @@ HRESULT InitContent()
     sptLight.SetLightColor(0.0f, 1.0f, 0.0f, 1.0f);
     sptLight.SetAmbientTerm(0.1f);
     sptLight.SetOuterInnerConeRatios(0.5f, 0.8f);
-
-    // create constant buffer
-    //ZeroMemory(&bd, sizeof(bd));
-    //bd.ByteWidth = sizeof(WVP);
-    //bd.Usage = D3D11_USAGE_DYNAMIC;
-    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    //bd.MiscFlags = 0;
-
-    //hr = myDevice->CreateBuffer(&bd, nullptr, &constantBuffer);
-    //if (FAILED(hr))
-    //    return hr;
-
-    // load complex mesh on card=================================================================================
-    // vertex buffer
-    //bd.ByteWidth = sizeof(test_pyramid_data);
-    //bd.Usage = D3D11_USAGE_IMMUTABLE;
-    //bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    //bd.CPUAccessFlags = 0;
-    //bd.MiscFlags = 0;
-
-    //subData.pSysMem = test_pyramid_data;
-
-    //// Create vertex buffer
-    //hr = myDevice->CreateBuffer(&bd, &subData, &vertexBufferMesh);
-    //if (FAILED(hr))
-    //    return hr;
-
-    //bd.ByteWidth = sizeof(StoneHenge_data);
-    //subData.pSysMem = StoneHenge_data;
-    //hr = myDevice->CreateBuffer(&bd, &subData, &vertexBuffer);
-    //if (FAILED(hr))
-    //    return hr;
-
-    //// index buffer
-    //bd.ByteWidth = sizeof(test_pyramid_indicies);
-    //bd.Usage = D3D11_USAGE_IMMUTABLE;
-    //bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    //bd.CPUAccessFlags = 0;
-    //bd.MiscFlags = 0;
-
-    //subData.pSysMem = test_pyramid_indicies;
-
-    //hr = myDevice->CreateBuffer(&bd, &subData, &indexBufferMesh);
-    //if (FAILED(hr))
-    //    return hr;
-
-    //bd.ByteWidth = sizeof(StoneHenge_indicies);
-    //subData.pSysMem = StoneHenge_indicies;
-    //hr = myDevice->CreateBuffer(&bd, &subData, &indexBuffer);
-    //if (FAILED(hr))
-    //    return hr;
 
     // TEXTURING ===============================================================================================
 
@@ -640,6 +655,14 @@ void CatchInput()
     if (GetAsyncKeyState('X') & 0x8000)
     {
         cam.UpdatePosition(cam.GetUpVector() * -cameraSpeed);
+    }
+    if (GetAsyncKeyState('Q') & 0x0001)
+    {
+        DrawQuad = !DrawQuad;
+    }
+    if (GetAsyncKeyState('G') & 0x0001)
+    {
+        DrawGrid = !DrawGrid;
     }
 }
 
@@ -807,27 +830,10 @@ void ExecutePipeline()
     immediateContext->ClearDepthStencilView(zBufferView, D3D11_CLEAR_DEPTH, 1.0f, 0);
     // setup pipeline
         // IA (Input Assembler)
-    ID3D11Buffer* meshVB[] = { vertexBuffer, vertexBufferMesh, vertexBufferGrid };
-    UINT mesh_strides[] = { sizeof(_OBJ_VERT_), sizeof(VERTEX) };    // distance b/w 2 verts
-    UINT mesh_offsets[] = { 0 };     // where to start from in the array
-    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    //immediateContext->IASetInputLayout(vertexMeshLayout);
         // VS (Vertex Shader)
-    //immediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
-    //immediateContext->VSSetShader(vMeshShader, 0, 0);
         // RS (Rasterizer Stage)
     immediateContext->RSSetViewports(1, &vPort);
         // PS (Pixel Shader)
-    //immediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
-    //ID3D11ShaderResourceView* tempSRV[] =
-    //{
-    //    SRV,
-    //    SRV_2
-    //};
-    //immediateContext->PSSetShaderResources(0, 2, tempSRV);
-    //immediateContext->PSSetSamplers(0, 1, &samplerState);
-    //immediateContext->PSSetShader(pShader, 0, 0);
-    //immediateContext->PSSetSamplers(0, 1, &samplerState);
         // OM (Output Merger)
     ID3D11RenderTargetView* tempRTV[] = { RTV };
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
@@ -849,8 +855,7 @@ void ExecutePipeline()
     cb.mView = XMMatrixTranspose( cam.GetViewMatrix() );
 
     cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
-    cb.mProjection = XMMatrixTranspose(
-        cam.GetProjectionMatrix());
+    cb.mProjection = XMMatrixTranspose( cam.GetProjectionMatrix() );
 
     WVP wvp = {};
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
@@ -859,14 +864,14 @@ void ExecutePipeline()
 
     XMMATRIX temp_LtRotY = XMMatrixRotationY(-0.01f);
     //pntLight.SetPosition(XMVector3Transform(pntLight.GetPositionVector(), temp_LtRotY));
-    sptLight.SetPosition(XMVector3Transform(sptLight.GetPositionVector(), temp_LtRotY));
+    //sptLight.SetPosition(XMVector3Transform(sptLight.GetPositionVector(), temp_LtRotY));
     XMStoreFloat4(&wvp.LightPos[0], dirLight.GetPositionVector());
     XMStoreFloat4(&wvp.LightPos[1], pntLight.GetPositionVector());
     XMStoreFloat4(&wvp.LightPos[2], sptLight.GetPositionVector());
 
     XMMATRIX temp_LtRotZ = XMMatrixRotationZ(-0.01f);
     //dirLight.SetDirection(XMVector3Transform(dirLight.GetDirectionVector(), temp_LtRotZ));
-    sptLight.SetDirection(XMVector3Transform(sptLight.GetConeDirectionVector(), temp_LtRotY));
+    //sptLight.SetDirection(XMVector3Transform(sptLight.GetConeDirectionVector(), temp_LtRotY));
     XMStoreFloat4(&wvp.LightDir[0], dirLight.GetDirectionVector());
     XMStoreFloat4(&wvp.LightDir[1], sptLight.GetConeDirectionVector());
 
@@ -875,89 +880,35 @@ void ExecutePipeline()
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
 
-
-
     //======================================================================================================================
-    // get more complex pre-made mesh (FBX, OBJ, custom header) _check
-    // load it onto the card (vertex buffer, index buffer, 
-    // makes sure our shaders can process it
-    // place it somewhere else in the environment
 
-
-    //immediateContext->IASetVertexBuffers(0, 1, &meshVB[0], mesh_strides, mesh_offsets);
-    //immediateContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-    // modify world matrix b4 drawing next object
-    //cb.mWorld = XMMatrixTranspose(
-    //    XMMatrixMultiply(
-    //        temp, XMMatrixTranslationFromVector({ 0.0f, -1.0f, 0.0f, 1.0f })));
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
-    //// draw it
-    //immediateContext->DrawIndexed(2532, 0, 0);
-
-    //immediateContext->IASetVertexBuffers(0, 1, &meshVB[1], &mesh_strides[0], mesh_offsets);
-    //immediateContext->IASetIndexBuffer(indexBufferMesh, DXGI_FORMAT_R32_UINT, 0);
-    // Draw pyramid
-    // modify world matrix b4 drawing next object
-    //cb.mWorld = XMMatrixTranspose(
-    //    XMMatrixMultiply(
-    //        temp, XMMatrixTranslation(0, 6.0f, 0)));
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
-    // draw it
-    //immediateContext->DrawIndexed(1674, 0, 0);
-
-    // Draw Directional Light
-    // modify world matrix b4 drawing next object
-    //cb.mWorld = XMMatrixTranspose( 
-    //    XMMatrixTranslationFromVector( dirLight.GetPositionVector() ) );
-
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
-
-    //immediateContext->DrawIndexed(1674, 0, 0);
-
-    // Draw Point Light Light
-    // modify world matrix b4 drawing next object
-    //cb.mWorld = XMMatrixTranspose(
-    //        XMMatrixTranslationFromVector( pntLight.GetPositionVector() ));
-
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
-
-    // draw it
-    //immediateContext->DrawIndexed(1674, 0, 0);
-
-    // Draw Spot Light
-    //cb.mWorld = XMMatrixTranspose(
-    //    XMMatrixTranslationFromVector( sptLight.GetPositionVector() ));
-
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
-
-    //// draw it
-    //immediateContext->DrawIndexed(1674, 0, 0);
-
+    // Draw Planet_1 ===========================================
     advanced_VS.Bind(immediateContext);
-    planet_2_PS.Bind(immediateContext);
-    planet_2_PS.BindShaderResources_1(immediateContext);
+    planet1_PS.Bind(immediateContext);
+    planet1_PS.BindShaderResources_1(immediateContext);
+    XMMATRIX mtranlsation = XMMatrixTranslation(0.0f, 0.0f, 60.0f);
+    XMMATRIX mscale = XMMatrixScaling(0.023f, 0.023f, 0.023f);
+    XMMATRIX mrotationY = XMMatrixRotationY(rot * 0.5f);
+    XMMATRIX Planet1m = mscale * mtranlsation * mrotationY;
+    cb.mWorld = XMMatrixTranspose(Planet1m);
 
-    cb.mWorld = XMMatrixTranspose(/*XMMatrixIdentity()*/ XMMatrixScaling(0.007f, 0.007f, 0.007f));
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+
+    planet_1.Draw();
+
+    // Draw Planet_2 ===========================================
+    planet2_PS.Bind(immediateContext);
+    planet2_PS.BindShaderResources_1(immediateContext);
+
+    mtranlsation = XMMatrixTranslation(0.0f, 0.0f, -220.0f);
+    mscale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
+    mrotationY = XMMatrixRotationY(rot * 0.35f);
+    XMMATRIX Planet2m = mscale * mtranlsation * mrotationY;
+    cb.mWorld = XMMatrixTranspose(Planet2m);
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -967,6 +918,43 @@ void ExecutePipeline()
 
     planet_2.Draw();
 
+    // Draw Planet_3 ===========================================
+    planet3_PS.Bind(immediateContext);
+    planet3_PS.BindShaderResources_1(immediateContext);
+
+    mtranlsation = XMMatrixTranslation(-12.0f, 0.0f, 0.0f);
+    mscale = XMMatrixScaling(0.010f, 0.010f, 0.010f);
+    mrotationY = XMMatrixRotationY(rot * 1.1f);
+    XMMATRIX Planet3m = mscale * mtranlsation * mrotationY ;
+    cb.mWorld = XMMatrixTranspose(Planet3m);
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+
+    planet_3.Draw();
+
+    // Draw Moon ===========================================
+    moon_PS.Bind(immediateContext);
+    moon_PS.BindShaderResources_1(immediateContext);
+
+    mtranlsation = XMMatrixTranslation(800.0f, 0.0f, 0.0f);
+    mscale = XMMatrixScaling(10.0f, 10.0f, 10.0f);
+    mrotationY = XMMatrixRotationY(rot * 1.5f);
+    XMMATRIX Moonm = mscale * mtranlsation * mrotationY;
+    cb.mWorld = XMMatrixTranspose(Moonm * Planet1m);
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)advanced_VS.GetConstantBuffer(), 0);
+
+    moon.Draw();
+
+    // Draw Ship =======================================
     talon_PS.Bind(immediateContext);
     talon_PS.BindShaderResources_1(immediateContext);
     cb.mWorld = XMMatrixTranspose(XMMatrixTranslation(0.0f, -0.5f, 2.0f) * cam.GetWorldMatrix());
@@ -979,12 +967,32 @@ void ExecutePipeline()
 
     talon.Draw();
 
+    // Draw Point to Quad ==================================
+    if (DrawQuad)
+    {
+        solid_PS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
+        gs_VS.Bind(immediateContext);
+        solid_PS.Bind(immediateContext);
+        pntToQuad_GS.Bind(immediateContext);
+        cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+
+        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        // send to Card
+        hr = immediateContext->Map((ID3D11Resource*)gs_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+        immediateContext->Unmap((ID3D11Resource*)gs_VS.GetConstantBuffer(), 0);
+
+        point.Draw();
+        immediateContext->GSSetShader(nullptr, nullptr, 0);
+    }
+
+    // Draw Skybox =====================================
     immediateContext->RSSetState(RSCullNone); // turn back face culling off
     immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
     skybox_VS.Bind(immediateContext);
     skybox_PS.Bind(immediateContext);
     skybox_PS.BindShaderResources_1(immediateContext);
-    cb.mWorld = XMMatrixTranspose(XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixTranslationFromVector(cam.GetPositionVector()));
+    cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(cam.GetPositionVector()));
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
     // send to Card
@@ -996,19 +1004,22 @@ void ExecutePipeline()
     immediateContext->RSSetState(nullptr);
     immediateContext->OMSetDepthStencilState(nullptr, 0);
 
-    // Draw Grid=====================================================================================
+    // Draw Grid ========================================
+    if (DrawGrid)
+    {
+        solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
+        default_VS.Bind(immediateContext);
+        solid_PS.Bind(immediateContext);
+        cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
 
-    default_VS.Bind(immediateContext);
-    solid_PS.Bind(immediateContext);
-    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        // send to Card
+        hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+        immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
 
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-
-    grid.Draw();
+        grid.Draw();
+    }
 
 
     // change 1 to 0 vsync

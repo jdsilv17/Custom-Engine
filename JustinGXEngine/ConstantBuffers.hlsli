@@ -54,6 +54,14 @@ struct PS_SKY_INPUT
     float3 UVW : TEXCOORD;
 };
 
+struct GS_OUTPUT
+{
+    float4 Pos : SV_POSITION;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float3 UVW : TEXCOORD;
+};
+
 
 // PS Functions============================================================
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse);
@@ -94,7 +102,7 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
     float4 ReflectedLight = 0;
     ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 25.0f, 0.8f);
     
-    float ambientTerm = 0.5f;
+    float ambientTerm = 1.0f;
     //float4 ambientColor = lColor * ambientTerm;
     
     float angularAttenuation = saturate((dot(lightDir, sNormal) + ambientTerm));

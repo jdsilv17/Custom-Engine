@@ -29,10 +29,12 @@ public:
 	Mesh(	ID3D11Device* device, 
 			ID3D11DeviceContext* deviceContext, 
 			std::vector<T>& _vertexList, 
-			std::vector<int>& _indicesList );
+			std::vector<int>& _indicesList,
+			D3D_PRIMITIVE_TOPOLOGY _primitive );
 	Mesh(	ID3D11Device* device,
 			ID3D11DeviceContext* deviceContext,
-			std::vector<T>& _vertexList	);
+			std::vector<T>& _vertexList,
+			D3D_PRIMITIVE_TOPOLOGY _primitive );
 
 	~Mesh();								
 	Mesh(const Mesh<T>& that);					
@@ -68,26 +70,28 @@ template<typename T>
 Mesh<T>::Mesh(	ID3D11Device* _device, 
 				ID3D11DeviceContext* _deviceContext, 
 				std::vector<T>& _vertexList, 
-				std::vector<int>& _indicesList	)
+				std::vector<int>& _indicesList,
+				D3D_PRIMITIVE_TOPOLOGY _primitive)
 {
 	this->DeviceContext = _deviceContext;
 	this->VertexList = _vertexList;
 	vertexCount = _vertexList.size();
 	indexCount = _indicesList.size();
 	this->IndicesList = _indicesList;
-	//this->Primitive = _primitive;
+	this->Primitive = _primitive;
 	this->InitMesh(_device);
 }
 
 template<typename T>
 Mesh<T>::Mesh(ID3D11Device* _device,
 	ID3D11DeviceContext* _deviceContext,
-	std::vector<T>& _vertexList )
+	std::vector<T>& _vertexList,  
+	D3D_PRIMITIVE_TOPOLOGY _primitive )
 {
 	this->DeviceContext = _deviceContext;
 	this->VertexList = _vertexList;
 	this->vertexCount = _vertexList.size();
-	this->Primitive = D3D10_PRIMITIVE_TOPOLOGY_LINELIST;
+	this->Primitive = _primitive;
 
 	this->InitMesh(_device);
 }
@@ -140,7 +144,7 @@ void Mesh<T>::InitMesh(ID3D11Device* device)
 
 	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList, this->VertexBuffer);
 
-	if (this->Primitive != D3D10_PRIMITIVE_TOPOLOGY_LINELIST)
+	if (this->Primitive == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
 		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList, this->IndexBuffer);
 }
 
@@ -149,17 +153,30 @@ void Mesh<T>::Draw()
 {
 	UINT offset = 0;
 	UINT strides = sizeof(T);
+
 	this->DeviceContext->IASetVertexBuffers(0, 1, this->VertexBuffer.GetAddressOf(), &strides, &offset);
-	if (this->IndexBuffer)
+
+	switch (this->Primitive)
 	{
-		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	case D3D11_PRIMITIVE_TOPOLOGY_POINTLIST:
+		this->DeviceContext->IASetPrimitiveTopology(this->Primitive);
+		this->DeviceContext->Draw(this->vertexCount, 0);
+		break;
+	case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST:
+		this->DeviceContext->IASetPrimitiveTopology(this->Primitive);
 		this->DeviceContext->IASetIndexBuffer(this->IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 		this->DeviceContext->DrawIndexed(this->indexCount, 0, 0);
-	}
-	else
-	{
-		this->DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
+		break;
+	case D3D11_PRIMITIVE_TOPOLOGY_LINELIST:
+		this->DeviceContext->IASetPrimitiveTopology(this->Primitive);
 		this->DeviceContext->Draw(this->vertexCount, 0);
+		break;
+	case D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP:
+		this->DeviceContext->IASetPrimitiveTopology(this->Primitive);
+		this->DeviceContext->Draw(this->vertexCount, 0);
+		break;
+	default:
+		break;
 	}
 }
 

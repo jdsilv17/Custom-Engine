@@ -167,7 +167,10 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Assets\headers\Moon.h" />
+    <ClInclude Include="Assets\headers\Planet_1.h" />
     <ClInclude Include="Assets\headers\Planet_2.h" />
+    <ClInclude Include="Assets\headers\Planet_3.h" />
     <ClInclude Include="Assets\headers\StoneHenge.h" />
     <ClInclude Include="Assets\headers\talon.h" />
     <ClInclude Include="Assets\headers\test pyramid.h" />
@@ -205,6 +208,12 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Geo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="MeshVertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">5.0</ShaderModel>

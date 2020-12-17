@@ -75,6 +75,15 @@
     <ClInclude Include="Assets\headers\talon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Assets\headers\Moon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\Planet_1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\Planet_3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JustinGXEngine.cpp">
@@ -138,6 +147,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="PointToQuad_GS.hlsl" />
+    <FxCompile Include="Geo_VS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ConstantBuffers.hlsli">
