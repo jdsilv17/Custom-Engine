@@ -427,46 +427,46 @@ HRESULT InitContent()
     ZeroMemory(&subData, sizeof(subData));
 
     // write, compile & load our shaders
-    hr = advanced_VS.Initialize(myDevice, "./Debug/MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
+    hr = advanced_VS.Initialize(myDevice, "./MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
 
-    hr = default_VS.Initialize(myDevice, "./Debug/VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
+    hr = default_VS.Initialize(myDevice, "./VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
 
-    hr = skybox_VS.Initialize(myDevice, "./Debug/SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
+    hr = skybox_VS.Initialize(myDevice, "./SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
 
-    hr = gs_VS.Initialize(myDevice, "./Debug/Geo_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
+    hr = gs_VS.Initialize(myDevice, "./Geo_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
 
     //std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
-    //hr = advanced_PS.Initialize_ALL(myDevice, "./Debug/PixelShader.cso", sizeof(WVP), textures);
+    //hr = advanced_PS.Initialize_ALL(myDevice, "./PixelShader.cso", sizeof(WVP), textures);
     //advanced_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = solid_PS.Initialize(myDevice, "./Debug/PS_Solid.cso", sizeof(WVP));
+    hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", sizeof(WVP));
     solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
     
-    hr = skybox_PS.Initialize(myDevice, "./Debug/SkyBox_PS.cso", sizeof(WVP)); // change to include texture
+    hr = skybox_PS.Initialize(myDevice, "./SkyBox_PS.cso", sizeof(WVP)); // change to include texture
     hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/OrangeSpace_CubeMap.dds");
     skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
 
-    hr = planet1_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet1_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
     hr = planet1_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet_Diffuse.dds");
     planet1_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = planet2_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet2_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
     hr = planet2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
     planet2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = planet3_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet3_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
     hr = planet3_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet4_Diffuse.dds");
     planet3_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = moon_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = moon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
     hr = moon_PS.InitShaderResources(myDevice, "./Assets/Textures/moon_Diffuse.dds");
     moon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = talon_PS.Initialize(myDevice, "./Debug/SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = talon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
     hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
     talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = pntToQuad_GS.Initialize(myDevice, "./Debug/PointToQuad_GS.cso", sizeof(WVP));
+    hr = pntToQuad_GS.Initialize(myDevice, "./PointToQuad_GS.cso", sizeof(WVP));
     pntToQuad_GS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
 
 
