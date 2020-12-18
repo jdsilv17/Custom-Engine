@@ -7,7 +7,7 @@ cbuffer ConstantBuffer : register(b0) // b for buffer
     float4 LightDir[3];
     float4 LightColor[3];
     float4 camPos;
-    float4 OutputColor;
+    float4 totalTime;
 }
 
 struct VS_INPUT
@@ -66,6 +66,7 @@ struct GS_OUTPUT
 // PS Functions============================================================
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse);
 float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse);
+float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse, float4 specDiffuse);
 float4 CalcSpotLight(float4 lPos, float3 coneDir, float4 lColor, float4 sPos, float3 sNormal, float4 tDiffuse);
 float CalcLinearAttenuation(float4 lPos, float lRadius, float4 sPos);
 float CalcLinearAttenuation(float innerConeRatio, float outerConeRatio, float surfaceRatio);
@@ -100,9 +101,35 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
     
     // Specular Component
     float4 ReflectedLight = 0;
-    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 25.0f, 0.8f);
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 20.0f, 0.8f);
     
     float ambientTerm = 1.0f;
+    //float4 ambientColor = lColor * ambientTerm;
+    
+    float angularAttenuation = saturate((dot(lightDir, sNormal) + ambientTerm));
+    
+    float rangeAttenuation = pow(1.0f - (dist / lRadius), 2.0f); // lightrange
+    
+    float linearAttenuation = CalcLinearAttenuation(lPos, lRadius, sPos);
+    
+    float4 finalColor = tDiffuse * lColor * angularAttenuation * rangeAttenuation * linearAttenuation + ReflectedLight;
+    
+    return finalColor;
+}
+
+float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, float3 sNormal, float4 tDiffuse, float4 specDiffuse)
+{
+    float3 lightDir = lPos.xyz - sPos.xyz;
+    float dist = length(lightDir);
+    lightDir = normalize(lightDir);
+    lightDir /= dist;
+    
+    // Specular Component
+    float4 ReflectedLight = 0;
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 20.0f, 0.8f);
+    ReflectedLight *= specDiffuse;
+    
+    float ambientTerm = 0.0f;
     //float4 ambientColor = lColor * ambientTerm;
     
     float angularAttenuation = saturate((dot(lightDir, sNormal) + ambientTerm));

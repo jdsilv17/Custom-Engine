@@ -85,5 +85,6 @@ private:
 	DirectX::XMVECTOR left_V;
 	DirectX::XMVECTOR right_V;
 
+	void UpdateWorldMatrix();
 	void UpdateTransform();
 };

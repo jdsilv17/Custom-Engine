@@ -2,9 +2,10 @@
 
 Object::Object()
 {
+	this->SetWorld(DirectX::XMMatrixIdentity());
 	this->SetPosition(0.0f, 0.0f, 0.0f);
 	this->SetRotation(0.0f, 0.0f, 0.0f);
-	this->SetScale(0.0f, 0.0f, 0.0f);
+	this->SetScale(1.0f, 1.0f, 1.0f);
 }
 
 const DirectX::XMMATRIX& Object::GetWorldMatrix() const
@@ -88,36 +89,42 @@ void Object::SetPosition(const DirectX::XMVECTOR& pos)
 {
 	this->Pos_V = pos;
 	DirectX::XMStoreFloat4(&this->Pos_F4, pos);
+	this->UpdateWorldMatrix();
 }
 
 void Object::SetPosition(float x, float y, float z)
 {
 	this->Pos_F4 = DirectX::XMFLOAT4(x, y, z, 1.0f);
 	this->Pos_V = DirectX::XMLoadFloat4(&this->Pos_F4);
+	this->UpdateWorldMatrix();
 }
 
 void Object::SetRotation(const DirectX::XMVECTOR& rot)
 {
 	this->Rot_V = rot;
 	DirectX::XMStoreFloat3(&this->Rot_F3, rot);
+	this->UpdateWorldMatrix();
 }
 
 void Object::SetRotation(float x, float y, float z)
 {
 	this->Rot_F3 = DirectX::XMFLOAT3(x, y, z);
 	this->Rot_V = DirectX::XMLoadFloat3(&this->Rot_F3);
+	this->UpdateWorldMatrix();
 }
 
 void Object::SetScale(const DirectX::XMVECTOR& scale)
 {
 	this->Scale_V = scale;
 	DirectX::XMStoreFloat3(&this->Scale_F3, scale);
+	this->UpdateWorldMatrix();
 }
 
 void Object::SetScale(float x, float y, float z)
 {
 	this->Scale_F3 = DirectX::XMFLOAT3(x, y, z);
 	this->Scale_V = DirectX::XMLoadFloat3(&this->Scale_F3);
+	this->UpdateWorldMatrix();
 }
 
 void Object::SetForwardVector(const DirectX::XMVECTOR& forward)
@@ -140,10 +147,24 @@ void Object::SetRightVector(const DirectX::XMVECTOR& right)
 	this->right_V = right;
 }
 
+void Object::UpdateWorldMatrix()
+{
+	DirectX::XMMATRIX translation = DirectX::XMMatrixTranslationFromVector(this->GetPositionVector());
+	DirectX::XMMATRIX rotationX = DirectX::XMMatrixRotationX(this->GetRotationFloat4().x);
+	DirectX::XMMATRIX rotationY = DirectX::XMMatrixRotationY(this->GetRotationFloat4().y);
+	DirectX::XMMATRIX rotationZ = DirectX::XMMatrixRotationZ(this->GetRotationFloat4().z);
+	DirectX::XMMATRIX rotation = rotationZ * rotationX * rotationY;
+	DirectX::XMMATRIX scale = DirectX::XMMatrixScalingFromVector(this->GetScaleVector());
+
+	DirectX::XMMATRIX world = scale * rotation * translation;
+	this->SetWorld(world);
+}
+
 void Object::UpdatePosition(const DirectX::XMVECTOR& pos)
 {
 	this->Pos_V = DirectX::XMVectorAdd(this->Pos_V, pos);
 	DirectX::XMStoreFloat4(&this->Pos_F4, this->Pos_V);
+	this->UpdateWorldMatrix();
 }
 
 void Object::UpdatePosition(float x, float y, float z)
@@ -152,12 +173,14 @@ void Object::UpdatePosition(float x, float y, float z)
 	this->Pos_F4.y += y;
 	this->Pos_F4.z += z;
 	this->Pos_V = DirectX::XMLoadFloat4(&this->Pos_F4);
+	this->UpdateWorldMatrix();
 }
 
 void Object::UpdateRotation(const DirectX::XMVECTOR& rot)
 {
 	this->Rot_V = DirectX::XMVectorAdd(this->Rot_V, rot);
 	DirectX::XMStoreFloat3(&this->Rot_F3, this->Rot_V);
+	this->UpdateWorldMatrix();
 }
 
 void Object::UpdateRotation(float x, float y, float z)
@@ -166,12 +189,14 @@ void Object::UpdateRotation(float x, float y, float z)
 	this->Rot_F3.y += y;
 	this->Rot_F3.z += z;
 	this->Rot_V = DirectX::XMLoadFloat3(&this->Rot_F3);
+	this->UpdateWorldMatrix();
 }
 
 void Object::UpdateScale(const DirectX::XMVECTOR& scale)
 {
 	this->Scale_V = DirectX::XMVectorAdd(this->Scale_V, scale);
 	DirectX::XMStoreFloat3(&this->Scale_F3, this->Scale_V);
+	this->UpdateWorldMatrix();
 }
 
 void Object::UpdateScale(float x, float y, float z)
@@ -180,6 +205,7 @@ void Object::UpdateScale(float x, float y, float z)
 	this->Scale_F3.y += y;
 	this->Scale_F3.z += z;
 	this->Scale_V = DirectX::XMLoadFloat3(&this->Scale_F3);
+	this->UpdateWorldMatrix();
 }
 
 void Object::UpdateTransform()

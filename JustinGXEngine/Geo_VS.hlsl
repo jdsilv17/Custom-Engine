@@ -1,7 +1,5 @@
 #include "ConstantBuffers.hlsli"
 
-//#pragma pack_matrix(row_major)
-
 VS_DEFAULT_INPUT main(VS_DEFAULT_INPUT input)
 {
     VS_DEFAULT_INPUT output = (VS_DEFAULT_INPUT) 0;
