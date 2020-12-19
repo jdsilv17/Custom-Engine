@@ -234,8 +234,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
 
-        DrawDwarfScene();
-        //DrawSpaceScene();
+        //DrawDwarfScene();
+        DrawSpaceScene();
     }
 
     // release all our D3D11 interfaces
@@ -487,25 +487,25 @@ HRESULT InitContent()
 
 
     #pragma region SpaceScene Shaders
-    //hr = planet1_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    //hr = planet1_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet_Diffuse.dds");
-    //planet1_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = planet1_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet1_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet_Diffuse.dds");
+    planet1_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    //hr = planet2_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    //hr = planet2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
-    //planet2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = planet2_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
+    planet2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    //hr = planet3_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    //hr = planet3_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet4_Diffuse.dds");
-    //planet3_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = planet3_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = planet3_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet4_Diffuse.dds");
+    planet3_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    //hr = moon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    //hr = moon_PS.InitShaderResources(myDevice, "./Assets/Textures/moon_Diffuse.dds");
-    //moon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = moon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = moon_PS.InitShaderResources(myDevice, "./Assets/Textures/moon_Diffuse.dds");
+    moon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    //hr = talon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    //hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
-    //talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    hr = talon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
+    talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 #pragma endregion
 
     MakeGrid(20.0f, 25);
@@ -594,56 +594,56 @@ HRESULT InitContent()
     indices.clear(); indices.shrink_to_fit();
     
     #pragma region SpaceScene Meshes
-    //// PLANET_1 =================================
-    //std::vector<_OBJ_VERT_> planetVerts;
-    //numOfVerts = ARRAYSIZE(Planet_1_data);
-    //for (size_t i = 0; i < numOfVerts; ++i)
-    //    planetVerts.push_back(Planet_1_data[i]);
-    //std::vector<int> planetIndices;
-    //numOfElements = ARRAYSIZE(Planet_1_indicies);
-    //for (size_t i = 0; i < numOfElements; ++i)
-    //    planetIndices.push_back(Planet_1_indicies[i]);
-    //planet_1 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    //// PLANET_2 =================================
-    //planetVerts.clear();
-    //planetIndices.clear();
-    //numOfVerts = ARRAYSIZE(Planet_2_data);
-    //for (size_t i = 0; i < numOfVerts; ++i)
-    //    planetVerts.push_back(Planet_2_data[i]);
-    //numOfElements = ARRAYSIZE(Planet_2_indicies);
-    //for (size_t i = 0; i < numOfElements; ++i)
-    //    planetIndices.push_back(Planet_2_indicies[i]);
-    //planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    //// PLANET_3 =================================
-    //planetVerts.clear();
-    //planetIndices.clear();
-    //numOfVerts = ARRAYSIZE(Planet_3_data);
-    //for (size_t i = 0; i < numOfVerts; ++i)
-    //    planetVerts.push_back(Planet_3_data[i]);
-    //numOfElements = ARRAYSIZE(Planet_3_indicies);
-    //for (size_t i = 0; i < numOfElements; ++i)
-    //    planetIndices.push_back(Planet_3_indicies[i]);
-    //planet_3 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    //// MOON ====================================
-    //planetVerts.clear();
-    //planetIndices.clear();
-    //numOfVerts = ARRAYSIZE(Moon_data);
-    //for (size_t i = 0; i < numOfVerts; ++i)
-    //    planetVerts.push_back(Moon_data[i]);
-    //numOfElements = ARRAYSIZE(Moon_indicies);
-    //for (size_t i = 0; i < numOfElements; ++i)
-    //    planetIndices.push_back(Moon_indicies[i]);
-    //moon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    //// TALON ===================================
-    //std::vector<_OBJ_VERT_> talonVerts;
-    //numOfVerts = ARRAYSIZE(talon_data);
-    //for (size_t i = 0; i < numOfVerts; ++i)
-    //    talonVerts.push_back(talon_data[i]);
-    //std::vector<int> talonIndices;
-    //numOfElements = ARRAYSIZE(talon_indicies);
-    //for (size_t i = 0; i < numOfElements; ++i)
-    //    talonIndices.push_back(talon_indicies[i]);
-    //talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // PLANET_1 =================================
+    std::vector<_OBJ_VERT_> planetVerts;
+    numOfVerts = ARRAYSIZE(Planet_1_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Planet_1_data[i]);
+    std::vector<int> planetIndices;
+    numOfElements = ARRAYSIZE(Planet_1_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Planet_1_indicies[i]);
+    planet_1 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // PLANET_2 =================================
+    planetVerts.clear();
+    planetIndices.clear();
+    numOfVerts = ARRAYSIZE(Planet_2_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Planet_2_data[i]);
+    numOfElements = ARRAYSIZE(Planet_2_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Planet_2_indicies[i]);
+    planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // PLANET_3 =================================
+    planetVerts.clear();
+    planetIndices.clear();
+    numOfVerts = ARRAYSIZE(Planet_3_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Planet_3_data[i]);
+    numOfElements = ARRAYSIZE(Planet_3_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Planet_3_indicies[i]);
+    planet_3 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // MOON ====================================
+    planetVerts.clear();
+    planetIndices.clear();
+    numOfVerts = ARRAYSIZE(Moon_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        planetVerts.push_back(Moon_data[i]);
+    numOfElements = ARRAYSIZE(Moon_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        planetIndices.push_back(Moon_indicies[i]);
+    moon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // TALON ===================================
+    std::vector<_OBJ_VERT_> talonVerts;
+    numOfVerts = ARRAYSIZE(talon_data);
+    for (size_t i = 0; i < numOfVerts; ++i)
+        talonVerts.push_back(talon_data[i]);
+    std::vector<int> talonIndices;
+    numOfElements = ARRAYSIZE(talon_indicies);
+    for (size_t i = 0; i < numOfElements; ++i)
+        talonIndices.push_back(talon_indicies[i]);
+    talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 #pragma endregion
 
     std::vector<VERTEX> pnt_Vert;
