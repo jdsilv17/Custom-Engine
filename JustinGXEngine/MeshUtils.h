@@ -34,6 +34,19 @@ struct VERTEX
 
 };
 
+struct COLORED_VERTEX
+{
+    DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
+    DirectX::XMFLOAT4 color = { 0, 0, 0, 0 };
+
+    COLORED_VERTEX() {}
+    COLORED_VERTEX(const DirectX::XMFLOAT4& _pos)
+        : pos(_pos) {}
+    COLORED_VERTEX(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT4& _col)
+        : pos(_pos), color(_col) {}
+
+};
+
 struct VERTEX_TANGENT
 {
     DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
@@ -76,6 +89,12 @@ const D3D11_INPUT_ELEMENT_DESC vertexInputLayoutDesc[] =
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0},
 };
 
+const D3D11_INPUT_ELEMENT_DESC coloredVertexLayoutDesc[] =
+{
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
+};
+
 const D3D11_INPUT_ELEMENT_DESC tangentInputLayoutDesc[] =
 {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -98,9 +117,9 @@ const D3D11_INPUT_ELEMENT_DESC cubeLayoutDesc[] =
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
 };
 
-static std::vector<VERTEX> lines;
-static void MakeGrid(float gridSize, int lineCount) 
+std::vector<VERTEX> MakeGrid(float gridSize, int lineCount) 
 {
+    std::vector<VERTEX> lines;
     // need: size, spacing, linecount, 
     float lineSpacing = gridSize / static_cast<float>(lineCount);
 
@@ -150,4 +169,87 @@ static void MakeGrid(float gridSize, int lineCount)
         // move over on the x-axis by the spacing
         z += lineSpacing;
     }
+
+    return lines;
+}
+
+std::vector<VERTEX> MakeColorGrid(float gridSize, int lineCount, float deltaTime)
+{
+    std::vector<VERTEX> lines;
+
+    // need: size, spacing, linecount, 
+    int maxVerts = 2048;
+    if (lineCount * 4 > maxVerts)
+        lineCount = 510;
+
+    float lineSpacing = gridSize / static_cast<float>(lineCount);
+
+    float x = -gridSize / 2.0f; // starting point
+    float z = -gridSize / 2.0f; // starting point
+
+
+    DirectX::XMVECTOR zero = { 0.0f, 0.0f, 0.0f, 1.0f };
+    DirectX::XMVECTOR one = { 1.0f, 1.0f, 1.0f, 1.0f };
+    static DirectX::XMFLOAT4 color;
+    static bool max = false;
+
+    if (max)
+    {
+        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(zero, DirectX::XMLoadFloat4(&color), 0.1f ));
+        if (color.x <= 0.0f && color.y <= 0.0f && color.z <= 0.0f)
+            max = false;
+    }
+    else if (!max)
+    {
+        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(one, DirectX::XMLoadFloat4(&color), 0.5f ));
+        if (color.x >= 1.0f && color.y >= 1.0f && color.z >= 1.0f)
+            max = true;
+    }
+
+
+    // create lines along x-axis
+    for (int i = 0; i <= lineCount; ++i)
+    {
+        // create the line
+        if (i == lineCount / 2)
+        {
+            // far point
+            lines.push_back(VERTEX({ x, 0.0f, z + gridSize, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
+            // near point
+            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
+        }
+        else
+        {
+            // far point
+            lines.push_back(VERTEX({ x, 0.0f, z + gridSize, 1.0f }, color));
+            // near point
+            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, color));
+        }
+        // move over on the x-axis by the spacing
+        x += lineSpacing;
+    }
+    x = -gridSize / 2.0f;
+    // create lines along z-axis
+    for (int i = 0; i <= lineCount; ++i)
+    {
+        // create the line
+        if (i == lineCount / 2)
+        {
+            // left point
+            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
+            // right point
+            lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
+        }
+        else
+        {
+            // left point
+            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, color));
+            // right point
+            lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, color));
+        }
+        // move over on the x-axis by the spacing
+        z += lineSpacing;
+    }
+
+    return lines;
 }

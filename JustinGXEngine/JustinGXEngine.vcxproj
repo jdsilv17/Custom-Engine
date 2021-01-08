@@ -187,10 +187,11 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshUtils.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="pools.h" />
     <ClInclude Include="RenderUtils.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Shaders.h" />
-    <ClInclude Include="SkyBox.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Time.h" />
   </ItemGroup>
@@ -200,8 +201,8 @@
     <ClCompile Include="JustinGXEngine.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Particle.cpp" />
     <ClCompile Include="Shaders.cpp" />
-    <ClCompile Include="SkyBox.cpp" />
     <ClCompile Include="Time.cpp" />
   </ItemGroup>
   <ItemGroup>

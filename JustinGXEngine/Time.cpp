@@ -38,5 +38,16 @@ void Time::Restart()
 
 double Time::GetMillisecondsElapsed()
 {
-	return 0.0;
+	if (this->isRunning)
+	{
+		auto t = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - this->start);
+		this->deltaTime = t.count();
+		return t.count();
+	}
+	else
+	{
+		auto t = std::chrono::duration<double, std::milli>(this->stop - this->start);
+		this->deltaTime = t.count();
+		return t.count();
+	}
 }

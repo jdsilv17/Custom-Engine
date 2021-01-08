@@ -14,6 +14,9 @@ public:
 
 	double GetMillisecondsElapsed();
 
+	// The elasped time between each frame in seconds
+	double deltaTime = 0.0;
+
 private:
 	bool isRunning = false;
 

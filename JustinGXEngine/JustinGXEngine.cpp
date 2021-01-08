@@ -8,6 +8,7 @@
 #include "Camera.h"
 #include "Light.h"
 #include "Shaders.h"
+#include "Time.h"
 
 #include "./Assets/headers/DwarfArmor.h"
 #include "./Assets/headers/DwarfAxe.h"
@@ -97,6 +98,7 @@ ID3D11Debug* debug = nullptr;
 #endif
 
 // Objects
+Time gTimer;
 Camera cam;
 Mesh<VERTEX> grid;
 Mesh<_OBJ_VERT_> DwarfBody;
@@ -144,7 +146,7 @@ Shaders::PixelShader talon_PS;
 Shaders::GeometryShader pntToQuad_GS;
 
 bool DrawQuad = false;
-bool DrawGrid = false;
+bool DrawGrid = true;
 
 
 
@@ -166,6 +168,7 @@ void                CleanUp();
 void                CatchInput();
 void                DrawSpaceScene();
 void                DrawDwarfScene();
+void                Update();
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -224,6 +227,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //}
 
     // Main message loop:
+
+    gTimer.Start();
     while (msg.message != WM_QUIT) //GetMessage(&msg, nullptr, 0, 0)) waits for message
     {
         PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE);
@@ -234,10 +239,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
 
-        //DrawDwarfScene();
+        Update();
         DrawSpaceScene();
+        //DrawDwarfScene();
     }
-
+    gTimer.Stop();
     // release all our D3D11 interfaces
     CleanUp();
 
@@ -508,8 +514,8 @@ HRESULT InitContent()
     talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 #pragma endregion
 
-    MakeGrid(20.0f, 25);
-    grid = Mesh<VERTEX>(myDevice, immediateContext, lines, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+    //std::vector<VERTEX> lines = MakeGrid(20.0f, 25);
+    //grid = Mesh<VERTEX>(myDevice, immediateContext, lines, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
     std::vector<_OBJ_VERT_> verts;
     std::vector<int> indices;
@@ -734,6 +740,10 @@ void CleanUp()
 /// </summary>
 void CatchInput()
 {
+    static Time uTimer;
+    uTimer.GetMillisecondsElapsed();
+    uTimer.Restart();
+
     const float cameraSpeed = 0.02f;
 
     POINT curr_point = { 0,0 };
@@ -749,44 +759,33 @@ void CatchInput()
 
     prev_point = curr_point; // keep the current pos of the current frame to use in the next frame
 
-    //static float time = 0.0f;
-    //static ULONGLONG timeStart = 0;
-    //ULONGLONG timeCur = GetTickCount64();
-    //if (timeStart == 0)
-    //    timeStart = timeCur;
-    //time = (timeCur - timeStart) / 1000.0f;
-
-    //float rot = (6.0f * (XM_PI / 180.0f)) * time;
-    //DwarfBody.SetRotation(0.0f, rot, 0.0f);
-
     if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
     {
         cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
     }
     if (GetAsyncKeyState('W') & 0x8000)
     {
-        cam.UpdatePosition(cam.GetForwardVector() * cameraSpeed);
+        cam.UpdatePosition(cam.GetForwardVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('A') & 0x8000)
     {
-        //DwarfBody.UpdateRotation(0.0f, 25.0f * (XM_PI / 180.0f), 0.0f);
-        cam.UpdatePosition(cam.GetLeftVector() * cameraSpeed);
+        cam.UpdatePosition(cam.GetLeftVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('S') & 0x8000)
     {
-        cam.UpdatePosition(cam.GetBackwardVector() * cameraSpeed);
+        cam.UpdatePosition(cam.GetBackwardVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('D') & 0x8000)
     {
-        cam.UpdatePosition(cam.GetRightVector() * cameraSpeed);
+        cam.UpdatePosition(cam.GetRightVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState(VK_SPACE) & 0x8000)
     {
-        cam.UpdatePosition(cam.GetUpVector() * cameraSpeed);
+        cam.UpdatePosition(cam.GetUpVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('X') & 0x8000)
     {
-        cam.UpdatePosition(cam.GetUpVector() * -cameraSpeed);
+        cam.UpdatePosition(cam.GetUpVector() * -cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('Q') & 0x0001)
     {
@@ -967,7 +966,6 @@ void DrawSpaceScene()
     immediateContext->RSSetViewports(1, &vPort);
         // PS (Pixel Shader)
         // OM (Output Merger)
-    ID3D11RenderTargetView* tempRTV[] = { RTV };
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
 
 
@@ -975,13 +973,8 @@ void DrawSpaceScene()
         // Create and update a constant buffer (move variables from C++ to shaders)
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
     HRESULT hr;
-
-    CatchInput();
     
-    static float rot = 0; rot += 0.005f;
-    XMMATRIX temp = XMMatrixRotationY(rot);
-
-    XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
+    //static float rot = 0; rot += 0.005f;
     ConstantBuffer cb = {};
 
     cb.mView = XMMatrixTranspose( cam.GetViewMatrix() );
@@ -1011,6 +1004,7 @@ void DrawSpaceScene()
     XMStoreFloat4(&wvp.LightColor[1], pntLight.GetLightColorVector());
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
+    wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
 
     //======================================================================================================================
 
@@ -1020,7 +1014,7 @@ void DrawSpaceScene()
     planet1_PS.BindShaderResources_1(immediateContext);
     XMMATRIX mtranlsation = XMMatrixTranslation(0.0f, 0.0f, 60.0f);
     XMMATRIX mscale = XMMatrixScaling(0.023f, 0.023f, 0.023f);
-    XMMATRIX mrotationY = XMMatrixRotationY(rot * 0.5f);
+    XMMATRIX mrotationY = XMMatrixRotationY(((float)gTimer.deltaTime / 1000.0f) * 0.5f);
     XMMATRIX Planet1m = mscale * mtranlsation * mrotationY;
     cb.mWorld = XMMatrixTranspose(Planet1m);
 
@@ -1038,7 +1032,7 @@ void DrawSpaceScene()
 
     mtranlsation = XMMatrixTranslation(0.0f, 0.0f, -220.0f);
     mscale = XMMatrixScaling(0.2f, 0.2f, 0.2f);
-    mrotationY = XMMatrixRotationY(rot * 0.35f);
+    mrotationY = XMMatrixRotationY(((float)gTimer.deltaTime / 1000.0f) * 0.35f);
     XMMATRIX Planet2m = mscale * mtranlsation * mrotationY;
     cb.mWorld = XMMatrixTranspose(Planet2m);
 
@@ -1056,7 +1050,7 @@ void DrawSpaceScene()
 
     mtranlsation = XMMatrixTranslation(-12.0f, 0.0f, 0.0f);
     mscale = XMMatrixScaling(0.010f, 0.010f, 0.010f);
-    mrotationY = XMMatrixRotationY(rot * 1.1f);
+    mrotationY = XMMatrixRotationY(((float)gTimer.deltaTime / 1000.0f) * 1.1f);
     XMMATRIX Planet3m = mscale * mtranlsation * mrotationY ;
     cb.mWorld = XMMatrixTranspose(Planet3m);
 
@@ -1074,7 +1068,7 @@ void DrawSpaceScene()
 
     mtranlsation = XMMatrixTranslation(800.0f, 0.0f, 0.0f);
     mscale = XMMatrixScaling(10.0f, 10.0f, 10.0f);
-    mrotationY = XMMatrixRotationY(rot * 1.5f);
+    mrotationY = XMMatrixRotationY(((float)gTimer.deltaTime / 1000.0f) * XM_PI);
     XMMATRIX Moonm = mscale * mtranlsation * mrotationY;
     cb.mWorld = XMMatrixTranspose(Moonm * Planet1m);
 
@@ -1139,6 +1133,9 @@ void DrawSpaceScene()
     // Draw Grid ========================================
     if (DrawGrid)
     {
+        std::vector<VERTEX> lines = MakeGrid(20.0f, 25);
+        //std::vector<VERTEX> lines = MakeColorGrid(20.0f, 25, (float)gTimer.deltaTime);
+        grid = Mesh<VERTEX>(myDevice, immediateContext, lines, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
         solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
         default_VS.Bind(immediateContext);
         solid_PS.Bind(immediateContext);
@@ -1149,7 +1146,6 @@ void DrawSpaceScene()
         hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
         memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
         immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-
         grid.Draw();
     }
 
@@ -1169,9 +1165,8 @@ void DrawDwarfScene()
         // VS (Vertex Shader)
         // RS (Rasterizer Stage)
     immediateContext->RSSetViewports(1, &vPort);
-    // PS (Pixel Shader)
-    // OM (Output Merger)
-    ID3D11RenderTargetView* tempRTV[] = { RTV };
+        // PS (Pixel Shader)
+        // OM (Output Merger)
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
     immediateContext->OMSetBlendState(blendState, 0, 0xffffffff);
 
@@ -1179,8 +1174,6 @@ void DrawDwarfScene()
         // Create and update a constant buffer (move variables from C++ to shaders)
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
     HRESULT hr;
-
-    CatchInput();
 
     XMMATRIX temp2 = XMMatrixTranslation(1.5f, 0, 0);
     ConstantBuffer cb = {};
@@ -1228,7 +1221,7 @@ void DrawDwarfScene()
     XMMATRIX temp;
     XMMATRIX mtranlsation = XMMatrixTranslation(0.0f, 0.0f, 60.0f);
     XMMATRIX mscale = XMMatrixScaling(0.023f, 0.023f, 0.023f);
-    XMMATRIX mrotation = XMMatrixRotationY((6.0f * (XM_PI / 180.0f)) * time);
+    XMMATRIX mrotation = XMMatrixRotationY((6.0f * (XM_PI / 180.0f)) * (float)gTimer.deltaTime);
     cb.mWorld = XMMatrixTranspose(mrotation * DwarfBody.GetWorldMatrix());
 
     XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
@@ -1335,4 +1328,12 @@ void DrawDwarfScene()
 
     bool vysnc = true;
     swapChain->Present(vysnc, 0);
+}
+
+void Update()
+{
+    gTimer.GetMillisecondsElapsed();
+
+    CatchInput();
+
 }

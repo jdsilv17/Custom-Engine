@@ -32,6 +32,12 @@ struct VS_DEFAULT_INPUT
     float2 UV : TEXCOORD;
 };
 
+struct VS_COLOR_INPUT
+{
+    float4 Pos : POSITION;
+    float4 Color : COLOR;
+};
+
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;

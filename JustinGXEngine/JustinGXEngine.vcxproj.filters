@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{d309fa0a-78a1-4023-b6d9-76d5df1364d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Model Headers">
+      <UniqueIdentifier>{9b4020bb-3865-4564-b91f-8267c55e390d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -30,16 +33,10 @@
     <ClInclude Include="JustinGXEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Assets\headers\StoneHenge.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MeshUtils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Assets\headers\test pyramid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DDSTextureLoader.h">
@@ -60,28 +57,37 @@
     <ClInclude Include="Light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SkyBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Cube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Assets\headers\Planet_2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Assets\headers\talon.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Assets\headers\Moon.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Assets\headers\Planet_1.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Model Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\Planet_2.h">
+      <Filter>Header Files\Model Headers</Filter>
     </ClInclude>
     <ClInclude Include="Assets\headers\Planet_3.h">
+      <Filter>Header Files\Model Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\StoneHenge.h">
+      <Filter>Header Files\Model Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\talon.h">
+      <Filter>Header Files\Model Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\test pyramid.h">
+      <Filter>Header Files\Model Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\headers\Moon.h">
+      <Filter>Header Files\Model Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="pools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,10 +110,10 @@
     <ClCompile Include="Light.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SkyBox.cpp">
+    <ClCompile Include="Shaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders.cpp">
+    <ClCompile Include="Particle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
