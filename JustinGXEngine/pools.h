@@ -7,7 +7,7 @@
 namespace end
 {
 	template<typename T, int16_t N>
-	class sorted_pool_t
+	class Sorted_Pool_t
 	{
 	public:
 		// Todo: Implement the function bodies
@@ -19,24 +19,31 @@ namespace end
 		size_t capacity()const { return N; }
 
 		// Returns the value at the specified index
-		T& operator[](int16_t index) { return (&pool)[index]; }
+		T& operator[](int16_t index) { return this->pool[index]; }
 
 		// Returns the value at the specified index
-		const T& operator[](int16_t index)const { return (&pool)[index]; }
+		const T& operator[](int16_t index)const { return this->pool[index]; }
 
 		// Returns the index of the first inactive element 
 		//   and updates the active count
 		// Returns -1 if no inactive elements remain
-		int16_t alloc()
-		{
-
+		int16_t alloc() 
+		{ 
+			if (this->active_count == N)
+				return -1;
+			else
+				return this->active_count += 1; 
 		}
 
 		// Moves the element at 'index' to the inactive
 		// region and updates the active count
 		void free(int16_t index)
 		{
-
+			//std::swap(this->pool[index], this->pool[--active_count]);
+			--active_count;
+			auto temp = this->pool[index];
+			this->pool[index] = this->pool[active_count];
+			this->pool[active_count] = temp;
 		}
 
 	private:
@@ -47,7 +54,7 @@ namespace end
 	};
 
 	template<typename T, int16_t N>
-	class pool_t
+	class Pool_t
 	{
 		public:
 		// Todo: Implement the function bodies
@@ -66,16 +73,16 @@ namespace end
 		}
 
 		// Initializes the free list
-		pool_t()
+		Pool_t()
 		{
 			
 		}
 
 		// Returns the value at the specified index
-		T& operator[](int16_t index) { return (&pool)[index]; }
+		T& operator[](int16_t index) { return this->pool[index]; }
 
 		// Returns the value at the specified index
-		const T& operator[](int16_t index)const { return (&pool)[index]; }
+		const T& operator[](int16_t index)const { return this->pool[index]; }
 
 	private:
 

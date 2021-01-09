@@ -2,16 +2,15 @@
 
 #include "Mesh.h"
 
-template <typename T>
-class Cube
+class Cube :
+	public Mesh<VERTEX_BASIC>
 {
 public:
 	Cube() {}
 	~Cube() {}
-	Cube(const Cube<T>& that);
-	Cube<T>& operator=(const Cube<T>& that);
-
-	Mesh<T> cube_mesh;
+	//Cube(const Cube& that);
+	//Cube& operator=(const Cube& that);
+	Mesh<VERTEX_BASIC> cube_mesh;
 
 	std::vector<VERTEX_BASIC> _vertexList = 
 	{
@@ -69,18 +68,4 @@ public:
 	};
 };
 
-template<typename T>
-Cube<T>::Cube(const Cube<T>& that)
-{
-	*this = that;
-}
 
-template<typename T>
-Cube<T>& Cube<T>::operator=(const Cube<T>& that)
-{
-	if (this != &that)
-	{
-		this->cube_mesh = that.cube_mesh;
-	}
-	return *this;
-}

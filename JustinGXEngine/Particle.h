@@ -1,13 +1,21 @@
 #pragma once
 #include "Mesh.h"
 class Particle :
-    public Mesh<COLORED_VERTEX>
+    public Mesh<VERTEX>
 {
 public:
-    COLORED_VERTEX vertex;
-    DirectX::XMFLOAT4 prev_pos;
+    Mesh<VERTEX> Mesh;
 
-    float liftime = 0;
+    DirectX::XMFLOAT4 Color;
+    DirectX::XMFLOAT4 prev_pos;
+    DirectX::XMVECTOR Velocity;
+
+    DirectX::XMVECTOR Gravity;
+    float Lifetime;
+
+    Particle();
+    Particle(const Particle& that);
+    Particle& operator=(const Particle& that);
 
 private:
 

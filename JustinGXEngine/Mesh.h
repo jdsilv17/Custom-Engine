@@ -25,7 +25,7 @@ class Mesh :
 	public Object
 {
 public:
-	Mesh() {} // maybe by default it is a cube
+	Mesh() {}
 	Mesh(	ID3D11Device* device, 
 			ID3D11DeviceContext* deviceContext, 
 			std::vector<T>& _vertexList, 
@@ -79,6 +79,7 @@ Mesh<T>::Mesh(	ID3D11Device* _device,
 	indexCount = _indicesList.size();
 	this->IndicesList = _indicesList;
 	this->Primitive = _primitive;
+
 	this->InitMesh(_device);
 }
 
@@ -101,6 +102,8 @@ Mesh<T>::~Mesh()
 {
 	this->VertexList.clear();
 	this->IndicesList.clear();
+	this->vertexCount = 0;
+	this->indexCount = 0;
 }
 
 template<typename T>
@@ -114,6 +117,13 @@ Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 {
 	if (this != &that)
 	{
+		this->VertexList.clear();
+		this->IndicesList.clear();
+		this->VertexList.shrink_to_fit();
+		this->IndicesList.shrink_to_fit();
+		this->vertexCount = 0;
+		this->indexCount = 0;
+
 		this->VertexList.reserve(that.VertexList.capacity());
 		this->IndicesList.reserve(that.IndicesList.capacity());
 

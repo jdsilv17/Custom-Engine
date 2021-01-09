@@ -117,7 +117,8 @@ const D3D11_INPUT_ELEMENT_DESC cubeLayoutDesc[] =
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
 };
 
-std::vector<VERTEX> MakeGrid(float gridSize, int lineCount) 
+
+static std::vector<VERTEX> MakeGrid(float gridSize, int lineCount)
 {
     std::vector<VERTEX> lines;
     // need: size, spacing, linecount, 
@@ -173,7 +174,7 @@ std::vector<VERTEX> MakeGrid(float gridSize, int lineCount)
     return lines;
 }
 
-std::vector<VERTEX> MakeColorGrid(float gridSize, int lineCount, float deltaTime)
+static std::vector<VERTEX> MakeColorGrid(float gridSize, int lineCount, float deltaTime)
 {
     std::vector<VERTEX> lines;
 
@@ -195,13 +196,13 @@ std::vector<VERTEX> MakeColorGrid(float gridSize, int lineCount, float deltaTime
 
     if (max)
     {
-        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(zero, DirectX::XMLoadFloat4(&color), 0.1f ));
+        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(zero, DirectX::XMLoadFloat4(&color), 0.1f));
         if (color.x <= 0.0f && color.y <= 0.0f && color.z <= 0.0f)
             max = false;
     }
     else if (!max)
     {
-        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(one, DirectX::XMLoadFloat4(&color), 0.5f ));
+        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(one, DirectX::XMLoadFloat4(&color), 0.5f));
         if (color.x >= 1.0f && color.y >= 1.0f && color.z >= 1.0f)
             max = true;
     }
