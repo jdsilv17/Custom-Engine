@@ -36,7 +36,7 @@ void Time::Restart()
 	start = std::chrono::high_resolution_clock::now();
 }
 
-double Time::GetMillisecondsElapsed()
+double Time::GetElapsedMilliseconds()
 {
 	if (this->isRunning)
 	{

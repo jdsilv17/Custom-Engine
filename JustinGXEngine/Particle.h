@@ -1,7 +1,7 @@
 #pragma once
 #include "Mesh.h"
-class Particle :
-    public Mesh<VERTEX>
+class Particle /*:
+    public Mesh<VERTEX>*/
 {
 public:
     Mesh<VERTEX> Mesh;

@@ -123,7 +123,7 @@ DirectionalLight dirLight;
 PointLight pntLight;
 SpotLight sptLight;
 Particle spark;
-end::Sorted_Pool_t<Particle, 5> sortPool;
+end::Sorted_Pool_t<Particle, 20> sortPool;
 
 
 Shaders::VertexShader advanced_VS;
@@ -152,7 +152,7 @@ Shaders::PixelShader talon_PS;
 Shaders::GeometryShader pntToQuad_GS;
 
 bool DrawQuad = false;
-bool DrawGrid = true;
+bool DrawGrid = false;
 
 
 
@@ -247,8 +247,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 
         Update();
-        //DrawDebugScene();
-        DrawSpaceScene();
+        DrawDebugScene();
+        //DrawSpaceScene();
         //DrawDwarfScene();
     }
     gTimer.Stop();
@@ -493,7 +493,7 @@ HRESULT InitContent()
 
     
     hr = skybox_PS.Initialize(myDevice, "./SkyBox_PS.cso", sizeof(WVP)); // change to include texture
-    hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/OrangeSpace_CubeMap.dds");
+    hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/SunsetSkybox.dds");
     skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
 
     hr = pntToQuad_GS.Initialize(myDevice, "./PointToQuad_GS.cso", sizeof(WVP));
@@ -511,7 +511,7 @@ HRESULT InitContent()
     {
         Particle p;
         p.Mesh = Mesh<VERTEX>(myDevice, immediateContext, sparkVerts, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-        p.prev_pos = p.GetPositionFloat4();
+        p.prev_pos = p.Mesh.GetPositionFloat4();
         p.Velocity = { 0.0f, 0.2f, 0.0f, 0.0f };
         p.Gravity = { 0.0f, -0.05f, 0.0f, 0.0f };
         p.Lifetime = 2.0f;
@@ -685,7 +685,7 @@ HRESULT InitContent()
 
     skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    //cube.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, cube._vertexList, cube._indicesList);
+    cam.SetPosition(0.0f, 5.0f, -15.0f);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -768,7 +768,7 @@ void CleanUp()
 void CatchInput()
 {
     static Time uTimer;
-    uTimer.GetMillisecondsElapsed();
+    uTimer.GetElapsedMilliseconds();
     uTimer.Restart();
 
     const float cameraSpeed = 0.002f;
@@ -1031,7 +1031,7 @@ void DrawSpaceScene()
     XMStoreFloat4(&wvp.LightColor[1], pntLight.GetLightColorVector());
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
-    wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
+    //wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
 
     //======================================================================================================================
 
@@ -1382,7 +1382,6 @@ void DrawDebugScene()
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
     HRESULT hr;
 
-    //static float rot = 0; rot += 0.005f;
     ConstantBuffer cb = {};
 
     cb.mView = XMMatrixTranspose(cam.GetViewMatrix());
@@ -1412,7 +1411,7 @@ void DrawDebugScene()
     XMStoreFloat4(&wvp.LightColor[1], pntLight.GetLightColorVector());
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
-    wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
+    //wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
 
     //======================================================================================================================
 
@@ -1439,8 +1438,8 @@ void DrawDebugScene()
     // Draw Skybox =====================================
     immediateContext->RSSetState(RSCullNone); // turn back face culling off
     immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
-    skybox_VS.Bind(immediateContext);
     skybox_PS.Bind(immediateContext);
+    skybox_VS.Bind(immediateContext);
     skybox_PS.BindShaderResources_1(immediateContext);
     cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(cam.GetPositionVector()));
 
@@ -1462,7 +1461,6 @@ void DrawDebugScene()
         std::vector<VERTEX> lines = MakeGrid(20.0f, 25);
         //std::vector<VERTEX> lines = MakeColorGrid(20.0f, 25, (float)gTimer.deltaTime);
         grid = Mesh<VERTEX>(myDevice, immediateContext, lines, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-
         cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
 
         XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
@@ -1476,7 +1474,7 @@ void DrawDebugScene()
     // Draw Paricles
     for (uint16_t i = 0; i < sortPool.size(); ++i) // draw each particle that is active
     {
-        cb.mWorld = XMMatrixTranspose(sortPool[i].GetWorldMatrix());
+        cb.mWorld = XMMatrixTranspose(sortPool[i].Mesh.GetWorldMatrix());
 
         XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
         // send to Card
@@ -1494,7 +1492,7 @@ void DrawDebugScene()
 
 void Update()
 {
-    gTimer.GetMillisecondsElapsed();
+    gTimer.GetElapsedMilliseconds(); // causes view matrix to swap rows
     //gTimer.Restart();
     float dt = ((float)gTimer.deltaTime / 1000.0f);
 
@@ -1503,6 +1501,7 @@ void Update()
     XMVECTOR min = { 0.0f, -0.2f, 0.0f };
     XMVECTOR max = { 0.0f, 0.2f, 0.0f };
     // every 0.5 secs activate a particle
+    
     for (float i = 0.0f; i < (dt / 0.5f); i += 0.5f)
     {
         sortPool.alloc();
@@ -1511,15 +1510,15 @@ void Update()
     {
         sortPool[i].Velocity += sortPool[i].Gravity * dt;
         sortPool[i].Velocity = XMVectorClamp(sortPool[i].Velocity, min, max);
-        sortPool[i].UpdatePosition(sortPool[i].Velocity * dt);
+        sortPool[i].Mesh.UpdatePosition(sortPool[i].Velocity * dt);
         sortPool[i].Lifetime -= dt;
 
         if (sortPool[i].Lifetime <= 0.0f) // if particle is dead
         {
-            sortPool.free(i); // free it
-            sortPool[(uint16_t)sortPool.size() + 1].SetPosition(XMLoadFloat4(&sortPool[i].prev_pos));
-            sortPool[(uint16_t)sortPool.size() + 1].Velocity = { 0.0f, 0.5f, 0.0f, 0.0f };
-            sortPool[(uint16_t)sortPool.size() + 1].Lifetime = 1.0f;
+            sortPool.free(i); // free it // causes problem with shader constant buffer
+            sortPool[(uint16_t)sortPool.size() + 1].Mesh.SetPosition(XMLoadFloat4(&sortPool[i].prev_pos));
+            sortPool[(uint16_t)sortPool.size() + 1].Velocity = { 0.0f, 0.5f, 0.0f, 0.0f }; // solid_PS.ShaderConstantBuffer gets set to NULL
+            sortPool[(uint16_t)sortPool.size() + 1].Lifetime = 1.0f; // defualt_VS.ShaderConstantBuffer gets set to some memory address
         }
     }
 

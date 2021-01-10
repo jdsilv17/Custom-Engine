@@ -54,13 +54,20 @@ HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const void* shad
 
 void Shaders::VertexShader::Bind(ID3D11DeviceContext* deviceContext)
 {
-    this->DeviceContext = deviceContext;
+    if (this->DeviceContext)
+    {
+        this->DeviceContext.Reset();
+        this->DeviceContext = deviceContext;
+    }
+    else
+        this->DeviceContext = deviceContext;
     if (this->ShaderConstantBuffer)
         this->DeviceContext->VSSetConstantBuffers(0, 1, this->ShaderConstantBuffer.GetAddressOf());
     if (this->InputLayout)
         this->DeviceContext->IASetInputLayout(this->InputLayout.Get());
     if (this->Shader)
         this->DeviceContext->VSSetShader(this->Shader.Get(), nullptr, 0);
+    this->DeviceContext.Reset();
 }
 
 const ID3D11VertexShader* Shaders::VertexShader::GetShader() const
@@ -195,29 +202,50 @@ HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const void* s
 
 void Shaders::PixelShader::Bind(ID3D11DeviceContext* deviceContext)
 {
-    this->DeviceContext = deviceContext;
+    if (this->DeviceContext)
+    {
+        this->DeviceContext.Reset();
+        this->DeviceContext = deviceContext;
+    }
+    else
+        this->DeviceContext = deviceContext;
     if (this->ShaderConstantBuffer)
         this->DeviceContext->PSSetConstantBuffers(0, 1, this->ShaderConstantBuffer.GetAddressOf());
     if (this->Shader)
         this->DeviceContext->PSSetShader(this->Shader.Get(), nullptr, 0);
+    this->DeviceContext.Reset();
 }
 
 void Shaders::PixelShader::BindShaderResources(ID3D11DeviceContext* deviceContext)
 {
-    this->DeviceContext = deviceContext;
+    if (this->DeviceContext)
+    {
+        this->DeviceContext.Reset();
+        this->DeviceContext = deviceContext;
+    }
+    else
+        this->DeviceContext = deviceContext;
     if (this->SRVs)
         this->DeviceContext->PSSetShaderResources(0, 2, this->SRVs->GetAddressOf());
     if (this->SamplerState)
         this->DeviceContext->PSSetSamplers(0, 1, this->SamplerState.GetAddressOf());
+    this->DeviceContext.Reset();
 }
 
 void Shaders::PixelShader::BindShaderResources_1(ID3D11DeviceContext* deviceContext)
 {
-    this->DeviceContext = deviceContext;
+    if (this->DeviceContext)
+    {
+        this->DeviceContext.Reset();
+        this->DeviceContext = deviceContext;
+    }
+    else
+        this->DeviceContext = deviceContext;
     if (this->ShaderResourceView)
         this->DeviceContext->PSSetShaderResources(0, 1, this->ShaderResourceView.GetAddressOf());
     if (this->SamplerState)
         this->DeviceContext->PSSetSamplers(0, 1, this->SamplerState.GetAddressOf());
+    this->DeviceContext.Reset();
 }
 
 void Shaders::PixelShader::Bind_ALL(ID3D11DeviceContext* deviceContext)
@@ -303,11 +331,18 @@ HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const void* sh
 
 void Shaders::GeometryShader::Bind(ID3D11DeviceContext* deviceContext)
 {
-    this->DeviceContext = deviceContext;
+    if (this->DeviceContext)
+    {
+        this->DeviceContext.Reset();
+        this->DeviceContext = deviceContext;
+    }
+    else
+        this->DeviceContext = deviceContext;
     if (this->ShaderConstantBuffer)
         this->DeviceContext->GSSetConstantBuffers(0, 1, this->ShaderConstantBuffer.GetAddressOf());
     if (this->Shader)
         this->DeviceContext->GSSetShader(this->Shader.Get(), nullptr, 0);
+    this->DeviceContext.Reset();
 }
 
 const ID3D11GeometryShader* Shaders::GeometryShader::GetShader() const

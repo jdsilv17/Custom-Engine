@@ -12,7 +12,7 @@ public:
 
 	void Restart();
 
-	double GetMillisecondsElapsed();
+	double GetElapsedMilliseconds();
 
 	// The elasped time between each frame in seconds
 	double deltaTime = 0.0;

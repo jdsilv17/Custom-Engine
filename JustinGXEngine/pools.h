@@ -39,11 +39,11 @@ namespace end
 		// region and updates the active count
 		void free(int16_t index)
 		{
-			//std::swap(this->pool[index], this->pool[--active_count]);
-			--active_count;
-			auto temp = this->pool[index];
-			this->pool[index] = this->pool[active_count];
-			this->pool[active_count] = temp;
+			std::swap(this->pool[index], this->pool[--active_count]);
+			//--active_count;
+			//auto temp = this->pool[index];
+			//this->pool[index] = this->pool[active_count];
+			//this->pool[active_count] = temp;
 		}
 
 	private:

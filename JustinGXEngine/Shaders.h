@@ -113,8 +113,8 @@ namespace Shaders
 		ComPtr<ID3D11Buffer> ShaderConstantBuffer = nullptr;
 
 	private:
-		ComPtr<ID3D11GeometryShader> Shader = nullptr;
 		ComPtr<ID3D11DeviceContext> DeviceContext = nullptr;
+		ComPtr<ID3D11GeometryShader> Shader = nullptr;
 		ComPtr<ID3D11InputLayout> InputLayout = nullptr;
 
 	};
