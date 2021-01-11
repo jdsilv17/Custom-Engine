@@ -8,6 +8,28 @@ Object::Object()
 	this->SetScale(1.0f, 1.0f, 1.0f);
 }
 
+Object::Object(const Object& that)
+{
+	*this = that;
+}
+
+Object& Object::operator=(const Object& that)
+{
+	if (this != &that)
+	{
+		this->SetPosition(that.Pos_V);
+		this->SetRotation(that.Rot_V);
+		this->SetScale(that.Scale_V);
+		this->SetForwardVector(that.foward_V);
+		this->SetBackwardVector(that.backward_V);
+		this->SetLeftVector(that.left_V);
+		this->SetRightVector(that.right_V);
+		this->SetWorld(that.World_F);
+		//this->SetTransform(that.Transform_F);
+	}
+	return *this;
+}
+
 const DirectX::XMMATRIX& Object::GetWorldMatrix() const
 {
 	return this->World_M;

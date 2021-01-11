@@ -181,6 +181,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="debug_renderer.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="JustinGXEngine.h" />
@@ -200,6 +201,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Cube.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="debug_renderer.cpp" />
     <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="JustinGXEngine.cpp" />
     <ClCompile Include="Light.cpp" />

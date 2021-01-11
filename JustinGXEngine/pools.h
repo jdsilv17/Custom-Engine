@@ -63,6 +63,7 @@ namespace end
 		// Returns -1 if no free elements remain
 		int16_t alloc()
 		{
+
 		}
 
 		// Adds 'index' to the free list
@@ -91,7 +92,8 @@ namespace end
 			T value;
 			int16_t next;
 			
-			element_t(){}
+			element_t() {}
+			~element_t() {}
 		};
 
 		element_t pool[N];

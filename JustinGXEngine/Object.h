@@ -6,6 +6,8 @@ class Object
 {
 public:
 	Object();
+	Object(const Object& that);
+	Object& operator=(const Object& that);
 
 
 	const DirectX::XMMATRIX& GetWorldMatrix() const;

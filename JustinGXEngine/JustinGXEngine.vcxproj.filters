@@ -19,6 +19,12 @@
     <Filter Include="Header Files\Model Headers">
       <UniqueIdentifier>{9b4020bb-3865-4564-b91f-8267c55e390d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Temp">
+      <UniqueIdentifier>{bd393738-0038-4714-9ea2-30288e800602}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Temp">
+      <UniqueIdentifier>{4ef35a23-2f98-4f51-946f-adb43bbf2ab5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -84,14 +90,17 @@
     <ClInclude Include="Assets\headers\Moon.h">
       <Filter>Header Files\Model Headers</Filter>
     </ClInclude>
-    <ClInclude Include="pools.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pools.h">
+      <Filter>Header Files\Temp</Filter>
+    </ClInclude>
     <ClInclude Include="Emitter.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Temp</Filter>
+    </ClInclude>
+    <ClInclude Include="debug_renderer.h">
+      <Filter>Header Files\Temp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -122,8 +131,11 @@
     <ClCompile Include="Cube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="debug_renderer.cpp">
+      <Filter>Source Files\Temp</Filter>
+    </ClCompile>
     <ClCompile Include="Emitter.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Temp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

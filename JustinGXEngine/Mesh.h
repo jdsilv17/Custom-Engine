@@ -37,7 +37,7 @@ public:
 			D3D_PRIMITIVE_TOPOLOGY _primitive );
 
 	~Mesh();								
-	Mesh(const Mesh<T>& that);					
+	Mesh(const Mesh<T>& that) : Object::Object(that) { }
 	Mesh<T>& operator=(const Mesh<T>& that);
 
 	void InitMesh(ID3D11Device* device);
@@ -106,17 +106,19 @@ Mesh<T>::~Mesh()
 	this->indexCount = 0;
 }
 
-template<typename T>
-Mesh<T>::Mesh(const Mesh<T>& that)
-{
-	*this = that;
-}
+//template<typename T>
+//Mesh<T>::Mesh(const Mesh<T>& that) : 
+//	Object(that)
+//{
+//	*this = that;
+//}
 
 template<typename T>
 Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 {
 	if (this != &that)
 	{
+		//this->SetPosition(that.GetPositionVector());
 		this->VertexList.clear();
 		this->IndicesList.clear();
 		this->VertexList.shrink_to_fit();

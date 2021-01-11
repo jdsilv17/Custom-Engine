@@ -4,13 +4,7 @@
 #include <DirectXMath.h>
 #include <vector>
 
-typedef union JXMVECTOR
-{
-    DirectX::XMVECTOR v;
-
-    DirectX::XMFLOAT4 fv;
-}*PJXMVECTOR;
-
+// wrap in a namespace
 struct VERTEX
 {
     DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
@@ -166,87 +160,6 @@ static std::vector<VERTEX> MakeGrid(float gridSize, int lineCount)
             lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 0.5f, 0.5f, 0.5f, 1.0f }));
             // right point
             lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, { 0.5f, 0.5f, 0.5f, 1.0f }));
-        }
-        // move over on the x-axis by the spacing
-        z += lineSpacing;
-    }
-
-    return lines;
-}
-
-static std::vector<VERTEX> MakeColorGrid(float gridSize, int lineCount, float deltaTime)
-{
-    std::vector<VERTEX> lines;
-
-    // need: size, spacing, linecount, 
-    int maxVerts = 2048;
-    if (lineCount * 4 > maxVerts)
-        lineCount = 510;
-
-    float lineSpacing = gridSize / static_cast<float>(lineCount);
-
-    float x = -gridSize / 2.0f; // starting point
-    float z = -gridSize / 2.0f; // starting point
-
-
-    DirectX::XMVECTOR zero = { 0.0f, 0.0f, 0.0f, 1.0f };
-    DirectX::XMVECTOR one = { 1.0f, 1.0f, 1.0f, 1.0f };
-    static DirectX::XMFLOAT4 color;
-    static bool max = false;
-
-    if (max)
-    {
-        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(zero, DirectX::XMLoadFloat4(&color), 0.1f));
-        if (color.x <= 0.0f && color.y <= 0.0f && color.z <= 0.0f)
-            max = false;
-    }
-    else if (!max)
-    {
-        DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(one, DirectX::XMLoadFloat4(&color), 0.5f));
-        if (color.x >= 1.0f && color.y >= 1.0f && color.z >= 1.0f)
-            max = true;
-    }
-
-
-    // create lines along x-axis
-    for (int i = 0; i <= lineCount; ++i)
-    {
-        // create the line
-        if (i == lineCount / 2)
-        {
-            // far point
-            lines.push_back(VERTEX({ x, 0.0f, z + gridSize, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
-            // near point
-            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
-        }
-        else
-        {
-            // far point
-            lines.push_back(VERTEX({ x, 0.0f, z + gridSize, 1.0f }, color));
-            // near point
-            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, color));
-        }
-        // move over on the x-axis by the spacing
-        x += lineSpacing;
-    }
-    x = -gridSize / 2.0f;
-    // create lines along z-axis
-    for (int i = 0; i <= lineCount; ++i)
-    {
-        // create the line
-        if (i == lineCount / 2)
-        {
-            // left point
-            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
-            // right point
-            lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
-        }
-        else
-        {
-            // left point
-            lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, color));
-            // right point
-            lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, color));
         }
         // move over on the x-axis by the spacing
         z += lineSpacing;

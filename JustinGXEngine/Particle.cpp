@@ -5,7 +5,7 @@ Particle::Particle()
 	//this->Pos = 
 	this->prev_pos = this->Mesh.GetPositionFloat4();
 	this->Color = { 1.0f, 1.0f, 1.0f, 1.0f };
-	this->Velocity = { 0.0f, 1.0f, 0.0f };
+	this->Velocity = { 0.0f, 15.0f, 0.0f };
 	this->Gravity = { 0.0f, -9.8f, 0.0f };
 	this->Lifetime = 10.0f;
 }
