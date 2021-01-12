@@ -75,8 +75,8 @@ Mesh<T>::Mesh(	ID3D11Device* _device,
 {
 	this->DeviceContext = _deviceContext;
 	this->VertexList = _vertexList;
-	vertexCount = _vertexList.size();
-	indexCount = _indicesList.size();
+	vertexCount = (int)_vertexList.size();
+	indexCount = (int)_indicesList.size();
 	this->IndicesList = _indicesList;
 	this->Primitive = _primitive;
 
@@ -91,7 +91,7 @@ Mesh<T>::Mesh(ID3D11Device* _device,
 {
 	this->DeviceContext = _deviceContext;
 	this->VertexList = _vertexList;
-	this->vertexCount = _vertexList.size();
+	this->vertexCount = (int)_vertexList.size();
 	this->Primitive = _primitive;
 
 	this->InitMesh(_device);
@@ -139,8 +139,8 @@ Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 		this->VertexBuffer = that.VertexBuffer;
 		this->IndexBuffer = that.IndexBuffer;
 
-		this->vertexCount = that.VertexList.size();
-		this->indexCount = that.IndicesList.size();
+		this->vertexCount = (int)that.VertexList.size();
+		this->indexCount = (int)that.IndicesList.size();
 
 		this->Primitive = that.Primitive;
 	}
@@ -151,8 +151,8 @@ template<typename T>
 void Mesh<T>::InitMesh(ID3D11Device* device)
 {
 	HRESULT hr;
-	this->vertexCount = this->VertexList.size();
-	this->indexCount = this->IndicesList.size();
+	this->vertexCount = (int)this->VertexList.size();
+	this->indexCount = (int)this->IndicesList.size();
 
 	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList, this->VertexBuffer);
 

@@ -126,7 +126,7 @@ DirectionalLight dirLight;
 PointLight pntLight;
 SpotLight sptLight;
 Emitter sortEmitter;
-end::Sorted_Pool_t<Particle, 5> sortPool;
+end::Sorted_Pool_t<Particle, 256> sortPool;
 end::Pool_t<Particle, 1024> sharedPool;
 
 
@@ -434,13 +434,6 @@ HRESULT InitContent()
 {
     HRESULT hr = S_OK;
 
-    // Create vertex buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-
-    D3D11_SUBRESOURCE_DATA subData;
-    ZeroMemory(&subData, sizeof(subData));
-
     // write, compile & load our shaders
     hr = advanced_VS.Initialize(myDevice, "./MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
 
@@ -453,10 +446,6 @@ HRESULT InitContent()
     hr = HUD_VS.Initialize(myDevice, "./HUD_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
 
     hr = Smoke_VS.Initialize(myDevice, "./HUD_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-
-    //std::string textures[] = { "./Assets/Textures/StoneHenge.dds", "./Assets/Textures/fire_01.dds" };
-    //hr = advanced_PS.Initialize_ALL(myDevice, "./PixelShader.cso", sizeof(WVP), textures);
-    //advanced_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
     hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", sizeof(WVP));
     solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
@@ -669,34 +658,19 @@ HRESULT InitContent()
 
     skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+    // Define Particles
     std::vector<VERTEX> sparkVerts =
     {
         VERTEX({ 0.0f, 0.25f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }),
         VERTEX({ 0.0f, -0.25f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }),
     };
-    std::vector<VERTEX> sparkVerts1 =
+    for (uint16_t i = 0; i < sortPool.capacity(); ++i)
     {
-        VERTEX({ 0.0f, 0.25f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }),
-        VERTEX({ 0.0f, -0.25f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }),
-    };
-    Particle P;
-    P.Mesh = Mesh<VERTEX>(myDevice, immediateContext, sparkVerts1, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-    P.Mesh.SetPosition(3.0f, 0.0f, 0.0f);
-    P.prev_pos = P.Mesh.GetPositionFloat4();
-    P.Velocity = { 0.0f, 15.0f, 0.0f, 0.0f };
-    //P.Gravity = { 0.0f, -0.5f, 0.0f, 0.0f };
-    P.Lifetime = 3.0f;
-    sortPool[0] = P;
-    for (uint16_t i = 1; i < sortPool.capacity(); ++i)
-    {
-        Particle p;
-        p.Mesh = Mesh<VERTEX>(myDevice, immediateContext, sparkVerts, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-        p.prev_pos = p.Mesh.GetPositionFloat4();
-        p.Velocity = { 0.0f, 15.0f, 0.0f, 0.0f };
-        //p.Gravity = { 0.0f, -0.5f, 0.0f, 0.0f };
-        p.Lifetime = 3.0f;
-
-        sortPool[i] = p;
+        sortPool[i].Mesh = Mesh<VERTEX>(myDevice, immediateContext, sparkVerts, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+        //sortPool[0].Mesh.SetPosition(3.0f, 0.0f, 0.0f);
+        sortPool[i].prev_pos = sortPool[i].Mesh.GetPositionFloat4();
+        sortPool[i].Velocity = { 0.0f, 15.0f, 0.0f, 0.0f };
+        sortPool[i].Lifetime = 3.0f;
     }
 
     cam.SetPosition(0.0f, 5.0f, -15.0f);
@@ -1450,34 +1424,37 @@ void DrawDebugScene()
     }
 
     // Draw Skybox =====================================
-    immediateContext->RSSetState(RSCullNone); // turn back face culling off
-    immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
-    skybox_PS.Bind(immediateContext);
-    skybox_VS.Bind(immediateContext);
-    skybox_PS.BindShaderResources_1(immediateContext);
-    cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(cam.GetPositionVector()));
+    if (false)
+    {
+        immediateContext->RSSetState(RSCullNone); // turn back face culling off
+        immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
+        skybox_PS.Bind(immediateContext);
+        skybox_VS.Bind(immediateContext);
+        skybox_PS.BindShaderResources_1(immediateContext);
+        cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(cam.GetPositionVector()));
 
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0);
+        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        // send to Card
+        hr = immediateContext->Map((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+        immediateContext->Unmap((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0);
 
-    skybox.cube_mesh.Draw();
-    immediateContext->RSSetState(nullptr);
-    immediateContext->OMSetDepthStencilState(nullptr, 0);
+        skybox.cube_mesh.Draw();
+        immediateContext->RSSetState(nullptr);
+        immediateContext->OMSetDepthStencilState(nullptr, 0);
+    }
 
     // Draw Grid ========================================
     default_VS.Bind(immediateContext);
     solid_PS.Bind(immediateContext);
-    if (DrawGrid)
+    if (!DrawGrid)
     {
         std::vector<VERTEX> lines;
         for (size_t i = 0; i < end::debug_renderer::get_line_vert_count(); i++)
         {
             lines.push_back(end::debug_renderer::get_line_verts()[i]);
         }
-        
+        lines.shrink_to_fit();
         grid = Mesh<VERTEX>(myDevice, immediateContext, lines, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
         cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
 
@@ -1487,11 +1464,14 @@ void DrawDebugScene()
         memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
         immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
         grid.Draw();
+
+        lines.clear(); lines.shrink_to_fit();
+        end::debug_renderer::clear_lines();
     }
-    end::debug_renderer::clear_lines();
+    
 
     // Draw Paricles
-    for (uint16_t i = 0; i < sortPool.size(); ++i) // draw each particle that is active
+    for (uint16_t i = 0; i < sortEmitter.indices.size(); ++i) // draw each particle that is active
     {
         cb.mWorld = XMMatrixTranspose(sortPool[i].Mesh.GetWorldMatrix()/*XMMatrixTranslationFromVector(sortEmitter.GetSpawnPositionVector())*/);
 
@@ -1517,36 +1497,37 @@ void Update()
 
     CatchInput();
 
-    end::MakeColorGrid(20.0f, 24, dt);
+    if (!DrawGrid)
+        end::MakeColorGrid(20.0f, 24, dt * 0.5f);
+
     //srand(sortPool.size());
 
     XMVECTOR min = { 0.0f, -10.0f, 0.0f };
     XMVECTOR max = { 0.0f, 15.0f, 0.0f };
-    // every 0.5 secs activate a particle
-    
-    for (float i = 0.0f; i < (dt / 1.0f); i += 1.0f)
+    // every 0.02 secs activate a particle
+    float t = (std::ceilf(dt / 0.01f));
+    if (t == 2.0f)
     {
-        //sortEmitter.indices.alloc();
+        sortEmitter.indices.alloc();
         sortPool.alloc();
     }
-    //for (uint16_t i = 0; i < sortPool.size(); ++i) // for every active particle, update it
+    for (uint16_t i = 0; i < sortEmitter.indices.size(); ++i) // for every active particle, update it
     {
-        sortPool[0].Velocity += sortPool[0].Gravity * dt; // apply gravity
-        sortPool[0].Velocity = XMVectorClamp(sortPool[0].Velocity, min, max); // clamp velocity
-        sortPool[0].Mesh.UpdatePosition(sortPool[0].Velocity * dt); // move particle
-        sortPool[0].Lifetime -= dt;
+        sortPool[i].Velocity += sortPool[i].Gravity * dt; // apply gravity
+        sortPool[i].Velocity = XMVectorClamp(sortPool[i].Velocity, min, max); // clamp velocity
+        sortPool[i].Mesh.UpdatePosition(sortPool[i].Velocity * dt); // move particle
+        sortPool[i].Lifetime -= dt;
 
-        if /*(sortPool[i].Mesh.GetPositionFloat4().y < -0.05f)*/(sortPool[0].Lifetime <= 0.0f) // if particle is dead
+        if (sortPool[i].Lifetime <= 0.0f) // if particle is dead
         {
-            sortPool.free(0); // free it // snip-snap snip-snap
+            sortPool.free(i); // free it // snip-snap snip-snap
+            sortEmitter.indices.free(i);
+            
+            int16_t index = (uint16_t)sortPool.size();
 
-            int16_t index = 0;
-            if ((uint16_t)sortPool.size() == (uint16_t)sortPool.capacity() - 1)
-                index = (uint16_t)sortPool.size();
-            else if ((uint16_t)sortPool.size() < (uint16_t)sortPool.capacity() - 1)
-                index = (uint16_t)sortPool.size() + 1;
+            sortPool[i].Mesh.SetPosition(sortPool[index].Mesh.GetPositionVector()); // supposed to be done by the copy ctor
 
-            sortPool[index].Mesh.SetPosition(XMLoadFloat4(&sortPool[index].prev_pos)); // do i mean nothing to you
+            sortPool[index].Mesh.SetPosition(sortEmitter.GetSpawnPositionVector()); // do i mean nothing to you
             sortPool[index].Velocity = { 0.0f, 15.0f, 0.0f, 0.0f };
             sortPool[index].Lifetime = 3.0f;
         }

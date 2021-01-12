@@ -70,24 +70,26 @@ namespace end
         float x = -gridSize / 2.0f; // starting point
         float z = -gridSize / 2.0f; // starting point
 
-
         DirectX::XMVECTOR zero = { 0.0f, 0.0f, 0.0f, 1.0f };
         DirectX::XMVECTOR one = { 1.0f, 1.0f, 1.0f, 1.0f };
-        static DirectX::XMFLOAT4 color;
-        static bool max = false;
+        static DirectX::XMFLOAT4 color = { 1.0f, 0.0f, 0.0f, 1.0f };
 
-        if (max)
+        if ( (color.z <= 0.0f) && (color.x <= 1.0f && color.x > 0.0f) && (color.y >= 0.0f && color.y < 1.0f) )
         {
-            DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(zero, DirectX::XMLoadFloat4(&color), 0.1f));
-            if (color.x <= 0.0f && color.y <= 0.0f && color.z <= 0.0f)
-                max = false;
+            color.x -= deltaTime;
+            color.y += deltaTime;
         }
-        else if (!max)
+        else if ( (color.x <= 0.0f) && (color.y <= 1.0f && color.y > 0.0f) && (color.z >= 0.0f && color.z < 1.0f) )
         {
-            DirectX::XMStoreFloat4(&color, DirectX::XMVectorLerp(one, DirectX::XMLoadFloat4(&color), 0.5f));
-            if (color.x >= 1.0f && color.y >= 1.0f && color.z >= 1.0f)
-                max = true;
+            color.y -= deltaTime;
+            color.z += deltaTime;
         }
+        else if ( (color.y <= 0.0f) && (color.z <= 1.0f && color.z > 0.0f) && (color.x >= 0.0f && color.x < 1.0f) )
+        {
+            color.z -= deltaTime;
+            color.x += deltaTime;
+        }
+        DirectX::XMStoreFloat4(&color, DirectX::XMVectorClamp(DirectX::XMLoadFloat4(&color), zero, one));
 
 
         // create lines along x-axis

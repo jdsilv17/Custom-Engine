@@ -63,10 +63,17 @@ namespace end
 		// Returns -1 if no free elements remain
 		int16_t alloc()
 		{
+			if (this->free_start == -1)
+				return -1;
 
+			int index = this->free_start;
+			this->free_start = this->pool[index].next;
+			return index;
 		}
 
 		// Adds 'index' to the free list
+		// sets index.next to free_start
+		// then sets free_start to index
 		void free(int16_t index)
 		{
 			this->pool[index].next = this->free_start;
@@ -76,7 +83,7 @@ namespace end
 		// Initializes the free list
 		Pool_t()
 		{
-			
+
 		}
 
 		// Returns the value at the specified index
