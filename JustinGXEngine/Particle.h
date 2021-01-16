@@ -5,7 +5,7 @@ class Particle /*:
 {
 public:
     Mesh<VERTEX> Mesh;
-
+    DirectX::XMFLOAT4 Pos;
     DirectX::XMFLOAT4 Color;
     DirectX::XMFLOAT4 prev_pos;
     DirectX::XMVECTOR Velocity;

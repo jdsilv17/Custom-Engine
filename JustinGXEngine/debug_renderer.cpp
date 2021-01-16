@@ -1,4 +1,6 @@
 #include "debug_renderer.h"
+
+
 #include <array>
 
 // Anonymous namespace
@@ -13,7 +15,7 @@ namespace
 	// CPU-side buffer of debug-line verts
 	// Copied to the GPU and reset every frame.
 	size_t line_vert_count = 0;
-	std::array<VERTEX, MAX_LINE_VERTS> line_verts;
+    std::array<VERTEX, MAX_LINE_VERTS> line_verts;
 }
 
 namespace end
@@ -22,6 +24,9 @@ namespace end
 	{
 		void add_line(DirectX::XMFLOAT4 point_a, DirectX::XMFLOAT4 point_b, DirectX::XMFLOAT4 color_a, DirectX::XMFLOAT4 color_b)
 		{
+            //if (line_verts.size() < MAX_LINE_VERTS)
+            //    line_verts.resize(MAX_LINE_VERTS);
+
             if (line_vert_count == MAX_LINE_VERTS)
                 return;
 			// Add points to debug_verts, increments debug_vert_count
@@ -99,18 +104,10 @@ namespace end
             if (i == lineCount / 2)
             {
                 debug_renderer::add_line({ x, 0.0f, z + gridSize, 1.0f }, { x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
-                //// far point
-                //lines.push_back(VERTEX({ x, 0.0f, z + gridSize, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
-                //// near point
-                //lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
             }
             else
             {
                 debug_renderer::add_line({ x, 0.0f, z + gridSize, 1.0f }, { x, 0.0f, z, 1.0f }, color);
-                //// far point
-                //lines.push_back(VERTEX({ x, 0.0f, z + gridSize, 1.0f }, color));
-                //// near point
-                //lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, color));
             }
             // move over on the x-axis by the spacing
             x += lineSpacing;
@@ -123,18 +120,10 @@ namespace end
             if (i == lineCount / 2)
             {
                 debug_renderer::add_line({ x, 0.0f, z, 1.0f }, { x + gridSize, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
-                //// left point
-                //lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
-                //// right point
-                //lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }));
             }
             else
             {
                 debug_renderer::add_line({ x, 0.0f, z, 1.0f }, { x + gridSize, 0.0f, z, 1.0f }, color);
-                //// left point
-                //lines.push_back(VERTEX({ x, 0.0f, z, 1.0f }, color));
-                //// right point
-                //lines.push_back(VERTEX({ x + gridSize, 0.0f, z, 1.0f }, color));
             }
             // move over on the x-axis by the spacing
             z += lineSpacing;

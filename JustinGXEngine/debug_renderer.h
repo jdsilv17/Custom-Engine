@@ -9,6 +9,7 @@ namespace end
 
 	namespace debug_renderer
 	{
+
 		void add_line(DirectX::XMFLOAT4 point_a, DirectX::XMFLOAT4 point_b, DirectX::XMFLOAT4 color_a, DirectX::XMFLOAT4 color_b);
 
 		inline void add_line(DirectX::XMFLOAT4 p, DirectX::XMFLOAT4 q, DirectX::XMFLOAT4 color) { add_line(p, q, color, color); }

@@ -26,21 +26,31 @@ class Mesh :
 {
 public:
 	Mesh() {}
+	// ================== DEPRECATED ======================
 	Mesh(	ID3D11Device* device, 
 			ID3D11DeviceContext* deviceContext, 
 			std::vector<T>& _vertexList, 
 			std::vector<int>& _indicesList,
 			D3D_PRIMITIVE_TOPOLOGY _primitive );
+	// ================== DEPRECATED ======================
 	Mesh(	ID3D11Device* device,
 			ID3D11DeviceContext* deviceContext,
 			std::vector<T>& _vertexList,
 			D3D_PRIMITIVE_TOPOLOGY _primitive );
+	Mesh(	ID3D11Device* device,
+			ID3D11DeviceContext* deviceContext,
+			const T* _vertexList,
+			const int& _vertexCount,
+			D3D_PRIMITIVE_TOPOLOGY _primitive);
 
 	~Mesh();								
-	Mesh(const Mesh<T>& that) : Object::Object(that) { }
+	Mesh(const Mesh<T>& that);
 	Mesh<T>& operator=(const Mesh<T>& that);
 
+	// ================== DEPRECATED ======================
 	void InitMesh(ID3D11Device* device);
+
+	void InitMesh2(ID3D11Device* device);
 	void Draw();
 
 	ID3D11Buffer* GetVertexBuffer();
@@ -59,6 +69,7 @@ private:
 
 	std::vector<T> Textures;
 
+	const T** pVertexList = nullptr;
 	std::vector<T> VertexList;
 	std::vector<int> IndicesList;
 	int vertexCount = NULL;
@@ -67,7 +78,7 @@ private:
 };
 
 template<typename T>
-Mesh<T>::Mesh(	ID3D11Device* _device, 
+Mesh<T>::Mesh(	ID3D11Device* device, 
 				ID3D11DeviceContext* _deviceContext, 
 				std::vector<T>& _vertexList, 
 				std::vector<int>& _indicesList,
@@ -80,11 +91,11 @@ Mesh<T>::Mesh(	ID3D11Device* _device,
 	this->IndicesList = _indicesList;
 	this->Primitive = _primitive;
 
-	this->InitMesh(_device);
+	this->InitMesh(device);
 }
 
 template<typename T>
-Mesh<T>::Mesh(ID3D11Device* _device,
+Mesh<T>::Mesh(ID3D11Device* device,
 	ID3D11DeviceContext* _deviceContext,
 	std::vector<T>& _vertexList,  
 	D3D_PRIMITIVE_TOPOLOGY _primitive )
@@ -94,7 +105,18 @@ Mesh<T>::Mesh(ID3D11Device* _device,
 	this->vertexCount = (int)_vertexList.size();
 	this->Primitive = _primitive;
 
-	this->InitMesh(_device);
+	this->InitMesh(device);
+}
+
+template<typename T>
+Mesh<T>::Mesh(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const T* _vertexList, const int& _vertexCount, D3D_PRIMITIVE_TOPOLOGY _primitive)
+{
+	this->DeviceContext = deviceContext;
+	this->pVertexList = &_vertexList;
+	this->vertexCount = _vertexCount;
+	this->Primitive = _primitive;
+
+	this->InitMesh2(device);
 }
 
 template<typename T>
@@ -106,19 +128,20 @@ Mesh<T>::~Mesh()
 	this->indexCount = 0;
 }
 
-//template<typename T>
-//Mesh<T>::Mesh(const Mesh<T>& that) : 
-//	Object(that)
-//{
-//	*this = that;
-//}
+template<typename T>
+Mesh<T>::Mesh(const Mesh<T>& that)
+{
+	Object::Object(that)
+	*this = that;
+}
 
 template<typename T>
 Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 {
 	if (this != &that)
 	{
-		//this->SetPosition(that.GetPositionVector());
+		Object::operator= (that);
+
 		this->VertexList.clear();
 		this->IndicesList.clear();
 		this->VertexList.shrink_to_fit();
@@ -139,8 +162,8 @@ Mesh<T>& Mesh<T>::operator=(const Mesh<T>& that)
 		this->VertexBuffer = that.VertexBuffer;
 		this->IndexBuffer = that.IndexBuffer;
 
-		this->vertexCount = (int)that.VertexList.size();
-		this->indexCount = (int)that.IndicesList.size();
+		this->vertexCount = that.vertexCount;
+		this->indexCount = that.indexCount;
 
 		this->Primitive = that.Primitive;
 	}
@@ -155,6 +178,17 @@ void Mesh<T>::InitMesh(ID3D11Device* device)
 	this->indexCount = (int)this->IndicesList.size();
 
 	hr = CreateVertexBuffer(device, this->vertexCount, this->VertexList, this->VertexBuffer);
+
+	if (this->Primitive == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
+		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList, this->IndexBuffer);
+}
+
+template<typename T>
+void Mesh<T>::InitMesh2(ID3D11Device* device)
+{
+	HRESULT hr;
+
+	hr = CreateVertexBuffer(device, this->vertexCount, *this->pVertexList, this->VertexBuffer);
 
 	if (this->Primitive == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
 		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList, this->IndexBuffer);

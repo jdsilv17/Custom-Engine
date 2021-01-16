@@ -72,8 +72,8 @@ namespace end
 		}
 
 		// Adds 'index' to the free list
-		// sets index.next to free_start
-		// then sets free_start to index
+		// sets index.next = currHead
+		// then sets currHead = index
 		void free(int16_t index)
 		{
 			this->pool[index].next = this->free_start;
@@ -84,13 +84,19 @@ namespace end
 		Pool_t()
 		{
 
+			for (int16_t i = 0; i < N; ++i)
+			{
+				this->pool[i].value = T();
+				this->pool[i].next = i + 1;
+			}
+			this->pool[N - 1].next = -1;
 		}
 
 		// Returns the value at the specified index
-		T& operator[](int16_t index) { return this->pool[index]; }
+		T& operator[](int16_t index) { return this->pool[index].value; }
 
 		// Returns the value at the specified index
-		const T& operator[](int16_t index)const { return this->pool[index]; }
+		const T& operator[](int16_t index)const { return this->pool[index].value; }
 
 	private:
 
@@ -99,7 +105,7 @@ namespace end
 			T value;
 			int16_t next;
 			
-			element_t() {}
+			element_t() : next(0) {}
 			~element_t() {}
 		};
 

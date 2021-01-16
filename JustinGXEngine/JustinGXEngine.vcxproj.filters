@@ -90,9 +90,6 @@
     <ClInclude Include="Assets\headers\Moon.h">
       <Filter>Header Files\Model Headers</Filter>
     </ClInclude>
-    <ClInclude Include="Particle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pools.h">
       <Filter>Header Files\Temp</Filter>
     </ClInclude>
@@ -100,6 +97,9 @@
       <Filter>Header Files\Temp</Filter>
     </ClInclude>
     <ClInclude Include="debug_renderer.h">
+      <Filter>Header Files\Temp</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.h">
       <Filter>Header Files\Temp</Filter>
     </ClInclude>
   </ItemGroup>
@@ -125,9 +125,6 @@
     <ClCompile Include="Shaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Particle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Cube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -135,6 +132,9 @@
       <Filter>Source Files\Temp</Filter>
     </ClCompile>
     <ClCompile Include="Emitter.cpp">
+      <Filter>Source Files\Temp</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle.cpp">
       <Filter>Source Files\Temp</Filter>
     </ClCompile>
   </ItemGroup>
