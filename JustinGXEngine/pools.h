@@ -74,6 +74,7 @@ namespace end
 		// Adds 'index' to the free list
 		// sets index.next = currHead
 		// then sets currHead = index
+		// 
 		void free(int16_t index)
 		{
 			this->pool[index].next = this->free_start;
@@ -83,7 +84,6 @@ namespace end
 		// Initializes the free list
 		Pool_t()
 		{
-
 			for (int16_t i = 0; i < N; ++i)
 			{
 				this->pool[i].value = T();

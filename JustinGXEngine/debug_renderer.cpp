@@ -24,9 +24,6 @@ namespace end
 	{
 		void add_line(DirectX::XMFLOAT4 point_a, DirectX::XMFLOAT4 point_b, DirectX::XMFLOAT4 color_a, DirectX::XMFLOAT4 color_b)
 		{
-            //if (line_verts.size() < MAX_LINE_VERTS)
-            //    line_verts.resize(MAX_LINE_VERTS);
-
             if (line_vert_count == MAX_LINE_VERTS)
                 return;
 			// Add points to debug_verts, increments debug_vert_count
