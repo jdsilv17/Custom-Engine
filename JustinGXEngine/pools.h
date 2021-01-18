@@ -105,7 +105,7 @@ namespace end
 			T value;
 			int16_t next;
 			
-			element_t() : value(T()) {}
+			element_t() : next(0) {}
 			~element_t() {}
 		};
 

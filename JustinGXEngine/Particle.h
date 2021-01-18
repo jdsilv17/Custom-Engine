@@ -5,7 +5,6 @@ class Particle /*:
     Object*/
 {
 public:
-    float p;
     DirectX::XMFLOAT4 Pos;
     DirectX::XMFLOAT4 Color;
     DirectX::XMFLOAT4 prev_pos;
