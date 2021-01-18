@@ -2,8 +2,7 @@
 
 Particle::Particle()
 {
-	this->Pos = { 0.0f, 0.0f, 0.0f, 1.0f };
-	this->prev_pos = this->Mesh.GetPositionFloat4();
+	this->Pos = this->prev_pos = { 0.0f, 0.0f, 0.0f, 1.0f };
 	this->Color = { 1.0f, 1.0f, 1.0f, 1.0f };
 	this->Velocity = { 0.0f, 15.0f, 0.0f };
 	this->Gravity = { 0.0f, -9.8f, 0.0f };
@@ -19,7 +18,6 @@ Particle& Particle::operator=(const Particle& that)
 {
 	if (this != &that)
 	{
-		this->Mesh = that.Mesh;
 		this->Pos = that.Pos;
 		this->Color = that.Color;
 		this->prev_pos = that.prev_pos;

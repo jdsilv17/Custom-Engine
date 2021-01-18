@@ -86,7 +86,7 @@ namespace end
 		{
 			for (int16_t i = 0; i < N; ++i)
 			{
-				this->pool[i].value = T();
+				//this->pool[i].value = T();
 				this->pool[i].next = i + 1;
 			}
 			this->pool[N - 1].next = -1;
@@ -105,7 +105,7 @@ namespace end
 			T value;
 			int16_t next;
 			
-			element_t() : next(0) {}
+			element_t() : value(T()) {}
 			~element_t() {}
 		};
 

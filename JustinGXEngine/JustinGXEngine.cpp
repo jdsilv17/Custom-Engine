@@ -198,7 +198,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ int       nCmdShow)
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //	_CrtSetBreakAlloc(187);
+    	//_CrtSetBreakAlloc(4115);
 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -263,10 +263,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // release all our D3D11 interfaces
     CleanUp();
 
-#ifdef _DEBUG
-    debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-    debug->Release();
-#endif
+//#ifdef _DEBUG
+//    debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//    debug->Release();
+//#endif
 
     return (int) msg.wParam;
 }
@@ -377,10 +377,10 @@ HRESULT InitDevice()
     if (FAILED(hr))
         return hr;
 
-#ifdef _DEBUG
-    hr = myDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&debug);
-    //hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
+//#ifdef _DEBUG
+//    hr = myDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&debug);
+//    //hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//#endif
 
     // Create Render Target View
     ID3D11Resource* backbuffer = nullptr;
@@ -662,44 +662,28 @@ HRESULT InitContent()
 
     skybox.cube_mesh = Mesh<VERTEX_BASIC>(myDevice, immediateContext, skybox._vertexList, skybox._indicesList, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Define Particles
-    std::vector<VERTEX> sparkVerts =
-    {
-        VERTEX({ 0.0f, 0.25f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }),
-        VERTEX({ 0.0f, -0.25f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }),
-    };
     for (uint16_t i = 0; i < sortPool.capacity(); ++i)
     {
-        sortPool[i].Mesh = Mesh<VERTEX>(myDevice, immediateContext, 
-            sparkVerts.data(), 
-            (int)sparkVerts.size(), 
-            D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-        sortPool[i].Velocity = { RAND_FLT(-5.0f, 5.0f), 15.0f, RAND_FLT(-5.0f, 5.0f), 0.0f };
+        sortPool[i].Velocity = { RAND_FLT(-3.0f, 3.0f), 15.0f, RAND_FLT(-3.0f, 3.0f), 0.0f };
         sortPool[i].Lifetime = 3.0f;
     }
 
     emitters[0].SetSpawnPosition(-9.0f, 0.0f, 9.0f);
     emitters[0].Spawn_Color = { 0.0f, 1.0f, 0.0f, 1.0f };
     emitters[1].SetSpawnPosition(-9.0f, 0.0f, -9.0f);
-    emitters[1].Spawn_Color = { 0.0f, 0.0f, 1.0f, 1.0f };
+    emitters[1].Spawn_Color = { 1.0f, 0.0f, 1.0f, 1.0f };
     emitters[2].SetSpawnPosition(9.0f, 0.0f, 9.0f);
     emitters[2].Spawn_Color = { 1.0f, 1.0f, 0.0f, 1.0f };
     emitters[3].SetSpawnPosition(9.0f, 0.0f, -9.0f);
-    emitters[3].Spawn_Color = { 0.0f, 1.0f, 1.0f, 1.0f };
+    emitters[3].Spawn_Color = { 1.0f, 1.0f, 1.0f, 1.0f };
     for (size_t i = 0; i < ARRAYSIZE(emitters); ++i)
     {
-        sparkVerts =
-        {
-            VERTEX({ 0.0f, 0.25f, 0.0f, 1.0f }, emitters[i].Spawn_Color),
-            VERTEX({ 0.0f, -0.25f, 0.0f, 1.0f }, emitters[i].Spawn_Color),
-        };
-        //int n = sizeof(sharedPool) / sizeof(sharedPool[0]);
         size_t length = emitters[i].indices.capacity() * (i + 1);
         for (uint16_t j = (uint16_t)(i * emitters[i].indices.capacity()); j < length; ++j)
         {
-            sharedPool[j].Mesh = Mesh<VERTEX>(myDevice, immediateContext, sparkVerts.data(), (int)sparkVerts.size(), D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-            sharedPool[j].Mesh.SetPosition(emitters[i].GetSpawnPositionVector());
-            sharedPool[j].Velocity = { RAND_FLT(-5.0f, 5.0f), 15.0f, RAND_FLT(-5.0f, 5.0f), 0.0f };
+            sharedPool[j].p = 0.0f;
+            sharedPool[j].Pos = emitters[i].GetSpawnPositionFloat4();
+            sharedPool[j].Velocity = { RAND_FLT(-3.0f, 3.0f), 15.0f, RAND_FLT(-3.0f, 3.0f), 0.0f };
             sharedPool[j].Lifetime = 3.0f;
         }
     }
@@ -756,9 +740,9 @@ HRESULT InitContent()
     myDevice->CreateBlendState(&blendDesc, &blendState);
 
 
-#ifdef _DEBUG
-    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-#endif
+//#ifdef _DEBUG
+//    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//#endif
     
     return hr;
 }
@@ -1496,37 +1480,23 @@ void DrawDebugScene()
 
         end::debug_renderer::clear_lines();
     }
-    
 
     // Draw Particles
-    for (uint16_t i = 0; i < sortEmitter.indices.size(); ++i) // draw each particle that is active
-    {
-        cb.mWorld = XMMatrixTranspose(sortPool[i].Mesh.GetWorldMatrix());
-
-        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-        // send to Card
-        hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-        immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-        sortPool[i].Mesh.Draw(); // move paricles into single vertexbuffer
-    }
-
-    // Draw Particles
-    for (size_t i = 0; i < ARRAYSIZE(emitters); ++i)
-    {
-        for (uint16_t j = 0; j < emitters[i].indices.size(); ++j) // draw each particle that is active
-        {
-            int16_t index = emitters[i].indices[j];
-            cb.mWorld = XMMatrixTranspose(sharedPool[index].Mesh.GetWorldMatrix());
-
-            XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-            // send to Card
-            hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-            memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-            immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-            sharedPool[index].Mesh.Draw(); // move paricles into single vertexbuffer
-        }
-    }
+    //for (size_t i = 0; i < ARRAYSIZE(emitters); ++i)
+    //{
+    //    for (uint16_t j = 0; j < emitters[i].indices.size(); ++j) // draw each particle that is active
+    //    {
+    //        int16_t index = emitters[i].indices[j];
+    //        cb.mWorld = XMMatrixTranspose(sharedPool[index].Mesh.GetWorldMatrix());
+    //
+    //        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //        // send to Card
+    //        hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //        memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //        immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
+    //        sharedPool[index].Mesh.Draw(); // move paricles into single vertexbuffer
+    //    }
+    //}
 
 
     // change 1 to 0 vsync
@@ -1554,10 +1524,13 @@ void Update()
     }
     for (uint16_t i = 0; i < sortEmitter.indices.size(); ++i) // for every active particle, update it
     {
+        sortPool[i].prev_pos = sortPool[i].Pos;
         sortPool[i].Velocity += sortPool[i].Gravity * dt; // apply gravity
-        sortPool[i].Mesh.UpdatePosition(sortPool[i].Velocity * dt); // move particle
+        XMVECTOR pos = XMLoadFloat4(&sortPool[i].Pos);
+        pos += sortPool[i].Velocity * dt;
+        XMStoreFloat4(&sortPool[i].Pos, pos); // move particle
         sortPool[i].Lifetime -= dt; // kill it, but slowly
-
+        end::debug_renderer::add_line(sortPool[i].prev_pos, sortPool[i].Pos, sortEmitter.Spawn_Color, { 1.0f, 0.0f, 0.0f, 1.0f });
         if (sortPool[i].Lifetime <= 0.0f) // if particle is dead
         {
             sortPool.free(i); // free it
@@ -1565,7 +1538,7 @@ void Update()
             
             int16_t index = (uint16_t)sortPool.size();
 
-            sortPool[index].Mesh.SetPosition(sortEmitter.GetSpawnPositionVector());
+            sortPool[index].Pos = sortEmitter.GetSpawnPositionFloat4();
             sortPool[index].Velocity = { RAND_FLT(-3.0f, 3.0f), 15.0f, RAND_FLT(-3.0f, 3.0f), 0.0f };
             sortPool[index].Lifetime = 3.0f;
         }
@@ -1590,16 +1563,20 @@ void Update()
         for (uint16_t i = 0; i < emitters[emt].indices.size(); ++i) // for every active particle, update it
         {
             int16_t index = emitters[emt].indices[i];
+            sharedPool[index].prev_pos = sharedPool[index].Pos;
             sharedPool[index].Velocity += sharedPool[index].Gravity * dt; // apply gravity
-            sharedPool[index].Mesh.UpdatePosition(sharedPool[index].Velocity * dt); // move particle
+            XMVECTOR pos = XMLoadFloat4(&sharedPool[index].Pos);
+            pos += sharedPool[index].Velocity * dt;
+            XMStoreFloat4(&sharedPool[index].Pos, pos); // move particle
             sharedPool[index].Lifetime -= dt; // kill it, but slowly
+            end::debug_renderer::add_line(sharedPool[index].prev_pos, sharedPool[index].Pos, emitters[emt].Spawn_Color);
 
             if (sharedPool[index].Lifetime <= 0.0f) // if particle is dead
             {
                 sharedPool.free(index); // deallocate
                 emitters[emt].indices.free(i);
 
-                sharedPool[index].Mesh.SetPosition(emitters[emt].GetSpawnPositionVector());
+                sharedPool[index].Pos = emitters[emt].GetSpawnPositionFloat4();
                 sharedPool[index].Velocity = { RAND_FLT(-3.0f, 3.0f), 15.0f, RAND_FLT(-3.0f, 3.0f), 0.0f };
                 sharedPool[index].Lifetime = 3.0f;
             }

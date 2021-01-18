@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Particle.h"
+#include "Object.h"
 #include "pools.h"
 
 class Emitter :

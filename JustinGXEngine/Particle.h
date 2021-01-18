@@ -1,10 +1,11 @@
 #pragma once
-#include "Mesh.h"
+//#include <DirectXMath.h>
+#include "Object.h"
 class Particle /*:
-    public Mesh<VERTEX>*/
+    Object*/
 {
 public:
-    Mesh<VERTEX> Mesh;
+    float p;
     DirectX::XMFLOAT4 Pos;
     DirectX::XMFLOAT4 Color;
     DirectX::XMFLOAT4 prev_pos;
