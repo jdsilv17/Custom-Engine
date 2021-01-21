@@ -6,6 +6,11 @@ Object::Object()
 	this->SetPosition(0.0f, 0.0f, 0.0f);
 	this->SetRotation(0.0f, 0.0f, 0.0f);
 	this->SetScale(1.0f, 1.0f, 1.0f);
+	this->SetForwardVector(this->FORWARD);
+	this->SetBackwardVector(this->BACKWARD);
+	this->SetUpVector(this->UP);
+	this->SetLeftVector(this->LEFT);
+	this->SetRightVector(this->RIGHT);
 }
 
 Object::Object(const Object& that)
@@ -75,14 +80,29 @@ const DirectX::XMVECTOR& Object::GetForwardVector() const
 	return this->foward_V;
 }
 
+const DirectX::XMFLOAT3& Object::GetForwardFloat3() const
+{
+	return this->foward_F3;
+}
+
 const DirectX::XMVECTOR& Object::GetBackwardVector() const
 {
 	return this->backward_V;
 }
 
+const DirectX::XMFLOAT3& Object::GetBackwardFloat3() const
+{
+	return this->backward_F3;
+}
+
 const DirectX::XMVECTOR& Object::GetUpVector() const
 {
-	return this->UP;
+	return this->up_V;
+}
+
+const DirectX::XMFLOAT3& Object::GetUpFloat3() const
+{
+	return this->up_F3;
 }
 
 const DirectX::XMVECTOR& Object::GetLeftVector() const
@@ -90,9 +110,19 @@ const DirectX::XMVECTOR& Object::GetLeftVector() const
 	return this->left_V;
 }
 
+const DirectX::XMFLOAT3& Object::GetLeftFloat3() const
+{
+	return this->left_F3;
+}
+
 const DirectX::XMVECTOR& Object::GetRightVector() const
 {
 	return this->right_V;
+}
+
+const DirectX::XMFLOAT3& Object::GetRightFloat3() const
+{
+	return this->right_F3;
 }
 
 void Object::SetWorld(const DirectX::XMMATRIX& mat)
@@ -105,6 +135,36 @@ void Object::SetWorld(DirectX::XMFLOAT4X4 mat)
 {
 	this->World_F = mat;
 	this->World_M = DirectX::XMLoadFloat4x4(&this->World_F);
+}
+
+void Object::SetLookAt(const DirectX::XMVECTOR& position, const DirectX::XMVECTOR& target, const DirectX::XMVECTOR& up)
+{
+	DirectX::XMVECTOR Z = DirectX::XMVector4Normalize(DirectX::XMVectorSubtract(target, position));
+	DirectX::XMVECTOR X = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(up, Z));
+	DirectX::XMVECTOR Y = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(Z, X));
+	DirectX::XMMATRIX LookAt = {	X,
+									Y,
+									Z,
+									this->GetPositionVector() };
+	this->SetWorld(LookAt);
+}
+
+void Object::SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& target, const float& deltaTime)
+{
+	//using namespace DirectX;
+	DirectX::XMVECTOR Z = DirectX::XMVector4Normalize(DirectX::XMVectorSubtract(target, mat.r[3]));
+	DirectX::XMVECTOR X = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(this->UP, Z));
+	//DirectX::XMVECTOR Y = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(Z, X));
+
+	DirectX::XMVECTOR dotV = DirectX::XMVector3Dot(Z, X);
+	// turn right
+	float rot = (dotV.m128_f32[0] > 0.0f) ? dotV.m128_f32[0] * (DirectX::XM_PI * deltaTime) :
+	// else turn left
+		(dotV.m128_f32[0] < 0.0f) ? dotV.m128_f32[0] * -(DirectX::XM_PI * deltaTime) : 0.0f;
+
+	// after turn, pass z to lookat algo
+	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationAxis(this->UP, rot);
+	this->SetWorld(TurnTo);
 }
 
 void Object::SetPosition(const DirectX::XMVECTOR& pos)
@@ -152,21 +212,31 @@ void Object::SetScale(float x, float y, float z)
 void Object::SetForwardVector(const DirectX::XMVECTOR& forward)
 {
 	this->foward_V = forward;
+	DirectX::XMStoreFloat3(&this->foward_F3, this->foward_V);
 }
 
 void Object::SetBackwardVector(const DirectX::XMVECTOR& backward)
 {
 	this->backward_V = backward;
+	DirectX::XMStoreFloat3(&this->backward_F3, this->backward_V);
+}
+
+void Object::SetUpVector(const DirectX::XMVECTOR& up)
+{
+	this->up_V = up;
+	DirectX::XMStoreFloat3(&this->up_F3, this->up_V);
 }
 
 void Object::SetLeftVector(const DirectX::XMVECTOR& left)
 {
 	this->left_V = left;
+	DirectX::XMStoreFloat3(&this->left_F3, this->left_V);
 }
 
 void Object::SetRightVector(const DirectX::XMVECTOR& right)
 {
 	this->right_V = right;
+	DirectX::XMStoreFloat3(&this->right_F3, this->right_V);
 }
 
 void Object::UpdateWorldMatrix()

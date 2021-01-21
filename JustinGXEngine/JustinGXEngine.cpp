@@ -33,6 +33,7 @@
 #include <DirectXMath.h>
 #include <directxcolors.h>
 #include <iostream>
+#include <bitset>
 #pragma comment(lib, "d3d11.lib")
 
 #define RAND_FLT(min, max)  (min + (rand() / (float)RAND_MAX) * (max - min))
@@ -100,6 +101,7 @@ ID3D11DepthStencilView* zBufferView = nullptr;
 
 ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
 ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
+ID3D11RasterizerState* RSAALLines = nullptr; // used to enable anti-aliased lines
 ID3D11BlendState* blendState = nullptr;
 
 #ifdef _DEBUG
@@ -132,8 +134,8 @@ Emitter sortEmitter;
 end::Sorted_Pool_t<Particle, 256> sortPool;
 Emitter emitters[4];
 end::Pool_t<Particle, 1024> sharedPool;
-double delta = 0.0f;
-double count = 0.0f;
+Object Gizmo[3];
+std::bitset<12> bits;
 
 Shaders::VertexShader advanced_VS;
 Shaders::VertexShader default_VS;
@@ -184,6 +186,7 @@ void                CatchInput();
 void                DrawSpaceScene();
 void                DrawDwarfScene();
 void                DrawDebugScene();
+void SortedPoolParticle(float dt);
 void                Update();
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -671,6 +674,7 @@ HRESULT InitContent()
         sortPool[i].Lifetime = 3.0f;
     }
 
+    // initialize particle emitters
     emitters[0].SetSpawnPosition(-9.0f, 0.0f, 9.0f);
     emitters[0].Spawn_Color = { 0.0f, 1.0f, 0.0f, 1.0f };
     emitters[1].SetSpawnPosition(-9.0f, 0.0f, -9.0f);
@@ -679,6 +683,11 @@ HRESULT InitContent()
     emitters[2].Spawn_Color = { 1.0f, 1.0f, 0.0f, 1.0f };
     emitters[3].SetSpawnPosition(9.0f, 0.0f, -9.0f);
     emitters[3].Spawn_Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    // initialize gizmos
+    Gizmo[0].SetPosition(0.0f, 2.0f, 0.0f);
+    Gizmo[1].SetPosition(-3.0f, 4.0f, -2.0f);
+    Gizmo[2].SetPosition(3.0f, 4.0f, 2.0f);
 
     cam.SetPosition(0.0f, 5.0f, -15.0f);
 
@@ -706,6 +715,10 @@ HRESULT InitContent()
     rd.CullMode = D3D11_CULL_NONE;
     rd.FillMode = D3D11_FILL_SOLID;
     hr = myDevice->CreateRasterizerState(&rd, &RSCullNone);
+    rd.AntialiasedLineEnable = true;
+    rd.CullMode = D3D11_CULL_BACK;
+    rd.FillMode = D3D11_FILL_SOLID;
+    hr = myDevice->CreateRasterizerState(&rd, &RSAALLines);
 
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
     ZeroMemory(&depthStencilDesc, sizeof(depthStencilDesc));
@@ -749,6 +762,7 @@ void CleanUp()
     if (RTV) RTV->Release();
     if (zBuffer) zBuffer->Release();
     if (zBufferView) zBufferView->Release();
+    if (RSAALLines) RSAALLines->Release();
     if (RSCullNone) RSCullNone->Release();
     if (DSLessEqual) DSLessEqual->Release();
     if (blendState) blendState->Release();
@@ -785,6 +799,22 @@ void CatchInput()
     {
         cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
     }
+    if (bits[0]) // 
+    {
+        Gizmo[0].UpdatePosition(Gizmo[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+    }
+    if (bits[1])
+    {
+        Gizmo[0].UpdatePosition(-Gizmo[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+    }
+    if (bits[2])
+    {
+        Gizmo[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+    }
+    if (bits[3])
+    {
+        Gizmo[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+    }
     if (GetAsyncKeyState('W') & 0x8000)
     {
         cam.UpdatePosition(cam.GetForwardVector() * cameraSpeed * (float)uTimer.deltaTime);
@@ -803,11 +833,11 @@ void CatchInput()
     }
     if (GetAsyncKeyState(VK_SPACE) & 0x8000)
     {
-        cam.UpdatePosition(cam.GetUpVector() * cameraSpeed * (float)uTimer.deltaTime);
+        cam.UpdatePosition(cam.UP * cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('X') & 0x8000)
     {
-        cam.UpdatePosition(cam.GetUpVector() * -cameraSpeed * (float)uTimer.deltaTime);
+        cam.UpdatePosition(cam.UP * -cameraSpeed * (float)uTimer.deltaTime);
     }
     if (GetAsyncKeyState('Q') & 0x0001)
     {
@@ -840,7 +870,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     //static POINT curr_point = { 0,0 };
     //static POINT delta_point = { 0,0 };
 
-
     switch (message)
     {
     case WM_COMMAND:
@@ -860,6 +889,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_UP) // move gizmo forward
+        {
+            bits.set(0);
+        }
+        if (wParam == VK_DOWN) // move gizmo backward
+        {
+            bits.set(1);
+        }
+        if (wParam == VK_LEFT) // rotate gizmo left
+        {
+            bits.set(2);
+        }
+        if (wParam == VK_RIGHT) // rotate gizmo right
+        {
+            bits.set(3);
+        }
+        break;
+    }
+    case WM_KEYUP:
+    {
+        if (wParam == VK_UP)
+        {
+            bits.set(0, false);
+        }
+        if (wParam == VK_DOWN)
+        {
+            bits.set(1, false);
+        }
+        if (wParam == VK_LEFT)
+        {
+            bits.set(2, false);
+        }
+        if (wParam == VK_RIGHT)
+        {
+            bits.set(3, false);
+        }
+        break;
+    }
     //case WM_RBUTTONDOWN:
     //{
     //    // Capture mouse input. 
@@ -1431,7 +1500,7 @@ void DrawDebugScene()
     }
 
     // Draw Skybox =====================================
-    if (false)
+    if (true)
     {
         immediateContext->RSSetState(RSCullNone); // turn back face culling off
         immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
@@ -1452,6 +1521,7 @@ void DrawDebugScene()
     }
 
     // Draw Grid ========================================
+    immediateContext->RSSetState(RSAALLines);
     default_VS.Bind(immediateContext);
     solid_PS.Bind(immediateContext);
     if (DrawGrid)
@@ -1482,23 +1552,15 @@ void DrawDebugScene()
     temp.Draw();
 
     end::debug_renderer::clear_lines();
+    immediateContext->RSSetState(nullptr);
 
     // change 1 to 0 vsync
     bool vysnc = true;
     swapChain->Present(vysnc, 0);
 }
 
-void Update()
+void SortedPoolParticle(float dt)
 {
-    gTimer.GetElapsedMilliseconds(); // causes view matrix to swap rows
-    gTimer.Restart();
-    float dt = ((float)gTimer.deltaTime / 1000.0f);
-
-    CatchInput();
-
-    if (!DrawGrid)
-        end::MakeColorGrid(20.0f, 24, dt * 0.5f); // creates grid that changes color overtime
-
     // Sorted Pool Algo
     // every 0.02 secs activate a particle
     float t = (std::ceilf(dt / 0.01f));
@@ -1511,18 +1573,18 @@ void Update()
     {
         sortPool[i].prev_pos = sortPool[i].Pos;
         sortPool[i].Velocity += sortPool[i].Gravity * dt; // apply gravity
-        
+
         XMVECTOR pos = XMLoadFloat4(&sortPool[i].Pos);
         pos += sortPool[i].Velocity * dt;
         XMStoreFloat4(&sortPool[i].Pos, pos); // move particle
-        
         sortPool[i].Lifetime -= dt; // kill it, but slowly
-        end::debug_renderer::add_line(sortPool[i].prev_pos, sortPool[i].Pos, sortEmitter.Spawn_Color, { 1.0f, 0.0f, 0.0f, 1.0f });
-        if (sortPool[i].Lifetime <= 0.0f) // if particle is dead
+        if (sortPool[i].Lifetime > 0.0f) // if particle is dead
+            end::debug_renderer::add_line(sortPool[i].prev_pos, sortPool[i].Pos, sortEmitter.Spawn_Color, { 1.0f, 0.0f, 0.0f, 1.0f });
+        else
         {
             sortPool.free(i); // free it
             sortEmitter.indices.free(i);
-            
+
             int16_t index = (uint16_t)sortPool.size();
 
             sortPool[index].Pos = sortEmitter.GetSpawnPositionFloat4();
@@ -1530,8 +1592,11 @@ void Update()
             sortPool[index].Lifetime = 3.0f;
         }
     }
-
+}
+void FreeListParticle(float dt)
+{
     // Free List Algo
+    float t = (std::ceilf(dt / 0.01f));
     for (size_t emt = 0; emt < ARRAYSIZE(emitters); ++emt)
     {
         int16_t emtIndex = 0;
@@ -1562,11 +1627,11 @@ void Update()
             int16_t index = emitters[emt].indices[i];
             sharedPool[index].prev_pos = sharedPool[index].Pos;
             sharedPool[index].Velocity += sharedPool[index].Gravity * dt; // apply gravity // am i nothing to you
-            
+
             XMVECTOR pos = XMLoadFloat4(&sharedPool[index].Pos);
             pos += sharedPool[index].Velocity * dt;
             XMStoreFloat4(&sharedPool[index].Pos, pos); // move particle
-            
+
             sharedPool[index].Lifetime -= dt; // kill it, but slowly
             end::debug_renderer::add_line(sharedPool[index].prev_pos, sharedPool[index].Pos, emitters[emt].Spawn_Color);
 
@@ -1577,5 +1642,43 @@ void Update()
                 sharedPool.free(index);
             }
         }
+    }
+}
+
+void Update()
+{
+    gTimer.GetElapsedMilliseconds(); // causes view matrix to swap rows
+    gTimer.Restart();
+    float dt = ((float)gTimer.deltaTime / 1000.0f);
+
+    CatchInput();
+
+    if (!DrawGrid)
+        end::MakeColorGrid(20.0f, 24, dt * 0.5f); // creates grid that changes color overtime
+
+    //SortedPoolParticle(dt);
+    //FreeListParticle(dt);
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        Gizmo[1].SetLookAt(Gizmo[1].GetPositionVector(), Gizmo[0].GetPositionVector(), Gizmo[1].UP);
+        Gizmo[2].SetTurnTo(Gizmo[2].GetWorldMatrix(), Gizmo[0].GetPositionVector(), dt* 0.05f);
+        XMVECTOR x = Gizmo[i].GetWorldMatrix().r[0] + Gizmo[i].GetPositionVector();
+        XMVECTOR y = Gizmo[i].GetWorldMatrix().r[1] + Gizmo[i].GetPositionVector();
+        XMVECTOR z = Gizmo[i].GetWorldMatrix().r[2] + Gizmo[i].GetPositionVector();
+
+        XMFLOAT4 xAxis;
+        XMStoreFloat4(&xAxis, x);
+        XMFLOAT4 yAxis;
+        XMStoreFloat4(&yAxis, y);
+        XMFLOAT4 zAxis;
+        XMStoreFloat4(&zAxis, z);
+
+        // x-axis
+        end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+        // y-axis
+        end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+        // z-axis
+        end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
 }
