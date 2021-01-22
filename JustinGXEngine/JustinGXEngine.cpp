@@ -135,7 +135,7 @@ end::Sorted_Pool_t<Particle, 256> sortPool;
 Emitter emitters[4];
 end::Pool_t<Particle, 1024> sharedPool;
 Object Gizmo[3];
-std::bitset<12> bits;
+std::bitset<256> bits;
 
 Shaders::VertexShader advanced_VS;
 Shaders::VertexShader default_VS;
@@ -795,55 +795,55 @@ void CatchInput()
 
     prev_point = curr_point; // keep the current pos of the current frame to use in the next frame
 
-    if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
-    {
-        cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
-    }
-    if (bits[0]) // 
+    //if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) // Right mouse button
+    //{
+    //    cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
+    //}
+    if (bits[0]) // up arrow
     {
         Gizmo[0].UpdatePosition(Gizmo[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
     }
-    if (bits[1])
+    if (bits[1]) // down arrow
     {
         Gizmo[0].UpdatePosition(-Gizmo[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
     }
-    if (bits[2])
+    if (bits[2]) // left arrow
     {
         Gizmo[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
     }
-    if (bits[3])
+    if (bits[3]) // right arrow
     {
         Gizmo[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState('W') & 0x8000)
+    if (bits[4]) // W
     {
         cam.UpdatePosition(cam.GetForwardVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState('A') & 0x8000)
+    if (bits[5]) // A
     {
         cam.UpdatePosition(cam.GetLeftVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState('S') & 0x8000)
+    if (bits[6]) // S
     {
         cam.UpdatePosition(cam.GetBackwardVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState('D') & 0x8000)
+    if (bits[7]) // D
     {
         cam.UpdatePosition(cam.GetRightVector() * cameraSpeed * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState(VK_SPACE) & 0x8000)
+    if (bits[8]) // SPACE
     {
         cam.UpdatePosition(cam.UP * cameraSpeed * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState('X') & 0x8000)
+    if (bits[9]) // X
     {
         cam.UpdatePosition(cam.UP * -cameraSpeed * (float)uTimer.deltaTime);
     }
-    if (GetAsyncKeyState('Q') & 0x0001)
+    if (bits[10] || GetAsyncKeyState('Q') & 0x0001)
     {
         DrawQuad = !DrawQuad;
     }
-    if (GetAsyncKeyState('G') & 0x0001)
+    if (bits[11] || GetAsyncKeyState('G') & 0x0001)
     {
         DrawGrid = !DrawGrid;
     }
@@ -862,13 +862,13 @@ void CatchInput()
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     //HDC hdc;
-    //RECT rcClient;                 // client area rectangle 
-    //POINT ptClientUL;              // client upper left corner 
-    //POINT ptClientLR;              // client lower right corner 
-    ////static POINTS mouseCoords;        // beginning point
-    //static POINT prev_point = { 0,0 };
-    //static POINT curr_point = { 0,0 };
-    //static POINT delta_point = { 0,0 };
+    RECT rcClient;                 // client area rectangle 
+    POINT ptClientUL;              // client upper left corner 
+    POINT ptClientLR;              // client lower right corner 
+    //static POINTS mouseCoords;        // beginning point
+    static POINT prev_point = { 0,0 };
+    static POINT curr_point = { 0,0 };
+    static POINT delta_point = { 0,0 };
 
     switch (message)
     {
@@ -907,6 +907,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             bits.set(3);
         }
+        if (wParam == 'W') // move camera forward
+        {
+            bits.set(4);
+        }
+        if (wParam == 'A') // strafe camera left
+        {
+            bits.set(5);
+        }
+        if (wParam == 'S') // move camera backward
+        {
+            bits.set(6);
+        }
+        if (wParam == 'D') // strafe camera right
+        {
+            bits.set(7);
+        }
+        if (wParam == VK_SPACE) // move camera up
+        {
+            bits.set(8);
+        }
+        if (wParam == 'X') // move camera down
+        {
+            bits.set(9);
+        }
         break;
     }
     case WM_KEYUP:
@@ -927,47 +951,71 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             bits.set(3, false);
         }
+        if (wParam == 'W')
+        {
+            bits.set(4, false);
+        }
+        if (wParam == 'A')
+        {
+            bits.set(5, false);
+        }
+        if (wParam == 'S')
+        {
+            bits.set(6, false);
+        }
+        if (wParam == 'D')
+        {
+            bits.set(7, false);
+        }
+        if (wParam == VK_SPACE)
+        {
+            bits.set(8, false);
+        }
+        if (wParam == 'X')
+        {
+            bits.set(9, false);
+        }
         break;
     }
-    //case WM_RBUTTONDOWN:
-    //{
-    //    // Capture mouse input. 
+    case WM_RBUTTONDOWN:
+    {
+        // Capture mouse input. 
 
-    //    SetCapture(hWnd);
+        SetCapture(hWnd);
 
-    //    // Retrieve the screen coordinates of the client area, 
-    //    // and convert them into client coordinates. 
+        // Retrieve the screen coordinates of the client area, 
+        // and convert them into client coordinates. 
 
-    //    GetClientRect(hWnd, &rcClient);
-    //    ptClientUL.x = rcClient.left;
-    //    ptClientUL.y = rcClient.top;
+        GetClientRect(hWnd, &rcClient);
+        ptClientUL.x = rcClient.left;
+        ptClientUL.y = rcClient.top;
 
-    //    // Add one to the right and bottom sides, because the 
-    //    // coordinates retrieved by GetClientRect do not 
-    //    // include the far left and lowermost pixels. 
+        // Add one to the right and bottom sides, because the 
+        // coordinates retrieved by GetClientRect do not 
+        // include the far left and lowermost pixels. 
 
-    //    ptClientLR.x = rcClient.right + 1;
-    //    ptClientLR.y = rcClient.bottom + 1;
-    //    ClientToScreen(hWnd, &ptClientUL);
-    //    ClientToScreen(hWnd, &ptClientLR);
+        ptClientLR.x = rcClient.right + 1;
+        ptClientLR.y = rcClient.bottom + 1;
+        ClientToScreen(hWnd, &ptClientUL);
+        ClientToScreen(hWnd, &ptClientLR);
 
-    //    // Copy the client coordinates of the client area 
-    //    // to the rcClient structure. Confine the mouse cursor 
-    //    // to the client area by passing the rcClient structure 
-    //    // to the ClipCursor function. 
+        // Copy the client coordinates of the client area 
+        // to the rcClient structure. Confine the mouse cursor 
+        // to the client area by passing the rcClient structure 
+        // to the ClipCursor function. 
 
-    //    SetRect(&rcClient, ptClientUL.x, ptClientUL.y,
-    //        ptClientLR.x, ptClientLR.y);
-    //    ClipCursor(&rcClient); // confines the cursor within the client area
+        SetRect(&rcClient, ptClientUL.x, ptClientUL.y,
+            ptClientLR.x, ptClientLR.y);
+        ClipCursor(&rcClient); // confines the cursor within the client area
 
-    //    // Convert the cursor coordinates into a POINTS 
-    //    // structure, which defines the beginning point of the 
-    //    // line drawn during a WM_MOUSEMOVE message. 
+        // Convert the cursor coordinates into a POINTS 
+        // structure, which defines the beginning point of the 
+        // line drawn during a WM_MOUSEMOVE message. 
 
-    //    //curr_point.x = LOWORD(lParam);
-    //    //curr_point.y = HIWORD(lParam);
-    //    return 0;
-    //}
+        curr_point.x = LOWORD(lParam);
+        curr_point.y = HIWORD(lParam);
+        return 0;
+    }
     ////case WM_INPUT:
     ////    {
     ////        UINT dataSize;
@@ -989,33 +1037,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     ////
     ////        return DefWindowProc(hWnd, message, wParam, lParam);
     ////    }
-    ////case WM_MOUSEMOVE:
+    case WM_MOUSEMOVE:
+    {
+        //When moving the mouse, the user must hold down 
+        //the right mouse button to rotate the camera. 
+        if (wParam & MK_RBUTTON)
+        {
+            prev_point = curr_point;
+            curr_point.x = LOWORD(lParam);
+            curr_point.y = HIWORD(lParam);
 
-    ////    // When moving the mouse, the user must hold down 
-    ////    // the left mouse button to rotate the camera. 
-    ////    //if (wParam & MK_RBUTTON)
-    ////    //{
-    ////    //    prev_point = curr_point;
-    ////    //    curr_point.x = LOWORD(lParam);
-    ////    //    curr_point.y = HIWORD(lParam);
-    ////    //    //GetCursorPos(&curr_point);
-    ////    //    // calc delta of mouse pos
-    ////    //    delta_point.x = curr_point.x - prev_point.x;
-    ////    //    delta_point.y = curr_point.y - prev_point.y;
+            // calc delta of mouse pos
+            delta_point.x = curr_point.x - prev_point.x;
+            delta_point.y = curr_point.y - prev_point.y;
+            prev_point = curr_point;
+            cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
+        }
 
-    ////    //    cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.001f, static_cast<float>(delta_point.x) * 0.001f, 0.0f);
-    ////    //}
+        break; 
+    }
+    case WM_RBUTTONUP:
 
-    ////    break;
-    //case WM_RBUTTONUP:
 
-    //    // The user has finished drawing the line. Reset the 
-    //    // previous line flag, release the mouse cursor, and 
-    //    // release the mouse capture. 
-
-    //    ClipCursor(NULL);
-    //    ReleaseCapture();
-    //    return 0;
+        ClipCursor(NULL);
+        ReleaseCapture();
+        break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -1662,11 +1708,11 @@ void Update()
     for (size_t i = 0; i < 3; ++i)
     {
         Gizmo[1].SetLookAt(Gizmo[1].GetPositionVector(), Gizmo[0].GetPositionVector(), Gizmo[1].UP);
-        Gizmo[2].SetTurnTo(Gizmo[2].GetWorldMatrix(), Gizmo[0].GetPositionVector(), dt* 0.05f);
+        Gizmo[2].SetTurnTo(Gizmo[2].GetWorldMatrix(), Gizmo[0].GetPositionVector(), dt);
+
         XMVECTOR x = Gizmo[i].GetWorldMatrix().r[0] + Gizmo[i].GetPositionVector();
         XMVECTOR y = Gizmo[i].GetWorldMatrix().r[1] + Gizmo[i].GetPositionVector();
         XMVECTOR z = Gizmo[i].GetWorldMatrix().r[2] + Gizmo[i].GetPositionVector();
-
         XMFLOAT4 xAxis;
         XMStoreFloat4(&xAxis, x);
         XMFLOAT4 yAxis;

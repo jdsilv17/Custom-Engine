@@ -184,6 +184,7 @@
     <ClInclude Include="debug_renderer.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="frustum_culling.h" />
     <ClInclude Include="JustinGXEngine.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Mesh.h" />

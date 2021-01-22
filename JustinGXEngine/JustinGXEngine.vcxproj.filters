@@ -102,6 +102,9 @@
     <ClInclude Include="Particle.h">
       <Filter>Header Files\Temp</Filter>
     </ClInclude>
+    <ClInclude Include="frustum_culling.h">
+      <Filter>Header Files\Temp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JustinGXEngine.cpp">

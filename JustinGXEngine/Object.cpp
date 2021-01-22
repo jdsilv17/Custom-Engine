@@ -136,7 +136,7 @@ void Object::SetWorld(DirectX::XMFLOAT4X4 mat)
 	this->World_F = mat;
 	this->World_M = DirectX::XMLoadFloat4x4(&this->World_F);
 }
-
+// move to math eventually
 void Object::SetLookAt(const DirectX::XMVECTOR& position, const DirectX::XMVECTOR& target, const DirectX::XMVECTOR& up)
 {
 	DirectX::XMVECTOR Z = DirectX::XMVector4Normalize(DirectX::XMVectorSubtract(target, position));
@@ -148,23 +148,34 @@ void Object::SetLookAt(const DirectX::XMVECTOR& position, const DirectX::XMVECTO
 									this->GetPositionVector() };
 	this->SetWorld(LookAt);
 }
-
+// move to math eventually
+void Object::SetLookAt(const DirectX::XMVECTOR& zAxis, const DirectX::XMVECTOR& up)
+{
+	DirectX::XMVECTOR Z = DirectX::XMVector4Normalize(zAxis);
+	DirectX::XMVECTOR X = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(up, Z));
+	DirectX::XMVECTOR Y = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(Z, X));
+	DirectX::XMMATRIX LookAt = { X,
+									Y,
+									Z,
+									this->GetPositionVector() };
+	this->SetWorld(LookAt);
+}
+// move to math eventually
 void Object::SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& target, const float& deltaTime)
 {
-	//using namespace DirectX;
 	DirectX::XMVECTOR Z = DirectX::XMVector4Normalize(DirectX::XMVectorSubtract(target, mat.r[3]));
 	DirectX::XMVECTOR X = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(this->UP, Z));
 	//DirectX::XMVECTOR Y = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(Z, X));
 
-	DirectX::XMVECTOR dotV = DirectX::XMVector3Dot(Z, X);
+	DirectX::XMVECTOR dotV = DirectX::XMVector3Dot(Z, mat.r[0]);
 	// turn right
-	float rot = (dotV.m128_f32[0] > 0.0f) ? dotV.m128_f32[0] * (DirectX::XM_PI * deltaTime) :
+	float rot_rad = (dotV.m128_f32[0] > 0.0f) ? dotV.m128_f32[0] * (DirectX::XM_PI / 180.0f) :
 	// else turn left
-		(dotV.m128_f32[0] < 0.0f) ? dotV.m128_f32[0] * -(DirectX::XM_PI * deltaTime) : 0.0f;
+		(dotV.m128_f32[0] < 0.0f) ? -dotV.m128_f32[0] * (DirectX::XM_PI / 180.0f) : 0.0f;
 
 	// after turn, pass z to lookat algo
-	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationAxis(this->UP, rot);
-	this->SetWorld(TurnTo);
+	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationY(rot_rad * deltaTime) * mat;
+	this->SetLookAt(TurnTo.r[2], this->UP);
 }
 
 void Object::SetPosition(const DirectX::XMVECTOR& pos)

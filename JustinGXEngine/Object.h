@@ -41,7 +41,7 @@ public:
 	void SetWorld(DirectX::XMFLOAT4X4 mat);
 
 	void SetLookAt(const DirectX::XMVECTOR& position, const DirectX::XMVECTOR& target, const DirectX::XMVECTOR& up);
-	void SetLookAt(DirectX::XMFLOAT4X4 mat);
+	void SetLookAt(const DirectX::XMVECTOR& zAxis, const DirectX::XMVECTOR& up);
 
 	void SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& target, const float& deltaTime);
 	void SetTurnTo(DirectX::XMFLOAT4X4 mat);
