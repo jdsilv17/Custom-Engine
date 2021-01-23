@@ -20,17 +20,21 @@ namespace end
 	// Calculates the plane of a triangle from three points. ???
 	plane_t calculate_plane(DirectX::XMFLOAT3 a, DirectX::XMFLOAT3 b, DirectX::XMFLOAT3 c)
 	{
-		
+		plane_t plane;
 		const DirectX::XMVECTOR origin = { 0.0f, 0.0f, 0.0f };
 		DirectX::XMVECTOR _a = DirectX::XMLoadFloat3(&a);
 		DirectX::XMVECTOR _b = DirectX::XMLoadFloat3(&b);
 		DirectX::XMVECTOR _c = DirectX::XMLoadFloat3(&c);
 
-		DirectX::XMVECTOR a_to_o = _a - origin;
-		DirectX::XMVECTOR b_to_o = _b - origin;
-		DirectX::XMVECTOR c_to_o = _c - origin;
+		// get the vectors for the edge of the triangle
+		DirectX::XMVECTOR U = _b - _a;
+		DirectX::XMVECTOR V = _c - _a;
 
-		//
+		// cross product to find the surface normal
+		DirectX::XMVECTOR normal = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(U, V));
+		DirectX::XMStoreFloat3(&plane.normal, normal);
+
+		return plane;
 	}
 
 	// Calculates a frustum (6 planes) from the input view parameter.

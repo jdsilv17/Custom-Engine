@@ -135,6 +135,7 @@ end::Sorted_Pool_t<Particle, 256> sortPool;
 Emitter emitters[4];
 end::Pool_t<Particle, 1024> sharedPool;
 Object Gizmo[3];
+Object Frustrum;
 std::bitset<256> bits;
 
 Shaders::VertexShader advanced_VS;
@@ -688,7 +689,7 @@ HRESULT InitContent()
     Gizmo[0].SetPosition(0.0f, 2.0f, 0.0f);
     Gizmo[1].SetPosition(-3.0f, 4.0f, -2.0f);
     Gizmo[2].SetPosition(3.0f, 4.0f, 2.0f);
-
+    Frustrum.SetPosition(0.0f, 2.0f, 0.0f);
     cam.SetPosition(0.0f, 5.0f, -15.0f);
 
     // initialize Directional Light
@@ -1705,11 +1706,12 @@ void Update()
     //SortedPoolParticle(dt);
     //FreeListParticle(dt);
 
+    // Create the Target, LooAt, and TurnTo Gizmos
     for (size_t i = 0; i < 3; ++i)
     {
         Gizmo[1].SetLookAt(Gizmo[1].GetPositionVector(), Gizmo[0].GetPositionVector(), Gizmo[1].UP);
-        Gizmo[2].SetTurnTo(Gizmo[2].GetWorldMatrix(), Gizmo[0].GetPositionVector(), dt);
-
+        Gizmo[2].SetTurnTo(Gizmo[2].GetWorldMatrix(), Gizmo[0].GetPositionVector(), dt * 0.5f);
+        
         XMVECTOR x = Gizmo[i].GetWorldMatrix().r[0] + Gizmo[i].GetPositionVector();
         XMVECTOR y = Gizmo[i].GetWorldMatrix().r[1] + Gizmo[i].GetPositionVector();
         XMVECTOR z = Gizmo[i].GetWorldMatrix().r[2] + Gizmo[i].GetPositionVector();
@@ -1726,5 +1728,84 @@ void Update()
         end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
         // z-axis
         end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+    }
+
+    // Create View Frustrum
+    if (true)
+    {
+        XMFLOAT4 NTL;   //Near - Top - Left(NTL)
+        XMFLOAT4 NTR;   //Near - Top - Right(NTR)
+        XMFLOAT4 NBL;   //Near - Bottom - Left(NBL)
+        XMFLOAT4 NBR;   //Near - Bottom - Right(NBR)
+
+        XMFLOAT4 FTL;   //Far - Top - Left(FTL)
+        XMFLOAT4 FTR;   //Far - Top - Right(FTR)
+        XMFLOAT4 FBL;   //Far - Bottom - Left(FBL)
+        XMFLOAT4 FBR;   //Far - Bottom - Right(FBR)
+        XMFLOAT4* corners_F[8] =
+        {
+            &FTL,
+            &FTR,
+            &FBL,
+            &FBR,
+
+            &NTL,
+            &NTR,
+            &NBL,
+            &NBR
+        };
+        XMVECTOR corners_V[8];
+
+        // Formula Reference: https://stackoverflow.com/questions/13665932/calculating-the-viewing-frustum-in-a-3d-space //
+        // compute the center points of the near and far planes
+        float nearDistance = 1.0f;
+        float farDistance = 7.0f;
+        //  plane center = cameras position + cameras forward * respective plane distnace
+        XMVECTOR nearCenter = Gizmo[0].GetPositionVector() + Gizmo[0].GetWorldMatrix().r[2] * nearDistance;
+        XMVECTOR farCenter = Gizmo[0].GetPositionVector() + Gizmo[0].GetWorldMatrix().r[2] * farDistance;
+
+        // Compute the widths and heights of the near and far planes:
+        float fovRadians = 20.0f * (XM_PI / 180.0f);
+        float nearHeight = 2.0f * tan(fovRadians / 2.0f) * nearDistance;
+        float farHeight = 2.0f * tan(fovRadians / 2.0f) * farDistance;
+        float nearWidth = nearHeight * aspectRatio;
+        float farWidth = farHeight * aspectRatio;
+
+        // Compute the corner points from the near and far planes:
+        // corner point = plane center +/- cameras UP/Y * (plane height/2) +/- cameras RIGHT/X * (plane width/2);
+        // Far top left
+        corners_V[0] = farCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
+        // Far top right
+        corners_V[1] = farCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
+        // Far bottom left
+        corners_V[2] = farCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
+        // Far bottom right
+        corners_V[3] = farCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
+        // Near top left
+        corners_V[4] = nearCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
+        // Near top right
+        corners_V[5] = nearCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
+        // Near bottom left
+        corners_V[6] = nearCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
+        // Near bottom right
+        corners_V[7] = nearCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
+
+        for (size_t i = 0; i < 8; ++i)
+        {
+            XMStoreFloat4(corners_F[i], corners_V[i]);
+        }
+
+        end::debug_renderer::add_line(NTL, NTR, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NTR, NBR, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NBR, NBL, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NBL, NTL, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(FTL, FTR, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(FTR, FBR, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(FBR, FBL, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(FBL, FTL, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NTL, FTL, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NBL, FBL, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NTR, FTR, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(NBR, FBR, XMFLOAT4(Colors::Fuchsia));
     }
 }

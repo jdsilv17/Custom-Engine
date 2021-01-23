@@ -164,17 +164,15 @@ void Object::SetLookAt(const DirectX::XMVECTOR& zAxis, const DirectX::XMVECTOR& 
 void Object::SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& target, const float& deltaTime)
 {
 	DirectX::XMVECTOR Z = DirectX::XMVector4Normalize(DirectX::XMVectorSubtract(target, mat.r[3]));
-	DirectX::XMVECTOR X = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(this->UP, Z));
-	//DirectX::XMVECTOR Y = DirectX::XMVector4Normalize(DirectX::XMVector3Cross(Z, X));
 
-	DirectX::XMVECTOR dotV = DirectX::XMVector3Dot(Z, mat.r[0]);
+	DirectX::XMVECTOR dotX = DirectX::XMVector3Dot(Z, mat.r[0]);
+	DirectX::XMVECTOR dotY = DirectX::XMVector3Dot(Z, mat.r[1]);
 	// turn right
-	float rot_rad = (dotV.m128_f32[0] > 0.0f) ? dotV.m128_f32[0] * (DirectX::XM_PI / 180.0f) :
-	// else turn left
-		(dotV.m128_f32[0] < 0.0f) ? -dotV.m128_f32[0] * (DirectX::XM_PI / 180.0f) : 0.0f;
+	float rot_Y_rad = dotX.m128_f32[0] * deltaTime /** (DirectX::XM_PI / 180.0f)*/;
+	float rot_X_rad = dotY.m128_f32[0] * deltaTime /** (DirectX::XM_PI / 180.0f)*/;
 
-	// after turn, pass z to lookat algo
-	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationY(rot_rad * deltaTime) * mat;
+	// after turn, pass z to lookat algo to orthonormalize it
+	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationX(-rot_X_rad) * DirectX::XMMatrixRotationY(rot_Y_rad) * mat;
 	this->SetLookAt(TurnTo.r[2], this->UP);
 }
 
