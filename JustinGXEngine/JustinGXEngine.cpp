@@ -14,6 +14,7 @@
 #include "Time.h"
 
 #include "debug_renderer.h"
+#include "frustum_culling.h"
 
 // Model header includes ======================
 #include "./Assets/headers/DwarfArmor.h"
@@ -40,132 +41,136 @@
 
 using namespace DirectX;
 
-// for init
-ID3D11Device* myDevice = nullptr;
-IDXGISwapChain* swapChain = nullptr;
-ID3D11DeviceContext* immediateContext = nullptr;
-
-// for drawing
-ID3D11RenderTargetView* RTV = nullptr;
-D3D11_VIEWPORT vPort;
-float aspectRatio = 1;
-
-struct ConstantBuffer
+namespace
 {
-    XMMATRIX mWorld;
-    XMMATRIX mView;
-    XMMATRIX mProjection;
-    XMFLOAT4 LightPos[3];
-    XMFLOAT4 LightDir[3];
-    XMFLOAT4 LightColor[3];
-};
+    // for init
+    ID3D11Device* myDevice = nullptr;
+    IDXGISwapChain* swapChain = nullptr;
+    ID3D11DeviceContext* immediateContext = nullptr;
 
- //storage value for math
-struct WVP
-{
-    XMFLOAT4X4 sWorld;
-    XMFLOAT4X4 sView;
-    XMFLOAT4X4 sProjection;
-    XMFLOAT4 LightPos[3];
-    XMFLOAT4 LightDir[3];
-    XMFLOAT4 LightColor[3];
-    XMFLOAT4 CamPos;
-    XMFLOAT4 totalTime;
-};
+    // for drawing
+    ID3D11RenderTargetView* RTV = nullptr;
+    D3D11_VIEWPORT vPort;
+    float aspectRatio = 1;
 
-XMVECTOR LightPositions[3] =
-{
-    {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
-    {-10.0f, 5.0f, 0.0f, 1.0f}, // point
-    {5.0f, 5.0f, 0.0f, 1.0f} // spot
-};
-XMVECTOR LightDirs[3] =
-{
-    {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
-    {-10.0f, 5.0f, 0.0f, 1.0f}, // point
-    {1.0f, -1.0f, 0.0f, 1.0f} // spot
-};
-XMVECTOR LightColors[3] =
-{
-    {0.75f, 0.75f, 0.75f, 1.0f},
-    {1.0f, 0.0f, 0.0f, 1.0f},
-    {0.0f, 1.0f, 0.0f, 1.0f}
-};
+    struct ConstantBuffer
+    {
+        XMMATRIX mWorld;
+        XMMATRIX mView;
+        XMMATRIX mProjection;
+        XMFLOAT4 LightPos[3];
+        XMFLOAT4 LightDir[3];
+        XMFLOAT4 LightColor[3];
+    };
 
-UINT numOfElements = 0;
-UINT numOfVerts = 0;
+    //storage value for math
+    struct WVP
+    {
+        XMFLOAT4X4 sWorld;
+        XMFLOAT4X4 sView;
+        XMFLOAT4X4 sProjection;
+        XMFLOAT4 LightPos[3];
+        XMFLOAT4 LightDir[3];
+        XMFLOAT4 LightColor[3];
+        XMFLOAT4 CamPos;
+        XMFLOAT4 totalTime;
+    };
 
-// z buffer
-ID3D11Texture2D* zBuffer = nullptr;
-ID3D11DepthStencilView* zBufferView = nullptr;
+    XMVECTOR LightPositions[3] =
+    {
+        {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
+        {-10.0f, 5.0f, 0.0f, 1.0f}, // point
+        {5.0f, 5.0f, 0.0f, 1.0f} // spot
+    };
+    XMVECTOR LightDirs[3] =
+    {
+        {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
+        {-10.0f, 5.0f, 0.0f, 1.0f}, // point
+        {1.0f, -1.0f, 0.0f, 1.0f} // spot
+    };
+    XMVECTOR LightColors[3] =
+    {
+        {0.75f, 0.75f, 0.75f, 1.0f},
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {0.0f, 1.0f, 0.0f, 1.0f}
+    };
 
-ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
-ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
-ID3D11RasterizerState* RSAALLines = nullptr; // used to enable anti-aliased lines
-ID3D11BlendState* blendState = nullptr;
+    UINT numOfElements = 0;
+    UINT numOfVerts = 0;
+
+    // z buffer
+    ID3D11Texture2D* zBuffer = nullptr;
+    ID3D11DepthStencilView* zBufferView = nullptr;
+
+    ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
+    ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
+    ID3D11RasterizerState* RSAALLines = nullptr; // used to enable anti-aliased lines
+    ID3D11BlendState* blendState = nullptr;
 
 #ifdef _DEBUG
-ID3D11Debug* debug = nullptr;
+    ID3D11Debug* debug = nullptr;
 #endif
 
-// Objects
-Time gTimer;
-Camera cam;
-Mesh<VERTEX> grid;
-Mesh<_OBJ_VERT_> DwarfBody;
-Mesh<_OBJ_VERT_> DwarfShirt;
-Mesh<_OBJ_VERT_> DwarfLeather;
-Mesh<_OBJ_VERT_> DwarfArmor;
-Mesh<_OBJ_VERT_> DwarfAxe;
-Mesh<VERTEX> HUD;
+    // Objects
+    Time gTimer;
+    Camera cam;
+    Mesh<VERTEX> grid;
+    Mesh<_OBJ_VERT_> DwarfBody;
+    Mesh<_OBJ_VERT_> DwarfShirt;
+    Mesh<_OBJ_VERT_> DwarfLeather;
+    Mesh<_OBJ_VERT_> DwarfArmor;
+    Mesh<_OBJ_VERT_> DwarfAxe;
+    Mesh<VERTEX> HUD;
 
-Mesh<_OBJ_VERT_> planet_1;
-Mesh<_OBJ_VERT_> planet_2;
-Mesh<_OBJ_VERT_> planet_3;
-Mesh<_OBJ_VERT_> moon;
-Mesh<_OBJ_VERT_> talon;
-Mesh<VERTEX> point;
-Cube skybox;
-DirectionalLight dirLight;
-PointLight pntLight;
-SpotLight sptLight;
+    Mesh<_OBJ_VERT_> planet_1;
+    Mesh<_OBJ_VERT_> planet_2;
+    Mesh<_OBJ_VERT_> planet_3;
+    Mesh<_OBJ_VERT_> moon;
+    Mesh<_OBJ_VERT_> talon;
+    Mesh<VERTEX> point;
+    Cube skybox;
+    DirectionalLight dirLight;
+    PointLight pntLight;
+    SpotLight sptLight;
 
-Emitter sortEmitter;
-end::Sorted_Pool_t<Particle, 256> sortPool;
-Emitter emitters[4];
-end::Pool_t<Particle, 1024> sharedPool;
-Object Gizmo[3];
-Object Frustrum;
-std::bitset<256> bits;
+    // engine dev
+    Emitter sortEmitter;
+    end::Sorted_Pool_t<Particle, 256> sortPool;
+    Emitter emitters[4];
+    end::Pool_t<Particle, 1024> sharedPool;
+    Object Gizmo[3];
+    Object AABB[3];
+    end::aabb_t aabbs[3];
+    std::bitset<256> bits;
 
-Shaders::VertexShader advanced_VS;
-Shaders::VertexShader default_VS;
-Shaders::VertexShader skybox_VS;
-Shaders::VertexShader gs_VS;
-Shaders::PixelShader advanced_PS;
-Shaders::PixelShader solid_PS;
-Shaders::PixelShader skybox_PS;
+    Shaders::VertexShader advanced_VS;
+    Shaders::VertexShader default_VS;
+    Shaders::VertexShader skybox_VS;
+    Shaders::VertexShader gs_VS;
+    Shaders::PixelShader advanced_PS;
+    Shaders::PixelShader solid_PS;
+    Shaders::PixelShader skybox_PS;
 
-Shaders::VertexShader HUD_VS;
-Shaders::VertexShader Smoke_VS;
-Shaders::PixelShader DwarfBody_PS;
-Shaders::PixelShader DwarfShirt_PS;
-Shaders::PixelShader DwarfLeather_PS;
-Shaders::PixelShader DwarfArmor_PS;
-Shaders::PixelShader DwarfAxe_PS;
-Shaders::PixelShader HUD_PS;
-Shaders::PixelShader Smoke_PS;
+    Shaders::VertexShader HUD_VS;
+    Shaders::VertexShader Smoke_VS;
+    Shaders::PixelShader DwarfBody_PS;
+    Shaders::PixelShader DwarfShirt_PS;
+    Shaders::PixelShader DwarfLeather_PS;
+    Shaders::PixelShader DwarfArmor_PS;
+    Shaders::PixelShader DwarfAxe_PS;
+    Shaders::PixelShader HUD_PS;
+    Shaders::PixelShader Smoke_PS;
 
-Shaders::PixelShader planet1_PS;
-Shaders::PixelShader planet2_PS;
-Shaders::PixelShader planet3_PS;
-Shaders::PixelShader moon_PS;
-Shaders::PixelShader talon_PS;
-Shaders::GeometryShader pntToQuad_GS;
+    Shaders::PixelShader planet1_PS;
+    Shaders::PixelShader planet2_PS;
+    Shaders::PixelShader planet3_PS;
+    Shaders::PixelShader moon_PS;
+    Shaders::PixelShader talon_PS;
+    Shaders::GeometryShader pntToQuad_GS;
 
-bool DrawQuad = false;
-bool DrawGrid = false;
-
+    bool DrawQuad = false;
+    bool DrawGrid = false;
+}
 
 
 #define MAX_LOADSTRING 100
@@ -686,10 +691,23 @@ HRESULT InitContent()
     emitters[3].Spawn_Color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
     // initialize gizmos
-    Gizmo[0].SetPosition(0.0f, 2.0f, 0.0f);
-    Gizmo[1].SetPosition(-3.0f, 4.0f, -2.0f);
-    Gizmo[2].SetPosition(3.0f, 4.0f, 2.0f);
-    Frustrum.SetPosition(0.0f, 2.0f, 0.0f);
+    Gizmo[0].SetPosition(0.0f, 1.0f, 0.0f);
+    Gizmo[1].SetPosition(-3.0f, 3.0f, -2.0f);
+    Gizmo[2].SetPosition(3.0f, 3.0f, 2.0f);
+
+    // initialize AABBs
+    for (size_t i = 0; i < ARRAYSIZE(AABB); ++i)
+    {
+        AABB[i].SetPosition(RAND_FLT(-10.0f, 10.0f), 0.0f, RAND_FLT(-10.0f, 10.0f));
+        AABB[i].SetRotation(0.0f, RAND_FLT(-10.0f, 10.0f), 0.0f);
+        XMStoreFloat3(&aabbs[i].center, AABB[i].GetPositionVector());
+        float x = RAND_FLT(0.5f, 2.0f);
+        float y = RAND_FLT(0.2f, 2.0f);
+        float z = RAND_FLT(0.2f, 2.0f);
+        aabbs[i].extents = { x, y, z };
+    }
+    
+
     cam.SetPosition(0.0f, 5.0f, -15.0f);
 
     // initialize Directional Light
@@ -1626,7 +1644,7 @@ void SortedPoolParticle(float dt)
         XMStoreFloat4(&sortPool[i].Pos, pos); // move particle
         sortPool[i].Lifetime -= dt; // kill it, but slowly
         if (sortPool[i].Lifetime > 0.0f) // if particle is dead
-            end::debug_renderer::add_line(sortPool[i].prev_pos, sortPool[i].Pos, sortEmitter.Spawn_Color, { 1.0f, 0.0f, 0.0f, 1.0f });
+            end::debug_renderer::add_line(sortPool[i].prev_pos, sortPool[i].Pos, { 1.0f, 0.0f, 0.0f, 1.0f }, sortEmitter.Spawn_Color);
         else
         {
             sortPool.free(i); // free it
@@ -1730,82 +1748,82 @@ void Update()
         end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
 
-    // Create View Frustrum
-    if (true)
+    // Create View Frustum
+    end::frustum_t frustum;
+    end::calculate_frustum(frustum, Gizmo[0].GetWorldMatrix(), aspectRatio);
+        
+    end::debug_renderer::add_line(frustum.corners[0], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // FTL, FTR
+    end::debug_renderer::add_line(frustum.corners[1], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // FTR, FBR
+    end::debug_renderer::add_line(frustum.corners[3], frustum.corners[2], XMFLOAT4(Colors::Fuchsia)); // FBR, FBL
+    end::debug_renderer::add_line(frustum.corners[2], frustum.corners[0], XMFLOAT4(Colors::Fuchsia)); // FBL, FTL
+    end::debug_renderer::add_line(frustum.corners[4], frustum.corners[5], XMFLOAT4(Colors::Fuchsia)); // NTL, NTR
+    end::debug_renderer::add_line(frustum.corners[5], frustum.corners[7], XMFLOAT4(Colors::Fuchsia)); // NTR, NBR
+    end::debug_renderer::add_line(frustum.corners[7], frustum.corners[6], XMFLOAT4(Colors::Fuchsia)); // NBR, NBL
+    end::debug_renderer::add_line(frustum.corners[6], frustum.corners[4], XMFLOAT4(Colors::Fuchsia)); // NBL, NTL
+    end::debug_renderer::add_line(frustum.corners[4], frustum.corners[0], XMFLOAT4(Colors::Fuchsia)); // NTL, FTL
+    end::debug_renderer::add_line(frustum.corners[6], frustum.corners[2], XMFLOAT4(Colors::Fuchsia)); // NBL, FBL
+    end::debug_renderer::add_line(frustum.corners[5], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // NTR, FTR
+    end::debug_renderer::add_line(frustum.corners[7], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // NBR, FBR
+
+    XMVECTOR planeAvg_V[6] = {};
+    //LEFT PLANE 0246
+    planeAvg_V[0] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[6])) / 4.0f;
+    //RIGHT PLANE 1357
+    planeAvg_V[1] = (XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[3]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[7])) / 4.0f;
+    //NEAR PLANE 4567
+    planeAvg_V[2] = (XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[6])) / 4.0f;
+    //FAR PLANE 0123
+    planeAvg_V[3] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[3])) / 4.0f;
+    //TOP PLANE 0145
+    planeAvg_V[4] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[5])) / 4.0f;
+    //BOTTOM PLANE 2367
+    planeAvg_V[5] = (XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[3]) + XMLoadFloat4(&frustum.corners[6]) + XMLoadFloat4(&frustum.corners[7])) / 4.0f;
+        
+    XMFLOAT4 planeAvg_F[6] = {};
+    for (size_t i = 0; i < 6; ++i)
     {
-        XMFLOAT4 NTL;   //Near - Top - Left(NTL)
-        XMFLOAT4 NTR;   //Near - Top - Right(NTR)
-        XMFLOAT4 NBL;   //Near - Bottom - Left(NBL)
-        XMFLOAT4 NBR;   //Near - Bottom - Right(NBR)
+        XMStoreFloat4(&planeAvg_F[i], planeAvg_V[i]);
 
-        XMFLOAT4 FTL;   //Far - Top - Left(FTL)
-        XMFLOAT4 FTR;   //Far - Top - Right(FTR)
-        XMFLOAT4 FBL;   //Far - Bottom - Left(FBL)
-        XMFLOAT4 FBR;   //Far - Bottom - Right(FBR)
-        XMFLOAT4* corners_F[8] =
-        {
-            &FTL,
-            &FTR,
-            &FBL,
-            &FBR,
+        XMFLOAT4 normal = { 0.0f, 0.0f, 0.0f, 1.0f };
+        normal.x = planeAvg_F[i].x + frustum.planes[i].normal.x;
+        normal.y = planeAvg_F[i].y + frustum.planes[i].normal.y;
+        normal.z = planeAvg_F[i].z + frustum.planes[i].normal.z;
+        // Draw plane normals
+        end::debug_renderer::add_line(planeAvg_F[i], normal, { 1.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
+    }
 
-            &NTL,
-            &NTR,
-            &NBL,
-            &NBR
-        };
-        XMVECTOR corners_V[8];
+    // Create AABBs
+    for (size_t i = 0; i < 3; ++i)
+    {
+        XMFLOAT4 color = XMFLOAT4(Colors::Cyan);
+        if (end::aabb_to_frustum(aabbs[i], frustum))
+            color = XMFLOAT4(Colors::Orange);
 
-        // Formula Reference: https://stackoverflow.com/questions/13665932/calculating-the-viewing-frustum-in-a-3d-space //
-        // compute the center points of the near and far planes
-        float nearDistance = 1.0f;
-        float farDistance = 7.0f;
-        //  plane center = cameras position + cameras forward * respective plane distnace
-        XMVECTOR nearCenter = Gizmo[0].GetPositionVector() + Gizmo[0].GetWorldMatrix().r[2] * nearDistance;
-        XMVECTOR farCenter = Gizmo[0].GetPositionVector() + Gizmo[0].GetWorldMatrix().r[2] * farDistance;
+        float x = aabbs[i].extents.x;
+        float y = aabbs[i].extents.y;
+        float z = aabbs[i].extents.z;
+        XMFLOAT4 ftr = { aabbs[i].center.x + x, aabbs[i].center.y + y, aabbs[i].center.z + z, 1.0f };
+        XMFLOAT4 ftl = { aabbs[i].center.x - x, aabbs[i].center.y + y, aabbs[i].center.z + z, 1.0f };
+        XMFLOAT4 fbl = { aabbs[i].center.x - x, aabbs[i].center.y - y, aabbs[i].center.z + z, 1.0f };
+        XMFLOAT4 fbr = { aabbs[i].center.x + x, aabbs[i].center.y - y, aabbs[i].center.z + z, 1.0f };
+        XMFLOAT4 ntl = { aabbs[i].center.x - x, aabbs[i].center.y + y, aabbs[i].center.z - z, 1.0f };
+        XMFLOAT4 ntr = { aabbs[i].center.x + x, aabbs[i].center.y + y, aabbs[i].center.z - z, 1.0f };
+        XMFLOAT4 nbl = { aabbs[i].center.x - x, aabbs[i].center.y - y, aabbs[i].center.z - z, 1.0f };
+        XMFLOAT4 nbr = { aabbs[i].center.x + x, aabbs[i].center.y - y, aabbs[i].center.z - z, 1.0f };
 
-        // Compute the widths and heights of the near and far planes:
-        float fovRadians = 20.0f * (XM_PI / 180.0f);
-        float nearHeight = 2.0f * tan(fovRadians / 2.0f) * nearDistance;
-        float farHeight = 2.0f * tan(fovRadians / 2.0f) * farDistance;
-        float nearWidth = nearHeight * aspectRatio;
-        float farWidth = farHeight * aspectRatio;
+        end::debug_renderer::add_line(ftl, ftr, color);
+        end::debug_renderer::add_line(ftr, fbr, color);
+        end::debug_renderer::add_line(fbr, fbl, color);
+        end::debug_renderer::add_line(fbl, ftl, color);
 
-        // Compute the corner points from the near and far planes:
-        // corner point = plane center +/- cameras UP/Y * (plane height/2) +/- cameras RIGHT/X * (plane width/2);
-        // Far top left
-        corners_V[0] = farCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
-        // Far top right
-        corners_V[1] = farCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
-        // Far bottom left
-        corners_V[2] = farCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
-        // Far bottom right
-        corners_V[3] = farCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * farHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * farWidth);
-        // Near top left
-        corners_V[4] = nearCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
-        // Near top right
-        corners_V[5] = nearCenter + Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
-        // Near bottom left
-        corners_V[6] = nearCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) - Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
-        // Near bottom right
-        corners_V[7] = nearCenter - Gizmo[0].GetWorldMatrix().r[1] * (0.5f * nearHeight) + Gizmo[0].GetWorldMatrix().r[0] * (0.5f * nearWidth);
+        end::debug_renderer::add_line(ntl, ntr, color);
+        end::debug_renderer::add_line(ntr, nbr, color);
+        end::debug_renderer::add_line(nbr, nbl, color);
+        end::debug_renderer::add_line(nbl, ntl, color);
 
-        for (size_t i = 0; i < 8; ++i)
-        {
-            XMStoreFloat4(corners_F[i], corners_V[i]);
-        }
-
-        end::debug_renderer::add_line(NTL, NTR, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NTR, NBR, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NBR, NBL, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NBL, NTL, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(FTL, FTR, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(FTR, FBR, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(FBR, FBL, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(FBL, FTL, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NTL, FTL, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NBL, FBL, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NTR, FTR, XMFLOAT4(Colors::Fuchsia));
-        end::debug_renderer::add_line(NBR, FBR, XMFLOAT4(Colors::Fuchsia));
+        end::debug_renderer::add_line(ftl, ntl, color);
+        end::debug_renderer::add_line(ftr, ntr, color);
+        end::debug_renderer::add_line(fbl, nbl, color);
+        end::debug_renderer::add_line(fbr, nbr, color);
     }
 }
