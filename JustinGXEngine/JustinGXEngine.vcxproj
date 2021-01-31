@@ -178,6 +178,8 @@
     <ClInclude Include="Assets\headers\StoneHenge.h" />
     <ClInclude Include="Assets\headers\talon.h" />
     <ClInclude Include="Assets\headers\test pyramid.h" />
+    <ClInclude Include="BinaryFileLoad.h" />
+    <ClInclude Include="bvh.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Cube.h" />
     <ClInclude Include="DDSTextureLoader.h" />

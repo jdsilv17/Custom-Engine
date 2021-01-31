@@ -4,7 +4,7 @@ HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const char* file
 {
     HRESULT hr = S_OK;
 
-    auto blob = load_binary_blob(filename);
+    auto blob = load_binary::load_binary_blob(filename);
 
     // Create the vertex Shader
     hr = device->CreateVertexShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());
@@ -93,7 +93,7 @@ HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const char* filen
 {
     HRESULT hr = S_OK;
 
-    auto blob = load_binary_blob(filename);
+    auto blob = load_binary::load_binary_blob(filename);
 
     // Create the vertex Shader
     hr = device->CreatePixelShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());
@@ -287,7 +287,7 @@ HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const char* fi
 {
     HRESULT hr = S_OK;
 
-    auto blob = load_binary_blob(filename);
+    auto blob = load_binary::load_binary_blob(filename);
 
     // Create the vertex Shader
     hr = device->CreateGeometryShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());

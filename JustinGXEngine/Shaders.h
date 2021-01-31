@@ -4,34 +4,13 @@
 #include <d3d11_1.h>
 #include <wrl/client.h>
 #include <string>
-#include <vector>
-#include <fstream>
+#include "BinaryFileLoad.h"
+
 
 using Microsoft::WRL::ComPtr;
 
 namespace Shaders
 {
-
-	static std::vector<uint8_t> load_binary_blob(const char* path)
-	{
-		std::vector<uint8_t> blob;
-
-		std::fstream file{ path, std::ios_base::in | std::ios_base::binary };
-
-		if (file.is_open())
-		{
-			file.seekg(0, std::ios_base::end);
-			blob.resize(file.tellg());
-			file.seekg(0, std::ios_base::beg);
-
-			file.read((char*)blob.data(), blob.size());
-
-			file.close();
-		}
-
-		return std::move(blob);
-	}
-
 	class VertexShader
 	{
 	public:

@@ -5,16 +5,19 @@
 #include "JustinGXEngine.h"
 
 #include "Cube.h"
-#include "Particle.h"
-#include "Emitter.h"
-#include "pools.h"
 #include "Camera.h"
 #include "Light.h"
 #include "Shaders.h"
 #include "Time.h"
+#include "BinaryFileLoad.h"
 
+#include "Particle.h"
+#include "Emitter.h"
+#include "pools.h"
 #include "debug_renderer.h"
 #include "frustum_culling.h"
+#include "bvh.h"
+
 
 // Model header includes ======================
 #include "./Assets/headers/DwarfArmor.h"
@@ -34,15 +37,18 @@
 #include <DirectXMath.h>
 #include <directxcolors.h>
 #include <iostream>
-#include <bitset>
+#include <bitset> // for std::bitset
+#include <algorithm> // for std::shuffle
+#include <random> // for std::mt19937 g(rand());
 #pragma comment(lib, "d3d11.lib")
 
-#define RAND_FLT(min, max)  (min + (rand() / (float)RAND_MAX) * (max - min))
 
 using namespace DirectX;
 
 namespace
 {
+    #define RAND_FLT(min, max)  (min + (rand() / (float)RAND_MAX) * (max - min))
+
     // for init
     ID3D11Device* myDevice = nullptr;
     IDXGISwapChain* swapChain = nullptr;
@@ -139,9 +145,15 @@ namespace
     Emitter emitters[4];
     end::Pool_t<Particle, 1024> sharedPool;
     Object Gizmo[3];
-    Object AABB[3];
     end::aabb_t aabbs[3];
     std::bitset<256> bits;
+    //std::vector<XMFLOAT3> terrain_pos;
+    std::vector<VERTEX> terrain_verts;
+    std::vector<VERTEX*> terrain_triangles;
+    std::vector<size_t> terrain_tri_indices;
+    std::vector<XMFLOAT4> terrain_centroids;
+    std::vector<end::bvh_node_t> BVH;
+
 
     Shaders::VertexShader advanced_VS;
     Shaders::VertexShader default_VS;
@@ -192,7 +204,8 @@ void                CatchInput();
 void                DrawSpaceScene();
 void                DrawDwarfScene();
 void                DrawDebugScene();
-void SortedPoolParticle(float dt);
+void                SortedPoolParticle(float dt);
+void                FreeListParticle(float dt);
 void                Update();
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -208,7 +221,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ int       nCmdShow)
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    	//_CrtSetBreakAlloc(4115);
+    _CrtSetBreakAlloc(227);
 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -696,19 +709,53 @@ HRESULT InitContent()
     Gizmo[2].SetPosition(3.0f, 3.0f, 2.0f);
 
     // initialize AABBs
-    for (size_t i = 0; i < ARRAYSIZE(AABB); ++i)
+    for (size_t i = 0; i < ARRAYSIZE(aabbs); ++i)
     {
-        AABB[i].SetPosition(RAND_FLT(-10.0f, 10.0f), 0.0f, RAND_FLT(-10.0f, 10.0f));
-        AABB[i].SetRotation(0.0f, RAND_FLT(-10.0f, 10.0f), 0.0f);
-        XMStoreFloat3(&aabbs[i].center, AABB[i].GetPositionVector());
+        aabbs[i].center = { RAND_FLT(-10.0f, 10.0f), 0.0f, RAND_FLT(-10.0f, 10.0f) };
+        float w = RAND_FLT(1.0f, 1.0f);
+        //XMStoreFloat3(&aabbs[i].center, AABB[i].GetPositionVector());
         float x = RAND_FLT(0.5f, 2.0f);
         float y = RAND_FLT(0.2f, 2.0f);
         float z = RAND_FLT(0.2f, 2.0f);
         aabbs[i].extents = { x, y, z };
     }
-    
 
-    cam.SetPosition(0.0f, 5.0f, -15.0f);
+    // Load terrain binary
+    std::vector<XMFLOAT3> terrain_pos = load_binary::load_terrain_blob("./Assets/headers/terrain.bin");
+    terrain_pos.shrink_to_fit();
+    terrain_verts.resize(terrain_pos.size());
+    size_t vert_count = terrain_verts.size();
+    for (size_t i = 0; i < vert_count; ++i)
+    {
+        terrain_verts[i] = VERTEX({ terrain_pos[i].x, terrain_pos[i].y, terrain_pos[i].z, 1.0f });
+    }
+    // Create an array of triangles which is an array of 3 vertices
+    size_t numTriangles = vert_count / 3;
+    terrain_tri_indices.resize(numTriangles);
+    terrain_triangles.resize(numTriangles);
+    terrain_centroids.resize(numTriangles);
+    size_t pos = 0;
+    for (size_t i = 0; i < numTriangles; ++i)
+    {
+        terrain_tri_indices[i] = i;
+        terrain_triangles[i] = new VERTEX[3];
+
+        for (size_t j = 0; j < 3; ++j)
+        {
+            terrain_triangles[i][j] = terrain_verts[pos];
+            ++pos;
+        }
+
+        XMVECTOR a = XMLoadFloat4(&terrain_triangles[i][0].pos);
+        XMVECTOR b = XMLoadFloat4(&terrain_triangles[i][1].pos);
+        XMVECTOR c = XMLoadFloat4(&terrain_triangles[i][2].pos);
+        XMVECTOR avg = (a + b + c) / 3.0f;
+        XMStoreFloat4(&terrain_centroids[i], avg);
+    }
+
+    
+    cam.SetPosition(0.0f, 25.0f, -20.0f);
+    cam.SetRotation(35.0f * (XM_PI / 180.0f), 0.0f, 0.0f);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -776,8 +823,14 @@ HRESULT InitContent()
 /// </summary>
 void CleanUp()
 {
-    if (immediateContext) immediateContext->ClearState();
+    size_t size = terrain_triangles.size();
+    for (size_t i = 0; i < size; ++i)
+    {
+        delete[] terrain_triangles[i];
+    }
 
+    if (immediateContext) immediateContext->ClearState();
+    
     if (RTV) RTV->Release();
     if (zBuffer) zBuffer->Release();
     if (zBufferView) zBufferView->Release();
@@ -801,18 +854,18 @@ void CatchInput()
 
     const float cameraSpeed = 0.002f;
 
-    POINT curr_point = { 0,0 };
-    POINT delta_point = { 0,0 };
+    //POINT curr_point = { 0,0 };
+    //POINT delta_point = { 0,0 };
 
-    GetCursorPos(&curr_point); // grab the curr every frame
+    //GetCursorPos(&curr_point); // grab the curr every frame
 
-    static POINT prev_point = curr_point; // initialize once
+    //static POINT prev_point = curr_point; // initialize once
 
-    // calc delta of mouse pos with the pos of the previous frame
-    delta_point.x = curr_point.x - prev_point.x;
-    delta_point.y = curr_point.y - prev_point.y;
+    //// calc delta of mouse pos with the pos of the previous frame
+    //delta_point.x = curr_point.x - prev_point.x;
+    //delta_point.y = curr_point.y - prev_point.y;
 
-    prev_point = curr_point; // keep the current pos of the current frame to use in the next frame
+    //prev_point = curr_point; // keep the current pos of the current frame to use in the next frame
 
     //if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) // Right mouse button
     //{
@@ -1710,6 +1763,234 @@ void FreeListParticle(float dt)
     }
 }
 
+end::aabb_bounds_t AABB_Bounds_from_Triangle(int triangle_index)
+{
+    end::aabb_bounds_t aabb;
+    XMVECTOR a, b, c;
+    XMVECTOR max, min;
+    
+    a = XMLoadFloat4(&terrain_triangles[triangle_index][0].pos);
+    b = XMLoadFloat4(&terrain_triangles[triangle_index][1].pos);
+    c = XMLoadFloat4(&terrain_triangles[triangle_index][2].pos);
+
+    max = XMVectorMax(XMVectorMax(a, b), XMVectorMax(a, c));
+    max.m128_f32[1] += 2.0f;
+    min = XMVectorMin(XMVectorMin(a, b), XMVectorMin(a, c));
+    min.m128_f32[1] -= 2.0f;
+    XMStoreFloat3(&aabb.max, max);
+    XMStoreFloat3(&aabb.min, min);
+
+    return aabb;
+}
+
+end::aabb_bounds_t AABB_Bounds(XMVECTOR& max, XMVECTOR& min)
+{
+    end::aabb_bounds_t aabb;
+
+    //max.m128_f32[1] += 2.0f;
+    //min.m128_f32[1] -= 2.0f;
+    XMStoreFloat3(&aabb.max, max);
+    XMStoreFloat3(&aabb.min, min);
+
+    return aabb;
+}
+
+end::aabb_t AABB_from_Triangle(int triangle_index)
+{
+    end::aabb_t aabb;
+    XMVECTOR a, b, c;
+    XMVECTOR max;
+    XMVECTOR center, extents;
+
+    a = XMLoadFloat4(&terrain_triangles[triangle_index][0].pos);
+    b = XMLoadFloat4(&terrain_triangles[triangle_index][1].pos);
+    c = XMLoadFloat4(&terrain_triangles[triangle_index][2].pos);
+
+    center = XMLoadFloat4(&terrain_centroids[triangle_index]);
+
+    max = XMVectorMax(XMVectorMax(a, b), XMVectorMax(a, c));
+    max.m128_f32[1] += 2.0f;
+    extents = max - center;
+
+    XMStoreFloat3(&aabb.center, center);
+    XMStoreFloat3(&aabb.extents, extents);
+
+    return aabb;
+}
+
+void Create_AABB(const end::aabb_t& aabb)
+{
+    float x = aabb.extents.x;
+    float y = aabb.extents.y;
+    float z = aabb.extents.z;
+    XMFLOAT4 ftr = { aabb.center.x + x, aabb.center.y + y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 ftl = { aabb.center.x - x, aabb.center.y + y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 fbl = { aabb.center.x - x, aabb.center.y - y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 fbr = { aabb.center.x + x, aabb.center.y - y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 ntl = { aabb.center.x - x, aabb.center.y + y, aabb.center.z - z, 1.0f };
+    XMFLOAT4 ntr = { aabb.center.x + x, aabb.center.y + y, aabb.center.z - z, 1.0f };
+    XMFLOAT4 nbl = { aabb.center.x - x, aabb.center.y - y, aabb.center.z - z, 1.0f };
+    XMFLOAT4 nbr = { aabb.center.x + x, aabb.center.y - y, aabb.center.z - z, 1.0f };
+
+    XMFLOAT4 color = XMFLOAT4(Colors::Red);
+    end::debug_renderer::add_line(ftl, ftr, color);
+    end::debug_renderer::add_line(ftr, fbr, color);
+    end::debug_renderer::add_line(fbr, fbl, color);
+    end::debug_renderer::add_line(fbl, ftl, color);
+
+    end::debug_renderer::add_line(ntl, ntr, color);
+    end::debug_renderer::add_line(ntr, nbr, color);
+    end::debug_renderer::add_line(nbr, nbl, color);
+    end::debug_renderer::add_line(nbl, ntl, color);
+
+    end::debug_renderer::add_line(ftl, ntl, color);
+    end::debug_renderer::add_line(ftr, ntr, color);
+    end::debug_renderer::add_line(fbl, nbl, color);
+    end::debug_renderer::add_line(fbr, nbr, color);
+}
+
+void Create_AABB(const end::aabb_t& aabb, XMFLOAT4 color)
+{
+    float x = aabb.extents.x;
+    float y = aabb.extents.y;
+    float z = aabb.extents.z;
+    XMFLOAT4 ftr = { aabb.center.x + x, aabb.center.y + y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 ftl = { aabb.center.x - x, aabb.center.y + y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 fbl = { aabb.center.x - x, aabb.center.y - y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 fbr = { aabb.center.x + x, aabb.center.y - y, aabb.center.z + z, 1.0f };
+    XMFLOAT4 ntl = { aabb.center.x - x, aabb.center.y + y, aabb.center.z - z, 1.0f };
+    XMFLOAT4 ntr = { aabb.center.x + x, aabb.center.y + y, aabb.center.z - z, 1.0f };
+    XMFLOAT4 nbl = { aabb.center.x - x, aabb.center.y - y, aabb.center.z - z, 1.0f };
+    XMFLOAT4 nbr = { aabb.center.x + x, aabb.center.y - y, aabb.center.z - z, 1.0f };
+
+    end::debug_renderer::add_line(ftl, ftr, color);
+    end::debug_renderer::add_line(ftr, fbr, color);
+    end::debug_renderer::add_line(fbr, fbl, color);
+    end::debug_renderer::add_line(fbl, ftl, color);
+
+    end::debug_renderer::add_line(ntl, ntr, color);
+    end::debug_renderer::add_line(ntr, nbr, color);
+    end::debug_renderer::add_line(nbr, nbl, color);
+    end::debug_renderer::add_line(nbl, ntl, color);
+
+    end::debug_renderer::add_line(ftl, ntl, color);
+    end::debug_renderer::add_line(ftr, ntr, color);
+    end::debug_renderer::add_line(fbl, nbl, color);
+    end::debug_renderer::add_line(fbr, nbr, color);
+}
+
+void Create_AABB(const end::aabb_bounds_t& aabb)
+{
+    float max_x = aabb.max.x;
+    float max_y = aabb.max.y;
+    float max_z = aabb.max.z;
+    float min_x = aabb.min.x;
+    float min_y = aabb.min.y;
+    float min_z = aabb.min.z;
+    XMFLOAT4 ftl = { min_x, max_y, max_z, 1.0f };
+    XMFLOAT4 ftr = { max_x, max_y, max_z, 1.0f };//max
+    XMFLOAT4 fbl = { min_x, min_y, max_z, 1.0f };
+    XMFLOAT4 fbr = { max_x, min_y, max_z, 1.0f };
+    XMFLOAT4 ntl = { min_x, max_y, min_z, 1.0f };
+    XMFLOAT4 ntr = { max_x, max_y, min_z, 1.0f };
+    XMFLOAT4 nbl = { min_x, min_y, min_z, 1.0f };//min
+    XMFLOAT4 nbr = { max_x, min_y, min_z, 1.0f };
+
+    XMFLOAT4 color = XMFLOAT4(Colors::Red);
+    end::debug_renderer::add_line(ftl, ftr, color);
+    end::debug_renderer::add_line(ftr, fbr, color);
+    end::debug_renderer::add_line(fbr, fbl, color);
+    end::debug_renderer::add_line(fbl, ftl, color);
+
+    end::debug_renderer::add_line(ntl, ntr, color);
+    end::debug_renderer::add_line(ntr, nbr, color);
+    end::debug_renderer::add_line(nbr, nbl, color);
+    end::debug_renderer::add_line(nbl, ntl, color);
+
+    end::debug_renderer::add_line(ftl, ntl, color);
+    end::debug_renderer::add_line(ftr, ntr, color);
+    end::debug_renderer::add_line(fbl, nbl, color);
+    end::debug_renderer::add_line(fbr, nbr, color);
+}
+
+void Create_AABB(const end::aabb_bounds_t& aabb, XMFLOAT4 color)
+{
+    float max_x = aabb.max.x;
+    float max_y = aabb.max.y;
+    float max_z = aabb.max.z;
+    float min_x = aabb.min.x;
+    float min_y = aabb.min.y;
+    float min_z = aabb.min.z;
+    XMFLOAT4 ftl = { min_x, max_y, max_z, 1.0f };
+    XMFLOAT4 ftr = { max_x, max_y, max_z, 1.0f };//max
+    XMFLOAT4 fbl = { min_x, min_y, max_z, 1.0f };
+    XMFLOAT4 fbr = { max_x, min_y, max_z, 1.0f };
+    XMFLOAT4 ntl = { min_x, max_y, min_z, 1.0f };
+    XMFLOAT4 ntr = { max_x, max_y, min_z, 1.0f };
+    XMFLOAT4 nbl = { min_x, min_y, min_z, 1.0f };//min
+    XMFLOAT4 nbr = { max_x, min_y, min_z, 1.0f };
+
+    end::debug_renderer::add_line(ftl, ftr, color);
+    end::debug_renderer::add_line(ftr, fbr, color);
+    end::debug_renderer::add_line(fbr, fbl, color);
+    end::debug_renderer::add_line(fbl, ftl, color);
+
+    end::debug_renderer::add_line(ntl, ntr, color);
+    end::debug_renderer::add_line(ntr, nbr, color);
+    end::debug_renderer::add_line(nbr, nbl, color);
+    end::debug_renderer::add_line(nbl, ntl, color);
+
+    end::debug_renderer::add_line(ftl, ntl, color);
+    end::debug_renderer::add_line(ftr, ntr, color);
+    end::debug_renderer::add_line(fbl, nbl, color);
+    end::debug_renderer::add_line(fbr, nbr, color);
+}
+
+void Create_AABB(XMFLOAT3 _max, XMFLOAT3 _min)
+{
+    float max_x = _max.x;
+    float max_y = _max.y;
+    float max_z = _max.z;
+    float min_x = _min.x;
+    float min_y = _min.y;
+    float min_z = _min.z;
+    XMFLOAT4 ftl = { min_x, max_y, max_z, 1.0f };
+    XMFLOAT4 ftr = { max_x, max_y, max_z, 1.0f };//max
+    XMFLOAT4 fbl = { min_x, min_y, max_z, 1.0f };
+    XMFLOAT4 fbr = { max_x, min_y, max_z, 1.0f };
+    XMFLOAT4 ntl = { min_x, max_y, min_z, 1.0f };
+    XMFLOAT4 ntr = { max_x, max_y, min_z, 1.0f };
+    XMFLOAT4 nbl = { min_x, min_y, min_z, 1.0f };//min
+    XMFLOAT4 nbr = { max_x, min_y, min_z, 1.0f };
+
+    XMFLOAT4 color = XMFLOAT4(Colors::Red);
+    end::debug_renderer::add_line(ftl, ftr, color);
+    end::debug_renderer::add_line(ftr, fbr, color);
+    end::debug_renderer::add_line(fbr, fbl, color);
+    end::debug_renderer::add_line(fbl, ftl, color);
+
+    end::debug_renderer::add_line(ntl, ntr, color);
+    end::debug_renderer::add_line(ntr, nbr, color);
+    end::debug_renderer::add_line(nbr, nbl, color);
+    end::debug_renderer::add_line(nbl, ntl, color);
+
+    end::debug_renderer::add_line(ftl, ntl, color);
+    end::debug_renderer::add_line(ftr, ntr, color);
+    end::debug_renderer::add_line(fbl, nbl, color);
+    end::debug_renderer::add_line(fbr, nbr, color);
+}
+
+float ManhattanDistance(const XMFLOAT4& point_a, const XMFLOAT4& point_b)
+{
+    float x_dist = fabs(point_a.x - point_b.x);
+    float y_dist = fabs(point_a.y - point_b.y);
+    float z_dist = fabs(point_a.z - point_b.z);
+
+    float manhat = x_dist + y_dist + z_dist;
+
+    return manhat;
+}
+
 void Update()
 {
     gTimer.GetElapsedMilliseconds(); // causes view matrix to swap rows
@@ -1748,82 +2029,129 @@ void Update()
         end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
 
-    // Create View Frustum
-    end::frustum_t frustum;
-    end::calculate_frustum(frustum, Gizmo[0].GetWorldMatrix(), aspectRatio);
-        
-    end::debug_renderer::add_line(frustum.corners[0], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // FTL, FTR
-    end::debug_renderer::add_line(frustum.corners[1], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // FTR, FBR
-    end::debug_renderer::add_line(frustum.corners[3], frustum.corners[2], XMFLOAT4(Colors::Fuchsia)); // FBR, FBL
-    end::debug_renderer::add_line(frustum.corners[2], frustum.corners[0], XMFLOAT4(Colors::Fuchsia)); // FBL, FTL
-    end::debug_renderer::add_line(frustum.corners[4], frustum.corners[5], XMFLOAT4(Colors::Fuchsia)); // NTL, NTR
-    end::debug_renderer::add_line(frustum.corners[5], frustum.corners[7], XMFLOAT4(Colors::Fuchsia)); // NTR, NBR
-    end::debug_renderer::add_line(frustum.corners[7], frustum.corners[6], XMFLOAT4(Colors::Fuchsia)); // NBR, NBL
-    end::debug_renderer::add_line(frustum.corners[6], frustum.corners[4], XMFLOAT4(Colors::Fuchsia)); // NBL, NTL
-    end::debug_renderer::add_line(frustum.corners[4], frustum.corners[0], XMFLOAT4(Colors::Fuchsia)); // NTL, FTL
-    end::debug_renderer::add_line(frustum.corners[6], frustum.corners[2], XMFLOAT4(Colors::Fuchsia)); // NBL, FBL
-    end::debug_renderer::add_line(frustum.corners[5], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // NTR, FTR
-    end::debug_renderer::add_line(frustum.corners[7], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // NBR, FBR
+    #pragma region FRUSTUM CULLING
+    //// Create View Frustum
+    //end::frustum_t frustum;
+    //end::calculate_frustum(frustum, Gizmo[0].GetWorldMatrix(), aspectRatio);
+    //    
+    //end::debug_renderer::add_line(frustum.corners[0], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // FTL, FTR
+    //end::debug_renderer::add_line(frustum.corners[1], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // FTR, FBR
+    //end::debug_renderer::add_line(frustum.corners[3], frustum.corners[2], XMFLOAT4(Colors::Fuchsia)); // FBR, FBL
+    //end::debug_renderer::add_line(frustum.corners[2], frustum.corners[0], XMFLOAT4(Colors::Fuchsia)); // FBL, FTL
+    //end::debug_renderer::add_line(frustum.corners[4], frustum.corners[5], XMFLOAT4(Colors::Fuchsia)); // NTL, NTR
+    //end::debug_renderer::add_line(frustum.corners[5], frustum.corners[7], XMFLOAT4(Colors::Fuchsia)); // NTR, NBR
+    //end::debug_renderer::add_line(frustum.corners[7], frustum.corners[6], XMFLOAT4(Colors::Fuchsia)); // NBR, NBL
+    //end::debug_renderer::add_line(frustum.corners[6], frustum.corners[4], XMFLOAT4(Colors::Fuchsia)); // NBL, NTL
+    //end::debug_renderer::add_line(frustum.corners[4], frustum.corners[0], XMFLOAT4(Colors::Fuchsia)); // NTL, FTL
+    //end::debug_renderer::add_line(frustum.corners[6], frustum.corners[2], XMFLOAT4(Colors::Fuchsia)); // NBL, FBL
+    //end::debug_renderer::add_line(frustum.corners[5], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // NTR, FTR
+    //end::debug_renderer::add_line(frustum.corners[7], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // NBR, FBR
 
-    XMVECTOR planeAvg_V[6] = {};
-    //LEFT PLANE 0246
-    planeAvg_V[0] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[6])) / 4.0f;
-    //RIGHT PLANE 1357
-    planeAvg_V[1] = (XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[3]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[7])) / 4.0f;
-    //NEAR PLANE 4567
-    planeAvg_V[2] = (XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[6])) / 4.0f;
-    //FAR PLANE 0123
-    planeAvg_V[3] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[3])) / 4.0f;
-    //TOP PLANE 0145
-    planeAvg_V[4] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[5])) / 4.0f;
-    //BOTTOM PLANE 2367
-    planeAvg_V[5] = (XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[3]) + XMLoadFloat4(&frustum.corners[6]) + XMLoadFloat4(&frustum.corners[7])) / 4.0f;
-        
-    XMFLOAT4 planeAvg_F[6] = {};
-    for (size_t i = 0; i < 6; ++i)
+    //XMVECTOR planeAvg_V[6] = {};
+    ////LEFT PLANE 0246
+    //planeAvg_V[0] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[6])) / 4.0f;
+    ////RIGHT PLANE 1357
+    //planeAvg_V[1] = (XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[3]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[7])) / 4.0f;
+    ////NEAR PLANE 4567
+    //planeAvg_V[2] = (XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[5]) + XMLoadFloat4(&frustum.corners[6])) / 4.0f;
+    ////FAR PLANE 0123
+    //planeAvg_V[3] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[3])) / 4.0f;
+    ////TOP PLANE 0145
+    //planeAvg_V[4] = (XMLoadFloat4(&frustum.corners[0]) + XMLoadFloat4(&frustum.corners[1]) + XMLoadFloat4(&frustum.corners[4]) + XMLoadFloat4(&frustum.corners[5])) / 4.0f;
+    ////BOTTOM PLANE 2367
+    //planeAvg_V[5] = (XMLoadFloat4(&frustum.corners[2]) + XMLoadFloat4(&frustum.corners[3]) + XMLoadFloat4(&frustum.corners[6]) + XMLoadFloat4(&frustum.corners[7])) / 4.0f;
+    //    
+    //XMFLOAT4 planeAvg_F[6] = {};
+    //for (size_t i = 0; i < 6; ++i)
+    //{
+    //    XMStoreFloat4(&planeAvg_F[i], planeAvg_V[i]);
+
+    //    XMFLOAT4 normal = { 0.0f, 0.0f, 0.0f, 1.0f };
+    //    normal.x = planeAvg_F[i].x + frustum.planes[i].normal.x;
+    //    normal.y = planeAvg_F[i].y + frustum.planes[i].normal.y;
+    //    normal.z = planeAvg_F[i].z + frustum.planes[i].normal.z;
+    //    // Draw plane normals
+    //    end::debug_renderer::add_line(planeAvg_F[i], normal, { 1.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
+    //}
+
+    //// Create AABBs
+    //for (size_t i = 0; i < ARRAYSIZE(aabbs); ++i)
+    //{
+    //    XMFLOAT4 color = XMFLOAT4(Colors::Cyan);
+    //    if (end::aabb_to_frustum(aabbs[i], frustum))
+    //        color = XMFLOAT4(Colors::Orange);
+
+    //    Create_AABB(aabbs[i], color);
+    //}
+    #pragma endregion
+
+    end::aabb_t player_aabb;
+    XMVECTOR extents = { 1.0f, 2.0f, 1.0f }/*Gizmo[0].GetWorldMatrix().r[0] + Gizmo[0].GetWorldMatrix().r[1] + Gizmo[0].GetWorldMatrix().r[2]*/;
+    XMStoreFloat3(&player_aabb.center, Gizmo[0].GetPositionVector());
+    XMStoreFloat3(&player_aabb.extents, extents);
+    Create_AABB(player_aabb, XMFLOAT4(Colors::Blue));
+
+    Create_AABB(AABB_Bounds_from_Triangle(terrain_tri_indices[0]), XMFLOAT4(Colors::Red));
+    size_t size = terrain_triangles.size();
+    for (size_t i = 0; i < size; ++i)
     {
-        XMStoreFloat4(&planeAvg_F[i], planeAvg_V[i]);
-
-        XMFLOAT4 normal = { 0.0f, 0.0f, 0.0f, 1.0f };
-        normal.x = planeAvg_F[i].x + frustum.planes[i].normal.x;
-        normal.y = planeAvg_F[i].y + frustum.planes[i].normal.y;
-        normal.z = planeAvg_F[i].z + frustum.planes[i].normal.z;
-        // Draw plane normals
-        end::debug_renderer::add_line(planeAvg_F[i], normal, { 1.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f });
+        end::debug_renderer::add_line(terrain_triangles[i][0].pos, terrain_triangles[i][1].pos, XMFLOAT4(Colors::White));
+        end::debug_renderer::add_line(terrain_triangles[i][1].pos, terrain_triangles[i][2].pos, XMFLOAT4(Colors::White));
+        end::debug_renderer::add_line(terrain_triangles[i][2].pos, terrain_triangles[i][0].pos, XMFLOAT4(Colors::White));
     }
 
-    // Create AABBs
-    for (size_t i = 0; i < 3; ++i)
-    {
-        XMFLOAT4 color = XMFLOAT4(Colors::Cyan);
-        if (end::aabb_to_frustum(aabbs[i], frustum))
-            color = XMFLOAT4(Colors::Orange);
+    #pragma region BVH
+    // Build BVH
+    //std::mt19937_64 g(rand());
+    //std::shuffle(terrain_tri_indices.begin(), terrain_tri_indices.end(), g);
+    //end::bvh_node_t root(AABB_Bounds_from_Triangle(terrain_tri_indices[0]), NULL);
+    ////end::bvh_node_t root;
+    //BVH.push_back(root);
+    //size_t size = terrain_triangles.size();
+    //for (size_t i = 1; i < size; ++i)
+    //{
+    //    //BVH[i];n
+    //    size_t tri_index = terrain_tri_indices[i];
+    //    end::bvh_node_t leaf_N(AABB_Bounds_from_Triangle(tri_index), tri_index);
+    //    //end::bvh_node_t curr(&root, tri_index - 1, tri_index + 1);
+    //    end::bvh_node_t curr(BVH[i - 1]);
+    //    while (!curr.is_leaf()) // is a root/branch
+    //    {
+    //        // Expand current bounds to include N
+    //        //XMVECTOR a_max = XMLoadFloat3(&curr.get_aabb().max);
+    //        //XMVECTOR b_max = XMLoadFloat3(&leaf_N.get_aabb().max);
+    //        //XMVECTOR a_min = XMLoadFloat3(&curr.get_aabb().min);
+    //        //XMVECTOR b_min = XMLoadFloat3(&leaf_N.get_aabb().min);
+    //        //XMVECTOR Max = XMVectorMax(a_max, b_max);
+    //        //XMVECTOR Min = XMVectorMin(a_min, b_min);
+    //        //end::aabb_bounds_t new_aabb = AABB_Bounds(Max, Min);
+    //        ////Create_AABB(new_aabb); // temp
+    //        //end::bvh_node_t new_node(new_aabb, i);
+    //        
+    //        // Determine which child of CurrentNode has best cost // current = cost(N, left) < cost(N, right) ? left : right
+    //        end::bvh_node_t left(AABB_Bounds_from_Triangle(curr.get_left()), i);
+    //        end::bvh_node_t right(AABB_Bounds_from_Triangle(curr.get_right()), i);
+    //        float left_cost = ManhattanDistance(terrain_centroids[tri_index], terrain_centroids[curr.get_left()]);
+    //        float right_cost = ManhattanDistance(terrain_centroids[tri_index], terrain_centroids[curr.get_right()]);
+    //        curr = (left_cost > right_cost) ? left : right;
+    //    }
 
-        float x = aabbs[i].extents.x;
-        float y = aabbs[i].extents.y;
-        float z = aabbs[i].extents.z;
-        XMFLOAT4 ftr = { aabbs[i].center.x + x, aabbs[i].center.y + y, aabbs[i].center.z + z, 1.0f };
-        XMFLOAT4 ftl = { aabbs[i].center.x - x, aabbs[i].center.y + y, aabbs[i].center.z + z, 1.0f };
-        XMFLOAT4 fbl = { aabbs[i].center.x - x, aabbs[i].center.y - y, aabbs[i].center.z + z, 1.0f };
-        XMFLOAT4 fbr = { aabbs[i].center.x + x, aabbs[i].center.y - y, aabbs[i].center.z + z, 1.0f };
-        XMFLOAT4 ntl = { aabbs[i].center.x - x, aabbs[i].center.y + y, aabbs[i].center.z - z, 1.0f };
-        XMFLOAT4 ntr = { aabbs[i].center.x + x, aabbs[i].center.y + y, aabbs[i].center.z - z, 1.0f };
-        XMFLOAT4 nbl = { aabbs[i].center.x - x, aabbs[i].center.y - y, aabbs[i].center.z - z, 1.0f };
-        XMFLOAT4 nbr = { aabbs[i].center.x + x, aabbs[i].center.y - y, aabbs[i].center.z - z, 1.0f };
+    //    // Create a new internal node as parent of CurrentNode and inserting leaf
+    //    XMVECTOR a_max = XMLoadFloat3(&curr.get_aabb().max);
+    //    XMVECTOR b_max = XMLoadFloat3(&leaf_N.get_aabb().max);
+    //    XMVECTOR a_min = XMLoadFloat3(&curr.get_aabb().min);
+    //    XMVECTOR b_min = XMLoadFloat3(&leaf_N.get_aabb().min);
+    //    XMVECTOR Max = XMVectorMax(a_max, b_max);
+    //    XMVECTOR Min = XMVectorMin(a_min, b_min);
+    //    end::aabb_bounds_t new_aabb = AABB_Bounds(Max, Min);
+    //    end::bvh_node_t new_node(new_aabb, i);
+    //    auto& p = new_node.get_parent();
+    //    p = i;
+    //    end::bvh_node_t parent_node(&new_node, curr.get_element_id(), leaf_N.get_element_id());
+    //    BVH.push_back(parent_node);
+    //    //root(parent_node);
+    //}
+    //BVH.shrink_to_fit();
+#pragma endregion
 
-        end::debug_renderer::add_line(ftl, ftr, color);
-        end::debug_renderer::add_line(ftr, fbr, color);
-        end::debug_renderer::add_line(fbr, fbl, color);
-        end::debug_renderer::add_line(fbl, ftl, color);
-
-        end::debug_renderer::add_line(ntl, ntr, color);
-        end::debug_renderer::add_line(ntr, nbr, color);
-        end::debug_renderer::add_line(nbr, nbl, color);
-        end::debug_renderer::add_line(nbl, ntl, color);
-
-        end::debug_renderer::add_line(ftl, ntl, color);
-        end::debug_renderer::add_line(ftr, ntr, color);
-        end::debug_renderer::add_line(fbl, nbl, color);
-        end::debug_renderer::add_line(fbr, nbr, color);
-    }
 }

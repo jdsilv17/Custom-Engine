@@ -136,6 +136,7 @@ void Object::SetWorld(DirectX::XMFLOAT4X4 mat)
 	this->World_F = mat;
 	this->World_M = DirectX::XMLoadFloat4x4(&this->World_F);
 }
+
 // move to math eventually
 void Object::SetLookAt(const DirectX::XMVECTOR& position, const DirectX::XMVECTOR& target, const DirectX::XMVECTOR& up)
 {
@@ -148,6 +149,7 @@ void Object::SetLookAt(const DirectX::XMVECTOR& position, const DirectX::XMVECTO
 									this->GetPositionVector() };
 	this->SetWorld(LookAt);
 }
+
 // move to math eventually
 void Object::SetLookAt(const DirectX::XMVECTOR& zAxis, const DirectX::XMVECTOR& up)
 {
@@ -160,6 +162,7 @@ void Object::SetLookAt(const DirectX::XMVECTOR& zAxis, const DirectX::XMVECTOR& 
 									this->GetPositionVector() };
 	this->SetWorld(LookAt);
 }
+
 // move to math eventually
 void Object::SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& target, const float& deltaTime)
 {

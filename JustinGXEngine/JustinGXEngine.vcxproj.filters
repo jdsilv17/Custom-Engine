@@ -105,6 +105,12 @@
     <ClInclude Include="frustum_culling.h">
       <Filter>Header Files\Temp</Filter>
     </ClInclude>
+    <ClInclude Include="bvh.h">
+      <Filter>Header Files\Temp</Filter>
+    </ClInclude>
+    <ClInclude Include="BinaryFileLoad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JustinGXEngine.cpp">
