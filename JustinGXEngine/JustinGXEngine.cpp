@@ -82,6 +82,24 @@ namespace
         XMFLOAT4 totalTime;
     };
 
+    struct material_t
+    {
+        enum e_component { EMISSIVE = 0, DIFFUSE, SPECULAR, SHININESS, COUNT };
+
+        struct component_t
+        {
+	        float value[3] = { 0.0f, 0.0f, 0.0f };
+	        float factor = 0.0f;
+	        int64_t input = -1;
+        };
+
+        component_t& operator[](int i) { return components[i]; }
+        const component_t& operator[](int i)const { return components[i]; }
+
+        private:
+        component_t components[COUNT];
+    };
+
     XMVECTOR LightPositions[3] =
     {
         {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
@@ -154,6 +172,8 @@ namespace
     std::vector<XMFLOAT4> terrain_centroids;
     std::vector<end::bvh_node_t> BVH;
 
+    Mesh<VERTEX> BattleMage;
+
 
     Shaders::VertexShader advanced_VS;
     Shaders::VertexShader default_VS;
@@ -162,6 +182,7 @@ namespace
     Shaders::PixelShader advanced_PS;
     Shaders::PixelShader solid_PS;
     Shaders::PixelShader skybox_PS;
+    Shaders::PixelShader default_PS;
 
     Shaders::VertexShader HUD_VS;
     Shaders::VertexShader Smoke_VS;
@@ -179,6 +200,8 @@ namespace
     Shaders::PixelShader moon_PS;
     Shaders::PixelShader talon_PS;
     Shaders::GeometryShader pntToQuad_GS;
+
+    Shaders::PixelShader BattleMage_PS;
 
     bool DrawQuad = false;
     bool DrawGrid = false;
@@ -476,7 +499,23 @@ HRESULT InitContent()
 
     hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", sizeof(WVP));
     solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
-    
+
+
+    using Path = std::array<char, 260>;
+    std::vector<material_t> materials;
+    std::vector<Path> paths;
+    load_binary::Load_FBXMat_blob("./Assets/Textures/BattleMageRun.mats", materials, paths);
+    std::vector<std::string> in_paths;
+    in_paths.resize(paths.size());
+    for (size_t i = 0; i < paths.size(); ++i)
+    {
+        in_paths[i] = ".\\Assets\\Textures\\";
+        in_paths[i].append(paths[i].data());
+    }
+    hr = default_PS.Initialize(myDevice, "./Default_PS.cso", sizeof(WVP));
+    hr = default_PS.InitShaderResources(myDevice, in_paths, 1);
+    default_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
+
     hr = skybox_PS.Initialize(myDevice, "./SkyBox_PS.cso", sizeof(WVP)); // change to include texture
     hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/SunsetSkybox.dds");
     skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
@@ -486,197 +525,197 @@ HRESULT InitContent()
 
 
     #pragma region Dwarf Shaders
-    std::string textures[2] = { "./Assets/Textures/Dwarf/BodyTexture.dds", "./Assets/Textures/Dwarf/BodySpec.dds" };
-    hr = DwarfBody_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
-    hr = DwarfBody_PS.InitShaderResources(myDevice, textures);
-    DwarfBody_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
-    textures->clear(); 
-    textures[0] = "./Assets/Textures/Dwarf/ShirtTexture.dds";
-    textures[1] = "./Assets/Textures/Dwarf/ShirtSpec.dds";
-    hr = DwarfShirt_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
-    hr = DwarfShirt_PS.InitShaderResources(myDevice, textures);
-    DwarfShirt_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
-    textures->clear();
-    textures[0] = "./Assets/Textures/Dwarf/LeatherTexture.dds";
-    textures[1] = "./Assets/Textures/Dwarf/LeatherSpec.dds";
-    hr = DwarfLeather_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
-    hr = DwarfLeather_PS.InitShaderResources(myDevice, textures);
-    DwarfLeather_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
-    textures->clear();
-    textures[0] = "./Assets/Textures/Dwarf/ArmorTexture.dds";
-    textures[1] =  "./Assets/Textures/Dwarf/ArmorSpec.dds";
-    hr = DwarfArmor_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
-    hr = DwarfArmor_PS.InitShaderResources(myDevice, textures);
-    DwarfArmor_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
-    hr = DwarfAxe_PS.Initialize(myDevice, "./SkyBoxReflection_PS.cso", sizeof(WVP));
-    hr = DwarfAxe_PS.InitShaderResources(myDevice, "./Assets/Textures/Dwarf/LostValley.dds");
-    DwarfAxe_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //std::string textures[2] = { "./Assets/Textures/Dwarf/BodyTexture.dds", "./Assets/Textures/Dwarf/BodySpec.dds" };
+    //hr = DwarfBody_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
+    //hr = DwarfBody_PS.InitShaderResources(myDevice, textures);
+    //DwarfBody_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //textures->clear(); 
+    //textures[0] = "./Assets/Textures/Dwarf/ShirtTexture.dds";
+    //textures[1] = "./Assets/Textures/Dwarf/ShirtSpec.dds";
+    //hr = DwarfShirt_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
+    //hr = DwarfShirt_PS.InitShaderResources(myDevice, textures);
+    //DwarfShirt_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //textures->clear();
+    //textures[0] = "./Assets/Textures/Dwarf/LeatherTexture.dds";
+    //textures[1] = "./Assets/Textures/Dwarf/LeatherSpec.dds";
+    //hr = DwarfLeather_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
+    //hr = DwarfLeather_PS.InitShaderResources(myDevice, textures);
+    //DwarfLeather_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //textures->clear();
+    //textures[0] = "./Assets/Textures/Dwarf/ArmorTexture.dds";
+    //textures[1] =  "./Assets/Textures/Dwarf/ArmorSpec.dds";
+    //hr = DwarfArmor_PS.Initialize(myDevice, "./Specular_PS.cso", sizeof(WVP));
+    //hr = DwarfArmor_PS.InitShaderResources(myDevice, textures);
+    //DwarfArmor_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //hr = DwarfAxe_PS.Initialize(myDevice, "./SkyBoxReflection_PS.cso", sizeof(WVP));
+    //hr = DwarfAxe_PS.InitShaderResources(myDevice, "./Assets/Textures/Dwarf/LostValley.dds");
+    //DwarfAxe_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = HUD_PS.Initialize(myDevice, "./HUD_PS.cso", sizeof(WVP));
-    hr = HUD_PS.InitShaderResources(myDevice, "./Assets/Textures/Dwarf/LoadingText.dds");
-    HUD_PS.ShaderConstantBuffer = HUD_VS.ShaderConstantBuffer;
-    hr = Smoke_PS.Initialize(myDevice, "./Smoke_PS.cso", sizeof(WVP));
-    hr = Smoke_PS.InitShaderResources(myDevice, "./Assets/Textures/Dwarf/LoadingSmoke.dds");
-    Smoke_PS.ShaderConstantBuffer = Smoke_VS.ShaderConstantBuffer;
+    //hr = HUD_PS.Initialize(myDevice, "./HUD_PS.cso", sizeof(WVP));
+    //hr = HUD_PS.InitShaderResources(myDevice, "./Assets/Textures/Dwarf/LoadingText.dds");
+    //HUD_PS.ShaderConstantBuffer = HUD_VS.ShaderConstantBuffer;
+    //hr = Smoke_PS.Initialize(myDevice, "./Smoke_PS.cso", sizeof(WVP));
+    //hr = Smoke_PS.InitShaderResources(myDevice, "./Assets/Textures/Dwarf/LoadingSmoke.dds");
+    //Smoke_PS.ShaderConstantBuffer = Smoke_VS.ShaderConstantBuffer;
 #pragma endregion
 
     #pragma region SpaceScene Shaders
-    hr = planet1_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = planet1_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet_Diffuse.dds");
-    planet1_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //hr = planet1_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    //hr = planet1_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet_Diffuse.dds");
+    //planet1_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = planet2_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = planet2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
-    planet2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //hr = planet2_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    //hr = planet2_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet2_Diffuse.dds");
+    //planet2_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = planet3_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = planet3_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet4_Diffuse.dds");
-    planet3_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //hr = planet3_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    //hr = planet3_PS.InitShaderResources(myDevice, "./Assets/Textures/RT_2D_Planet4_Diffuse.dds");
+    //planet3_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = moon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = moon_PS.InitShaderResources(myDevice, "./Assets/Textures/moon_Diffuse.dds");
-    moon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //hr = moon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    //hr = moon_PS.InitShaderResources(myDevice, "./Assets/Textures/moon_Diffuse.dds");
+    //moon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 
-    hr = talon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
-    hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
-    talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
+    //hr = talon_PS.Initialize(myDevice, "./SingleTexture_PS.cso", sizeof(WVP)); // change to include texture
+    //hr = talon_PS.InitShaderResources(myDevice, "./Assets/Textures/defender.dds");
+    //talon_PS.ShaderConstantBuffer = advanced_VS.ShaderConstantBuffer;
 #pragma endregion
 
     #pragma region Dwarf Meshes
-    std::vector<_OBJ_VERT_> verts;
-    std::vector<int> indices;
-    // CREATE DWARFBODY
-    numOfVerts = ARRAYSIZE(DwarfBody_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        verts.push_back(DwarfBody_data[i]);
-    numOfElements = ARRAYSIZE(DwarfBody_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        indices.push_back(DwarfBody_indicies[i]);
-    DwarfBody = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    DwarfBody.SetPosition(-1.0f, 0.0f, 0.0f);
-    DwarfBody.SetRotation(0.0f, XM_PI, 0.0f);
+    //std::vector<_OBJ_VERT_> verts;
+    //std::vector<int> indices;
+    //// CREATE DWARFBODY
+    //numOfVerts = ARRAYSIZE(DwarfBody_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    verts.push_back(DwarfBody_data[i]);
+    //numOfElements = ARRAYSIZE(DwarfBody_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    indices.push_back(DwarfBody_indicies[i]);
+    //DwarfBody = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //DwarfBody.SetPosition(-1.0f, 0.0f, 0.0f);
+    //DwarfBody.SetRotation(0.0f, XM_PI, 0.0f);
 
-    verts.clear(); verts.shrink_to_fit();
-    indices.clear(); indices.shrink_to_fit();
-    // CREATE DWARFSHIRT
-    numOfVerts = ARRAYSIZE(DwarfShirt_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        verts.push_back(DwarfShirt_data[i]);
-    numOfElements = ARRAYSIZE(DwarfShirt_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        indices.push_back(DwarfShirt_indicies[i]);
-    DwarfShirt = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //verts.clear(); verts.shrink_to_fit();
+    //indices.clear(); indices.shrink_to_fit();
+    //// CREATE DWARFSHIRT
+    //numOfVerts = ARRAYSIZE(DwarfShirt_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    verts.push_back(DwarfShirt_data[i]);
+    //numOfElements = ARRAYSIZE(DwarfShirt_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    indices.push_back(DwarfShirt_indicies[i]);
+    //DwarfShirt = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    verts.clear(); verts.shrink_to_fit();
-    indices.clear(); indices.shrink_to_fit();
-    // CREATE DWARFLEATHER
-    numOfVerts = ARRAYSIZE(DwarfLeather_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        verts.push_back(DwarfLeather_data[i]);
-    numOfElements = ARRAYSIZE(DwarfLeather_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        indices.push_back(DwarfLeather_indicies[i]);
-    DwarfLeather = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //verts.clear(); verts.shrink_to_fit();
+    //indices.clear(); indices.shrink_to_fit();
+    //// CREATE DWARFLEATHER
+    //numOfVerts = ARRAYSIZE(DwarfLeather_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    verts.push_back(DwarfLeather_data[i]);
+    //numOfElements = ARRAYSIZE(DwarfLeather_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    indices.push_back(DwarfLeather_indicies[i]);
+    //DwarfLeather = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    verts.clear(); verts.shrink_to_fit();
-    indices.clear(); indices.shrink_to_fit();
-    // CREATE DwarfArmor
-    numOfVerts = ARRAYSIZE(DwarfArmor_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        verts.push_back(DwarfArmor_data[i]);
-    numOfElements = ARRAYSIZE(DwarfArmor_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        indices.push_back(DwarfArmor_indicies[i]);
-    DwarfArmor = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //verts.clear(); verts.shrink_to_fit();
+    //indices.clear(); indices.shrink_to_fit();
+    //// CREATE DwarfArmor
+    //numOfVerts = ARRAYSIZE(DwarfArmor_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    verts.push_back(DwarfArmor_data[i]);
+    //numOfElements = ARRAYSIZE(DwarfArmor_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    indices.push_back(DwarfArmor_indicies[i]);
+    //DwarfArmor = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    verts.clear(); verts.shrink_to_fit();
-    indices.clear(); indices.shrink_to_fit();
+    //verts.clear(); verts.shrink_to_fit();
+    //indices.clear(); indices.shrink_to_fit();
 
-    // CREATE DwarfAxe
-    numOfVerts = ARRAYSIZE(DwarfAxe_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        verts.push_back(DwarfAxe_data[i]);
-    numOfElements = ARRAYSIZE(DwarfAxe_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        indices.push_back(DwarfAxe_indicies[i]);
-    DwarfAxe = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    DwarfAxe.SetPosition(-1.0f, 0.0f, 0.0f);
-    DwarfAxe.SetRotation(0.0f, 180.0f * (XM_PI / 180.0f), 0.0f);
+    //// CREATE DwarfAxe
+    //numOfVerts = ARRAYSIZE(DwarfAxe_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    verts.push_back(DwarfAxe_data[i]);
+    //numOfElements = ARRAYSIZE(DwarfAxe_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    indices.push_back(DwarfAxe_indicies[i]);
+    //DwarfAxe = Mesh<_OBJ_VERT_>(myDevice, immediateContext, verts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //DwarfAxe.SetPosition(-1.0f, 0.0f, 0.0f);
+    //DwarfAxe.SetRotation(0.0f, 180.0f * (XM_PI / 180.0f), 0.0f);
 
-    verts.clear(); verts.shrink_to_fit();
-    indices.clear(); indices.shrink_to_fit();
+    //verts.clear(); verts.shrink_to_fit();
+    //indices.clear(); indices.shrink_to_fit();
 
-    // CREATE HUD
-    std::vector<VERTEX> HUDverts;
-    HUDverts =
-    {
-        VERTEX({-1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}),
-        VERTEX({1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}),
-        VERTEX({-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}),
-        VERTEX({1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f})
-    };
-    indices =
-    {
-        0,1,2,
-        2,1,3
-    };
-    HUD = Mesh<VERTEX>(myDevice, immediateContext, HUDverts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //// CREATE HUD
+    //std::vector<VERTEX> HUDverts;
+    //HUDverts =
+    //{
+    //    VERTEX({-1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}),
+    //    VERTEX({1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}),
+    //    VERTEX({-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}),
+    //    VERTEX({1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f})
+    //};
+    //indices =
+    //{
+    //    0,1,2,
+    //    2,1,3
+    //};
+    //HUD = Mesh<VERTEX>(myDevice, immediateContext, HUDverts, indices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    HUDverts.clear(); HUDverts.shrink_to_fit();
-    indices.clear(); indices.shrink_to_fit();
+    //HUDverts.clear(); HUDverts.shrink_to_fit();
+    //indices.clear(); indices.shrink_to_fit();
 #pragma endregion
     
     #pragma region SpaceScene Meshes
-    // PLANET_1 =================================
-    std::vector<_OBJ_VERT_> planetVerts;
-    numOfVerts = ARRAYSIZE(Planet_1_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        planetVerts.push_back(Planet_1_data[i]);
-    std::vector<int> planetIndices;
-    numOfElements = ARRAYSIZE(Planet_1_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        planetIndices.push_back(Planet_1_indicies[i]);
-    planet_1 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // PLANET_2 =================================
-    planetVerts.clear();
-    planetIndices.clear();
-    numOfVerts = ARRAYSIZE(Planet_2_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        planetVerts.push_back(Planet_2_data[i]);
-    numOfElements = ARRAYSIZE(Planet_2_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        planetIndices.push_back(Planet_2_indicies[i]);
-    planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // PLANET_3 =================================
-    planetVerts.clear();
-    planetIndices.clear();
-    numOfVerts = ARRAYSIZE(Planet_3_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        planetVerts.push_back(Planet_3_data[i]);
-    numOfElements = ARRAYSIZE(Planet_3_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        planetIndices.push_back(Planet_3_indicies[i]);
-    planet_3 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // MOON ====================================
-    planetVerts.clear();
-    planetIndices.clear();
-    numOfVerts = ARRAYSIZE(Moon_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        planetVerts.push_back(Moon_data[i]);
-    numOfElements = ARRAYSIZE(Moon_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        planetIndices.push_back(Moon_indicies[i]);
-    moon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // TALON ===================================
-    std::vector<_OBJ_VERT_> talonVerts;
-    numOfVerts = ARRAYSIZE(talon_data);
-    for (size_t i = 0; i < numOfVerts; ++i)
-        talonVerts.push_back(talon_data[i]);
-    std::vector<int> talonIndices;
-    numOfElements = ARRAYSIZE(talon_indicies);
-    for (size_t i = 0; i < numOfElements; ++i)
-        talonIndices.push_back(talon_indicies[i]);
-    talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //// PLANET_1 =================================
+    //std::vector<_OBJ_VERT_> planetVerts;
+    //numOfVerts = ARRAYSIZE(Planet_1_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    planetVerts.push_back(Planet_1_data[i]);
+    //std::vector<int> planetIndices;
+    //numOfElements = ARRAYSIZE(Planet_1_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    planetIndices.push_back(Planet_1_indicies[i]);
+    //planet_1 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //// PLANET_2 =================================
+    //planetVerts.clear();
+    //planetIndices.clear();
+    //numOfVerts = ARRAYSIZE(Planet_2_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    planetVerts.push_back(Planet_2_data[i]);
+    //numOfElements = ARRAYSIZE(Planet_2_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    planetIndices.push_back(Planet_2_indicies[i]);
+    //planet_2 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //// PLANET_3 =================================
+    //planetVerts.clear();
+    //planetIndices.clear();
+    //numOfVerts = ARRAYSIZE(Planet_3_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    planetVerts.push_back(Planet_3_data[i]);
+    //numOfElements = ARRAYSIZE(Planet_3_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    planetIndices.push_back(Planet_3_indicies[i]);
+    //planet_3 = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //// MOON ====================================
+    //planetVerts.clear();
+    //planetIndices.clear();
+    //numOfVerts = ARRAYSIZE(Moon_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    planetVerts.push_back(Moon_data[i]);
+    //numOfElements = ARRAYSIZE(Moon_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    planetIndices.push_back(Moon_indicies[i]);
+    //moon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, planetVerts, planetIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    //// TALON ===================================
+    //std::vector<_OBJ_VERT_> talonVerts;
+    //numOfVerts = ARRAYSIZE(talon_data);
+    //for (size_t i = 0; i < numOfVerts; ++i)
+    //    talonVerts.push_back(talon_data[i]);
+    //std::vector<int> talonIndices;
+    //numOfElements = ARRAYSIZE(talon_indicies);
+    //for (size_t i = 0; i < numOfElements; ++i)
+    //    talonIndices.push_back(talon_indicies[i]);
+    //talon = Mesh<_OBJ_VERT_>(myDevice, immediateContext, talonVerts, talonIndices, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 #pragma endregion
 
     std::vector<VERTEX> pnt_Vert;
@@ -753,9 +792,18 @@ HRESULT InitContent()
         XMStoreFloat4(&terrain_centroids[i], avg);
     }
 
-    
-    cam.SetPosition(0.0f, 25.0f, -20.0f);
-    cam.SetRotation(35.0f * (XM_PI / 180.0f), 0.0f, 0.0f);
+    // Load BattleMage.fbx
+    std::vector<int> indexList;
+    std::vector<VERTEX> vertices;
+    load_binary::load_FBXMesh_blob("./Assets/headers/BattleMageRun.mesh", indexList, vertices);
+    BattleMage = Mesh<VERTEX>(myDevice, immediateContext, vertices.data(), vertices.size(), 
+        indexList.data(), indexList.size(), D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+
+
+    // initialize camera
+    cam.SetPosition(0.0f, 5.0f, -15.0f);
+    //cam.SetRotation(35.0f * (XM_PI / 180.0f), 0.0f, 0.0f);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -1638,10 +1686,11 @@ void DrawDebugScene()
         immediateContext->OMSetDepthStencilState(nullptr, 0);
     }
 
-    // Draw Grid ========================================
-    immediateContext->RSSetState(RSAALLines);
+
     default_VS.Bind(immediateContext);
     solid_PS.Bind(immediateContext);
+    // Draw Grid ========================================
+    immediateContext->RSSetState(RSAALLines);
     if (DrawGrid)
     {
         cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
@@ -1672,11 +1721,24 @@ void DrawDebugScene()
     end::debug_renderer::clear_lines();
     immediateContext->RSSetState(nullptr);
 
+    // Draw fbx mesh
+    default_PS.Bind(immediateContext);
+    default_PS.BindShaderResources(immediateContext);
+    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity()/*XMMatrixScaling(0.5f, 0.5f, 0.5f)*/);
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
+    BattleMage.Draw();
+
     // change 1 to 0 vsync
     bool vysnc = true;
     swapChain->Present(vysnc, 0);
 }
 
+#pragma region END FUNCTIONS
 void SortedPoolParticle(float dt)
 {
     // Sorted Pool Algo
@@ -1990,6 +2052,7 @@ float ManhattanDistance(const XMFLOAT4& point_a, const XMFLOAT4& point_b)
 
     return manhat;
 }
+#pragma endregion
 
 void Update()
 {
@@ -2085,27 +2148,27 @@ void Update()
     //}
     #pragma endregion
 
-    end::aabb_t player_aabb;
-    XMVECTOR extents = { 1.0f, 2.0f, 1.0f }/*Gizmo[0].GetWorldMatrix().r[0] + Gizmo[0].GetWorldMatrix().r[1] + Gizmo[0].GetWorldMatrix().r[2]*/;
-    XMStoreFloat3(&player_aabb.center, Gizmo[0].GetPositionVector());
-    XMStoreFloat3(&player_aabb.extents, extents);
-    Create_AABB(player_aabb, XMFLOAT4(Colors::Blue));
-
-    Create_AABB(AABB_Bounds_from_Triangle(terrain_tri_indices[0]), XMFLOAT4(Colors::Red));
-    size_t size = terrain_triangles.size();
-    for (size_t i = 0; i < size; ++i)
-    {
-        end::debug_renderer::add_line(terrain_triangles[i][0].pos, terrain_triangles[i][1].pos, XMFLOAT4(Colors::White));
-        end::debug_renderer::add_line(terrain_triangles[i][1].pos, terrain_triangles[i][2].pos, XMFLOAT4(Colors::White));
-        end::debug_renderer::add_line(terrain_triangles[i][2].pos, terrain_triangles[i][0].pos, XMFLOAT4(Colors::White));
-    }
+    //end::aabb_t player_aabb;
+    //XMVECTOR extents = { 1.0f, 2.0f, 1.0f }/*Gizmo[0].GetWorldMatrix().r[0] + Gizmo[0].GetWorldMatrix().r[1] + Gizmo[0].GetWorldMatrix().r[2]*/;
+    //XMStoreFloat3(&player_aabb.center, Gizmo[0].GetPositionVector());
+    //XMStoreFloat3(&player_aabb.extents, extents);
+    //Create_AABB(player_aabb, XMFLOAT4(Colors::Blue));
+    //
+    //Create_AABB(AABB_Bounds_from_Triangle(terrain_tri_indices[0]), XMFLOAT4(Colors::Red));
+    //size_t size = terrain_triangles.size();
+    //for (size_t i = 0; i < size; ++i)
+    //{
+    //    end::debug_renderer::add_line(terrain_triangles[i][0].pos, terrain_triangles[i][1].pos, XMFLOAT4(Colors::White));
+    //    end::debug_renderer::add_line(terrain_triangles[i][1].pos, terrain_triangles[i][2].pos, XMFLOAT4(Colors::White));
+    //    end::debug_renderer::add_line(terrain_triangles[i][2].pos, terrain_triangles[i][0].pos, XMFLOAT4(Colors::White));
+    //}
 
     #pragma region BVH
     // Build BVH
     //std::mt19937_64 g(rand());
     //std::shuffle(terrain_tri_indices.begin(), terrain_tri_indices.end(), g);
     //end::bvh_node_t root(AABB_Bounds_from_Triangle(terrain_tri_indices[0]), NULL);
-    ////end::bvh_node_t root;
+    ////end::bvh_node_t root(nullptr);
     //BVH.push_back(root);
     //size_t size = terrain_triangles.size();
     //for (size_t i = 1; i < size; ++i)

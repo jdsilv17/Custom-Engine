@@ -135,15 +135,23 @@ HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const void* shade
     return hr;
 }
 
-HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::string texFilename[2])
+HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, const std::vector<std::string>& texFileNames, int loadType)
 {
     HRESULT hr = S_OK;
 
-    for (size_t i = 0; i < 2; i++)
+    size_t texCount = texFileNames.size();
+    
+    for (size_t i = 0; i < texCount; ++i)
     {
-        std::wstring widestr = std::wstring(texFilename[i].begin(), texFilename[i].end());
+        std::wstring widestr = std::wstring(texFileNames[i].begin(), texFileNames[i].end());
         const wchar_t* widecstr = widestr.c_str();
-        hr = DirectX::CreateDDSTextureFromFile(device, widecstr, nullptr, this->SRVs[i].GetAddressOf());
+
+        this->SRVs.push_back(ComPtr<ID3D11ShaderResourceView>());
+
+        if (loadType == 0)
+            hr = DirectX::CreateDDSTextureFromFile(device, widecstr, nullptr, this->SRVs[i].GetAddressOf());
+        else
+            hr = DirectX::CreateWICTextureFromFile(device, widecstr, nullptr, this->SRVs[i].GetAddressOf());
     }
 
     D3D11_SAMPLER_DESC sd;
@@ -159,13 +167,16 @@ HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::str
     return hr;
 }
 
-HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::string texFilename)
+HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::string texFilename, int loadType)
 {
     HRESULT hr = S_OK;
 
     std::wstring widestr = std::wstring(texFilename.begin(), texFilename.end());
     const wchar_t* widecstr = widestr.c_str();
-    hr = DirectX::CreateDDSTextureFromFile(device, widecstr, nullptr, this->ShaderResourceView.GetAddressOf());
+    if (loadType == 0)
+        hr = DirectX::CreateDDSTextureFromFile(device, widecstr, nullptr, this->ShaderResourceView.GetAddressOf());
+    else
+        hr = DirectX::CreateWICTextureFromFile(device, widecstr, nullptr, this->ShaderResourceView.GetAddressOf());
 
     D3D11_SAMPLER_DESC sd;
     ZeroMemory(&sd, sizeof(sd));
@@ -180,22 +191,22 @@ HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::str
     return hr;
 }
 
-HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, std::string texFilename[2])
+HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType)
 {
     HRESULT hr;
     hr = this->Initialize(device, filename, byteWidth);
 
-    hr = this->InitShaderResources(device, texFilename);
+    hr = this->InitShaderResources(device, texFileNames, loadType);
 
     return hr;
 }
 
-HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, std::string texFilename[2])
+HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType)
 {
     HRESULT hr;
     hr = this->Initialize(device, shaderByteCode, byteWidth);
 
-    hr = this->InitShaderResources(device, texFilename);
+    hr = this->InitShaderResources(device, texFileNames, loadType);
 
     return hr;
 }
@@ -225,8 +236,8 @@ void Shaders::PixelShader::BindShaderResources(ID3D11DeviceContext* deviceContex
     }
     else
         this->DeviceContext = deviceContext;
-    if (this->SRVs)
-        this->DeviceContext->PSSetShaderResources(0, 2, this->SRVs->GetAddressOf());
+    if (!this->SRVs.empty())
+        this->DeviceContext->PSSetShaderResources(0, this->SRVs.size(), this->SRVs.data()->GetAddressOf());
     if (this->SamplerState)
         this->DeviceContext->PSSetSamplers(0, 1, this->SamplerState.GetAddressOf());
     this->DeviceContext.Reset();
@@ -264,9 +275,9 @@ const ID3D11Buffer* Shaders::PixelShader::GetConstantBuffer() const
     return this->ShaderConstantBuffer.Get();
 }
 
-const ID3D11ShaderResourceView* Shaders::PixelShader::GetShaderResourceView() const
+size_t Shaders::PixelShader::GetShaderResourceViews() const
 {
-    return this->ShaderResourceView.Get();
+    return this->SRVs.size();
 }
 
 const ID3D11ShaderResourceView* Shaders::PixelShader::GetShaderResourceView_1() const

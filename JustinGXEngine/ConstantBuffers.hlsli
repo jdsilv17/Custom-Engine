@@ -46,6 +46,15 @@ struct PS_INPUT
     float3 Normal : NORMAL;
 };
 
+struct PS_DEFAULT_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float4 wPos : POSITION;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float2 UV : TEXCOORD;
+};
+
 struct PS_SOLID_INPUT
 {
     float4 Pos : SV_POSITION;
@@ -81,6 +90,7 @@ float4 CalcSpecularComponent(float4 lColor, float3 lDir, float3 sPos, float3 sNo
 
 float4 PS_MultiTexturing(PS_INPUT input, Texture2D tex[2], SamplerState samplerState);
 float4 PS_SingleTexture(PS_INPUT input, Texture2D tex, SamplerState samplerState);
+float4 PS_SingleTexture(PS_DEFAULT_INPUT input, Texture2D tex, SamplerState samplerState);
 float4 PS_Solid(PS_INPUT input);
 
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse)
@@ -132,7 +142,7 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
     
     // Specular Component
     float4 ReflectedLight = 0;
-    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 20.0f, 0.8f);
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 10.0f, 0.8f);
     ReflectedLight *= specDiffuse;
     
     float ambientTerm = 0.0f;
@@ -215,6 +225,12 @@ float4 PS_MultiTexturing(PS_INPUT input, Texture2D tex[2], SamplerState samplerS
 float4 PS_SingleTexture(PS_INPUT input, Texture2D tex, SamplerState samplerState)
 {
     float4 baseColor = tex.Sample(samplerState, input.UVW.xy);
+    return baseColor;
+}
+
+float4 PS_SingleTexture(PS_DEFAULT_INPUT input, Texture2D tex, SamplerState samplerState)
+{
+    float4 baseColor = tex.Sample(samplerState, input.UV);
     return baseColor;
 }
 

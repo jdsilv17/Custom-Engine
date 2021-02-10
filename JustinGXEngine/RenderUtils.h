@@ -94,3 +94,25 @@ HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, std::vector<T>& 
 
     return hr;
 }
+
+template <typename T>
+HRESULT CreateIndexBuffer(ID3D11Device* device, int indexCount, const T* indicesList, ComPtr<ID3D11Buffer>& indexBuffer)
+{
+    HRESULT hr = S_OK;
+
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.ByteWidth = sizeof(T) * indexCount;
+    bd.Usage = D3D11_USAGE_IMMUTABLE;
+    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    bd.CPUAccessFlags = 0;
+    bd.MiscFlags = 0;
+
+    D3D11_SUBRESOURCE_DATA subData;
+    ZeroMemory(&subData, sizeof(subData));
+    subData.pSysMem = indicesList;
+
+    hr = device->CreateBuffer(&bd, &subData, indexBuffer.GetAddressOf());
+
+    return hr;
+}

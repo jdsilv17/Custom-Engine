@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DDSTextureLoader.h"
+#include "WICTextureLoader/WICTextureLoader.h"
 #include <d3d11_1.h>
 #include <wrl/client.h>
 #include <string>
@@ -42,10 +43,10 @@ namespace Shaders
 		// remake for use of multiple textures
 		HRESULT Initialize(ID3D11Device* device, const char* filename, UINT byteWidth);
 		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth);
-		HRESULT InitShaderResources(ID3D11Device* device, std::string texFilename[2]);
-		HRESULT InitShaderResources(ID3D11Device* device, std::string texFilename);
-		HRESULT Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, std::string texFilename[2]);
-		HRESULT Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, std::string texFilename[2]);
+		HRESULT InitShaderResources(ID3D11Device* device, const std::vector<std::string>& texFileNames, int loadType = 0);
+		HRESULT InitShaderResources(ID3D11Device* device, std::string texFilename, int loadType = 0);
+		HRESULT Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType = 0);
+		HRESULT Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType = 0);
 		void Bind(ID3D11DeviceContext* deviceContext);
 		void BindShaderResources(ID3D11DeviceContext* deviceContext);
 		void BindShaderResources_1(ID3D11DeviceContext* deviceContext);
@@ -54,7 +55,7 @@ namespace Shaders
 		const ID3D11PixelShader* GetShader() const;
 		const ID3D11Buffer* GetConstantBuffer() const;
 		//const ID3D11Buffer* const* GetAddressOfConstantBuffer() const;
-		const ID3D11ShaderResourceView* GetShaderResourceView() const;
+		size_t GetShaderResourceViews() const;
 		const ID3D11ShaderResourceView* GetShaderResourceView_1() const;
 		const ID3D11SamplerState* GetSamplerState() const;
 
@@ -69,12 +70,7 @@ namespace Shaders
 		ComPtr<ID3D11ShaderResourceView> ShaderResourceView_1 = nullptr;
 		ComPtr<ID3D11SamplerState> SamplerState = nullptr;
 		//ComPtr<ID3D11Texture2D> Texture = nullptr;
-
-		ComPtr<ID3D11ShaderResourceView> SRVs[2] =
-		{
-			ShaderResourceView,
-			ShaderResourceView_1
-		};
+		std::vector< ComPtr<ID3D11ShaderResourceView>> SRVs;
 
 	};
 

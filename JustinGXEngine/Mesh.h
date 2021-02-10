@@ -3,13 +3,13 @@
 #include "Object.h"
 
 #ifndef MeshUtils_h_
-	#include "MeshUtils.h"
 	#define MeshUtils_h_
+	#include "MeshUtils.h"
 #endif // MeshUtils_h_
 
 #ifndef RenderUtils_h_
-	#include "RenderUtils.h"
 	#define RenderUtils_h_
+	#include "RenderUtils.h"
 #endif // !RenderUtils_h_
 
 
@@ -42,6 +42,13 @@ public:
 			const T* _vertexList,
 			const int& _vertexCount,
 			D3D_PRIMITIVE_TOPOLOGY _primitive);
+	Mesh(	ID3D11Device* device,
+			ID3D11DeviceContext* deviceContext,
+			const T* _vertexList,
+			const int& _vertexCount,
+			const int* _indicesList,
+			const int& _indexCount,
+			D3D_PRIMITIVE_TOPOLOGY _primitive);
 
 	~Mesh();								
 	Mesh(const Mesh<T>& that);
@@ -70,6 +77,7 @@ private:
 	std::vector<T> Textures;
 
 	const T** pVertexList = nullptr;
+	const int** pIndicesList = nullptr;
 	std::vector<T> VertexList;
 	std::vector<int> IndicesList;
 	int vertexCount = NULL;
@@ -114,6 +122,19 @@ Mesh<T>::Mesh(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const T*
 	this->DeviceContext = deviceContext;
 	this->pVertexList = &_vertexList;
 	this->vertexCount = _vertexCount;
+	this->Primitive = _primitive;
+
+	this->InitMesh2(device);
+}
+
+template<typename T>
+inline Mesh<T>::Mesh(ID3D11Device* device, ID3D11DeviceContext* deviceContext, const T* _vertexList, const int& _vertexCount, const int* _indicesList, const int& _indexCount, D3D_PRIMITIVE_TOPOLOGY _primitive)
+{
+	this->DeviceContext = deviceContext;
+	this->pVertexList = &_vertexList;
+	this->vertexCount = _vertexCount;
+	this->pIndicesList = &_indicesList;
+	this->indexCount = _indexCount;
 	this->Primitive = _primitive;
 
 	this->InitMesh2(device);
@@ -191,7 +212,7 @@ void Mesh<T>::InitMesh2(ID3D11Device* device)
 	hr = CreateVertexBuffer(device, this->vertexCount, *this->pVertexList, this->VertexBuffer);
 
 	if (this->Primitive == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
-		hr = CreateIndexBuffer(device, this->indexCount, this->IndicesList, this->IndexBuffer);
+		hr = CreateIndexBuffer(device, this->indexCount, *this->pIndicesList, this->IndexBuffer);
 }
 
 template<typename T>
