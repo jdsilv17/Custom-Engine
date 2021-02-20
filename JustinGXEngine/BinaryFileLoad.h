@@ -62,7 +62,7 @@ namespace load_binary
 		return std::move(pos);
 	}
 
-	inline void load_FBXMesh_blob(const char* path, std::vector<int>& indices_list, std::vector<VERTEX>& vertex_list)
+	inline void Load_FBXMesh_blob(const char* path, std::vector<int>& indices_list, std::vector<VERTEX>& vertex_list)
 	{
 		uint32_t index_count = 0;
 		uint32_t vertex_count = 0;
@@ -130,6 +130,40 @@ namespace load_binary
 			file.read((char*)&path_count, sizeof(size_t));
 			in_paths.resize(path_count);
 			file.read((char*)in_paths.data(), sizeof(Path) * path_count);
+		}
+
+		file.close();
+	}
+
+	template <typename Keyframe>
+	inline void Load_FBXAnim_blob(char const* path, std::vector<Keyframe>& frames, double& in_duration, int& in_frameCount)
+	{
+		std::fstream file(path, std::ios_base::in | std::ios_base::binary);
+
+		assert(file.is_open());
+
+		if (!file.is_open())
+			assert(false);
+
+		if (file.is_open())
+		{
+			file.read((char*)&in_duration, sizeof(double));
+			file.read((char*)&in_frameCount, sizeof(int));
+			frames.resize(in_frameCount);
+
+			for (size_t i = 0; i < in_frameCount; ++i)
+			{
+				file.read((char*)&frames[i].time, sizeof(double));
+
+				frames[i].joints.resize(28); // change to read vector size from file
+				size_t size = frames[i].joints.size();
+				
+				for (size_t j = 0; j < size; ++j)
+				{
+					file.read((char*)&frames[i].joints[j].global_xform, sizeof(DirectX::XMFLOAT4X4));
+					file.read((char*)&frames[i].joints[j].parent_index, sizeof(int));
+				}
+			}
 		}
 
 		file.close();

@@ -13,6 +13,16 @@ Object::Object()
 	this->SetRightVector(this->RIGHT);
 }
 
+Object::Object(const DirectX::XMMATRIX& _world)
+{
+	this->SetWorld(_world);
+}
+
+Object::Object(const DirectX::XMFLOAT4X4& _world)
+{
+	this->SetWorld(_world);
+}
+
 Object::Object(const Object& that)
 {
 	*this = that;
@@ -129,12 +139,16 @@ void Object::SetWorld(const DirectX::XMMATRIX& mat)
 {
 	this->World_M = mat;
 	DirectX::XMStoreFloat4x4(&this->World_F, this->World_M);
+	this->Pos_V = { this->World_F.m[3][0], this->World_F.m[3][1], this->World_F.m[3][2], this->World_F.m[3][3] };
+	DirectX::XMStoreFloat4(&this->Pos_F4, this->Pos_V);
 }
 
 void Object::SetWorld(DirectX::XMFLOAT4X4 mat)
 {
 	this->World_F = mat;
 	this->World_M = DirectX::XMLoadFloat4x4(&this->World_F);
+	this->Pos_V = { this->World_F.m[3][0], this->World_F.m[3][1], this->World_F.m[3][2], this->World_F.m[3][3] };
+	DirectX::XMStoreFloat4(&this->Pos_F4, this->Pos_V);
 }
 
 // move to math eventually

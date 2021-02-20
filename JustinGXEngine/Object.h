@@ -6,6 +6,8 @@ class Object
 {
 public:
 	Object();
+	Object(const DirectX::XMMATRIX& _world);
+	Object(const DirectX::XMFLOAT4X4& _world);
 	Object(const Object& that);
 	Object& operator=(const Object& that);
 
@@ -44,7 +46,7 @@ public:
 	void SetLookAt(const DirectX::XMVECTOR& zAxis, const DirectX::XMVECTOR& up);
 
 	void SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& target, const float& deltaTime);
-	void SetTurnTo(DirectX::XMFLOAT4X4 mat);
+	//void SetTurnTo(DirectX::XMFLOAT4X4 mat);
 	// Transform
 	void SetTransform(const DirectX::XMMATRIX& mat);
 	void SetTransform(DirectX::XMFLOAT4X4 mat);

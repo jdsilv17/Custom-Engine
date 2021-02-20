@@ -9,6 +9,7 @@
 #include "Light.h"
 #include "Shaders.h"
 #include "Time.h"
+#include "Animation.h"
 #include "BinaryFileLoad.h"
 
 #include "Particle.h"
@@ -100,6 +101,30 @@ namespace
         component_t components[COUNT];
     };
 
+    // ANIMATION==============================
+    struct Joint
+    {
+        DirectX::XMFLOAT4X4 global_xform;
+
+        int parent_index;
+    };
+
+    struct myKeyFrame
+    {
+        double time = 0;
+
+        std::vector<Joint> joints;
+    };
+
+    struct AnimClip
+    {
+        double duration = 0;
+        int frameCount = 0;
+
+        std::vector<myKeyFrame> frames;
+    };
+    //========================================
+
     XMVECTOR LightPositions[3] =
     {
         {-0.577f, 0.577f, -0.577f, 1.0f}, // directional
@@ -162,7 +187,7 @@ namespace
     end::Sorted_Pool_t<Particle, 256> sortPool;
     Emitter emitters[4];
     end::Pool_t<Particle, 1024> sharedPool;
-    Object Gizmo[3];
+    std::vector<Object> Gizmos;
     end::aabb_t aabbs[3];
     std::bitset<256> bits;
     //std::vector<XMFLOAT3> terrain_pos;
@@ -173,6 +198,7 @@ namespace
     std::vector<end::bvh_node_t> BVH;
 
     Mesh<VERTEX> BattleMage;
+    Animation::Animation run_anim;
 
 
     Shaders::VertexShader advanced_VS;
@@ -500,7 +526,7 @@ HRESULT InitContent()
     hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", sizeof(WVP));
     solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
 
-
+    // read FBX materials
     using Path = std::array<char, 260>;
     std::vector<material_t> materials;
     std::vector<Path> paths;
@@ -743,9 +769,15 @@ HRESULT InitContent()
     emitters[3].Spawn_Color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
     // initialize gizmos
-    Gizmo[0].SetPosition(0.0f, 1.0f, 0.0f);
-    Gizmo[1].SetPosition(-3.0f, 3.0f, -2.0f);
-    Gizmo[2].SetPosition(3.0f, 3.0f, 2.0f);
+    Object gizmo_1;
+    Object gizmo_2;
+    Object gizmo_3;
+    gizmo_1.SetPosition(0.0f, 1.0f, 0.0f);
+    gizmo_2.SetPosition(-3.0f, 3.0f, -2.0f);
+    gizmo_3.SetPosition(3.0f, 3.0f, 2.0f);
+    Gizmos.push_back(gizmo_1);
+    Gizmos.push_back(gizmo_2);
+    Gizmos.push_back(gizmo_3);
 
     // initialize AABBs
     for (size_t i = 0; i < ARRAYSIZE(aabbs); ++i)
@@ -795,14 +827,39 @@ HRESULT InitContent()
     // Load BattleMage.fbx
     std::vector<int> indexList;
     std::vector<VERTEX> vertices;
-    load_binary::load_FBXMesh_blob("./Assets/headers/BattleMageRun.mesh", indexList, vertices);
+    load_binary::Load_FBXMesh_blob("./Assets/headers/BattleMageRun.mesh", indexList, vertices);
     BattleMage = Mesh<VERTEX>(myDevice, immediateContext, vertices.data(), vertices.size(), 
         indexList.data(), indexList.size(), D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+    AnimClip clip;
 
+    load_binary::Load_FBXAnim_blob("./Assets/Animations/Run.anim",
+        clip.frames, clip.duration, clip.frameCount);
+
+    
+    double _duration;
+    int _frameCount;
+    load_binary::Load_FBXAnim_blob("./Assets/Animations/Run.anim",
+        run_anim.Frames, _duration, _frameCount);
+    run_anim.SetAnimationLength(_duration);
+    run_anim.SetFrameCount(_frameCount);
+
+    for (size_t frame = 0; frame < _frameCount; ++frame)
+    {
+        size_t jointCount = run_anim.Frames[frame].joints.size();
+        for (size_t j = 0; j < jointCount; ++j)
+        {
+            run_anim.Frames[frame].joints[j].jointObject.SetWorld(run_anim.GetKeyframes()[frame].joints[j].global_xform);
+            run_anim.Frames[frame].joints[j].jointObject.SetWorld(
+                XMMatrixScaling(0.2f, 0.2f, 0.2f) * run_anim.Frames[frame].joints[j].jointObject.GetWorldMatrix());
+            XMMATRIX mat = run_anim.Frames[frame].joints[j].jointObject.GetWorldMatrix();
+            mat.r[3].m128_f32[2] += 5.0f;
+            run_anim.Frames[frame].joints[j].jointObject.SetWorld(mat);
+        }
+    }
 
     // initialize camera
-    cam.SetPosition(0.0f, 5.0f, -15.0f);
+    cam.SetPosition(0.0f, 5.0f, -5.0f);
     //cam.SetRotation(35.0f * (XM_PI / 180.0f), 0.0f, 0.0f);
 
     // initialize Directional Light
@@ -921,19 +978,19 @@ void CatchInput()
     //}
     if (bits[0]) // up arrow
     {
-        Gizmo[0].UpdatePosition(Gizmo[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdatePosition(Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
     }
     if (bits[1]) // down arrow
     {
-        Gizmo[0].UpdatePosition(-Gizmo[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdatePosition(-Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
     }
     if (bits[2]) // left arrow
     {
-        Gizmo[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
     }
     if (bits[3]) // right arrow
     {
-        Gizmo[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
     }
     if (bits[4]) // W
     {
@@ -2069,14 +2126,15 @@ void Update()
     //FreeListParticle(dt);
 
     // Create the Target, LooAt, and TurnTo Gizmos
-    for (size_t i = 0; i < 3; ++i)
+    Gizmos[1].SetLookAt(Gizmos[1].GetPositionVector(), Gizmos[0].GetPositionVector(), Gizmos[1].UP);
+    Gizmos[2].SetTurnTo(Gizmos[2].GetWorldMatrix(), Gizmos[0].GetPositionVector(), dt * 0.5f);
+    // Draw Gizmos
+    size_t gizmo_count = Gizmos.size();
+    for (size_t i = 0; i < gizmo_count; ++i)
     {
-        Gizmo[1].SetLookAt(Gizmo[1].GetPositionVector(), Gizmo[0].GetPositionVector(), Gizmo[1].UP);
-        Gizmo[2].SetTurnTo(Gizmo[2].GetWorldMatrix(), Gizmo[0].GetPositionVector(), dt * 0.5f);
-        
-        XMVECTOR x = Gizmo[i].GetWorldMatrix().r[0] + Gizmo[i].GetPositionVector();
-        XMVECTOR y = Gizmo[i].GetWorldMatrix().r[1] + Gizmo[i].GetPositionVector();
-        XMVECTOR z = Gizmo[i].GetWorldMatrix().r[2] + Gizmo[i].GetPositionVector();
+        XMVECTOR x = Gizmos[i].GetWorldMatrix().r[0] + Gizmos[i].GetPositionVector();
+        XMVECTOR y = Gizmos[i].GetWorldMatrix().r[1] + Gizmos[i].GetPositionVector();
+        XMVECTOR z = Gizmos[i].GetWorldMatrix().r[2] + Gizmos[i].GetPositionVector();
         XMFLOAT4 xAxis;
         XMStoreFloat4(&xAxis, x);
         XMFLOAT4 yAxis;
@@ -2085,12 +2143,56 @@ void Update()
         XMStoreFloat4(&zAxis, z);
 
         // x-axis
-        end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+        end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
         // y-axis
-        end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+        end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
         // z-axis
-        end::debug_renderer::add_line(Gizmo[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+        end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
+
+    // Draw Joints
+    size_t joint_count = run_anim.Frames[0].joints.size();
+    for (size_t i = 0; i < joint_count; ++i)
+    {
+        XMVECTOR x = run_anim.Frames[0].joints[i].jointObject.GetWorldMatrix().r[0] 
+            + run_anim.Frames[0].joints[i].jointObject.GetPositionVector();
+        XMVECTOR y = run_anim.Frames[0].joints[i].jointObject.GetWorldMatrix().r[1] 
+            + run_anim.Frames[0].joints[i].jointObject.GetPositionVector();
+        XMVECTOR z = run_anim.Frames[0].joints[i].jointObject.GetWorldMatrix().r[2] 
+            + run_anim.Frames[0].joints[i].jointObject.GetPositionVector();
+        XMFLOAT4 xAxis;
+        XMStoreFloat4(&xAxis, x);
+        XMFLOAT4 yAxis;
+        XMStoreFloat4(&yAxis, y);
+        XMFLOAT4 zAxis;
+        XMStoreFloat4(&zAxis, z);
+
+        // x-axis
+        end::debug_renderer::add_line(run_anim.Frames[0].joints[i].jointObject.GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+        // y-axis
+        end::debug_renderer::add_line(run_anim.Frames[0].joints[i].jointObject.GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+        // z-axis
+        end::debug_renderer::add_line(run_anim.Frames[0].joints[i].jointObject.GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+    }
+
+    // draw a line from a joints position to its parents position
+    // bottom up
+    //
+    //for (size_t frame = 0; frame < run_anim.GetFrameCount(); ++frame)
+    {
+        size_t jointCount = run_anim.Frames[0].joints.size();
+        for (size_t j = 0; j < jointCount; j++)
+        {
+            Animation::Joint* child = &run_anim.Frames[0].joints[j];
+            if (child->parent_index != -1)
+            {
+                Animation::Joint* parent = &run_anim.Frames[0].joints[child->parent_index];
+                end::debug_renderer::add_line(child->jointObject.GetPositionFloat4(), parent->jointObject.GetPositionFloat4(),
+                    XMFLOAT4(Colors::HotPink), XMFLOAT4(Colors::White));
+            }
+        }
+    }
+
 
     #pragma region FRUSTUM CULLING
     //// Create View Frustum
@@ -2216,5 +2318,7 @@ void Update()
     //}
     //BVH.shrink_to_fit();
 #pragma endregion
+
+    
 
 }
