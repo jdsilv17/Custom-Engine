@@ -197,6 +197,7 @@ void Object::SetPosition(const DirectX::XMVECTOR& pos)
 {
 	this->Pos_V = pos;
 	DirectX::XMStoreFloat4(&this->Pos_F4, pos);
+	this->PositionChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -204,6 +205,7 @@ void Object::SetPosition(float x, float y, float z)
 {
 	this->Pos_F4 = DirectX::XMFLOAT4(x, y, z, 1.0f);
 	this->Pos_V = DirectX::XMLoadFloat4(&this->Pos_F4);
+	this->PositionChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -211,6 +213,7 @@ void Object::SetRotation(const DirectX::XMVECTOR& rot)
 {
 	this->Rot_V = rot;
 	DirectX::XMStoreFloat3(&this->Rot_F3, rot);
+	this->RotationChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -218,6 +221,7 @@ void Object::SetRotation(float x, float y, float z)
 {
 	this->Rot_F3 = DirectX::XMFLOAT3(x, y, z);
 	this->Rot_V = DirectX::XMLoadFloat3(&this->Rot_F3);
+	this->RotationChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -225,6 +229,7 @@ void Object::SetScale(const DirectX::XMVECTOR& scale)
 {
 	this->Scale_V = scale;
 	DirectX::XMStoreFloat3(&this->Scale_F3, scale);
+	this->ScaleChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -232,6 +237,7 @@ void Object::SetScale(float x, float y, float z)
 {
 	this->Scale_F3 = DirectX::XMFLOAT3(x, y, z);
 	this->Scale_V = DirectX::XMLoadFloat3(&this->Scale_F3);
+	this->ScaleChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -282,6 +288,7 @@ void Object::UpdatePosition(const DirectX::XMVECTOR& pos)
 {
 	this->Pos_V = DirectX::XMVectorAdd(this->Pos_V, pos);
 	DirectX::XMStoreFloat4(&this->Pos_F4, this->Pos_V);
+	this->PositionChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -291,6 +298,7 @@ void Object::UpdatePosition(float x, float y, float z)
 	this->Pos_F4.y += y;
 	this->Pos_F4.z += z;
 	this->Pos_V = DirectX::XMLoadFloat4(&this->Pos_F4);
+	this->PositionChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -298,6 +306,7 @@ void Object::UpdateRotation(const DirectX::XMVECTOR& rot)
 {
 	this->Rot_V = DirectX::XMVectorAdd(this->Rot_V, rot);
 	DirectX::XMStoreFloat3(&this->Rot_F3, this->Rot_V);
+	this->RotationChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -307,6 +316,7 @@ void Object::UpdateRotation(float x, float y, float z)
 	this->Rot_F3.y += y;
 	this->Rot_F3.z += z;
 	this->Rot_V = DirectX::XMLoadFloat3(&this->Rot_F3);
+	this->RotationChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -314,6 +324,7 @@ void Object::UpdateScale(const DirectX::XMVECTOR& scale)
 {
 	this->Scale_V = DirectX::XMVectorAdd(this->Scale_V, scale);
 	DirectX::XMStoreFloat3(&this->Scale_F3, this->Scale_V);
+	this->ScaleChanged = true;
 	this->UpdateWorldMatrix();
 }
 
@@ -323,6 +334,7 @@ void Object::UpdateScale(float x, float y, float z)
 	this->Scale_F3.y += y;
 	this->Scale_F3.z += z;
 	this->Scale_V = DirectX::XMLoadFloat3(&this->Scale_F3);
+	this->ScaleChanged = true;
 	this->UpdateWorldMatrix();
 }
 

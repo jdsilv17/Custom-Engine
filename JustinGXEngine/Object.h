@@ -113,6 +113,10 @@ private:
 	DirectX::XMVECTOR right_V;
 	DirectX::XMFLOAT3 right_F3;
 
+	bool PositionChanged = false;
+	bool RotationChanged = false;
+	bool ScaleChanged = false;
+
 	void UpdateWorldMatrix();
 	void UpdateTransform();
 };

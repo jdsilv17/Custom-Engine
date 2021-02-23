@@ -5,7 +5,7 @@ SamplerState samplerState : register(s0);
 
 float4 main(PS_DEFAULT_INPUT input) : SV_TARGET
 {
-    float4 amientColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+    float4 amientColor = { 0.3f, 0.3f, 0.3f, 1.0f };
     float4 finalColor = 0;
     float4 tex[3]; // diffuse, emissive, specular
     for (int i = 0; i < 3; ++i)
@@ -15,7 +15,7 @@ float4 main(PS_DEFAULT_INPUT input) : SV_TARGET
     finalColor = tex[0] * amientColor + tex[1];
     finalColor += CalcDirectinalLight(LightDir[0].xyz, LightColor[0], input.Normal, tex[0]);
     
-    float pntRadius = 5.0f;
+    float pntRadius = 15.0f;
     finalColor += CalcPointLight(LightPos[1], LightColor[1], pntRadius, input.wPos, input.Normal, tex[0], tex[2]);
     
     //finalColor += CalcSpotLight(LightPos[2], (float3) LightDir[1], LightColor[2], input.wPos, input.Normal, texColor);

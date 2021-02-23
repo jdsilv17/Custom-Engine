@@ -10,3 +10,5 @@ Documentation
 *.opensdf
 *.user
 .vs
+/JustinGXEngine/*.cso
+/JustinGXEngine/*.csh

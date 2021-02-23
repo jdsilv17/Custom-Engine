@@ -4,6 +4,7 @@
 #include <DirectXMath.h>
 
 #include "Object.h"
+#include "Time.h"
 
 namespace Animation
 {
@@ -37,22 +38,35 @@ namespace Animation
         const int GetFrameCount() const;
         std::vector<Keyframe>& GetKeyframes();
         const Keyframe* p_GetKeyframes() const;
-        const Keyframe GetKeyframe(int _index) const;
+        const Keyframe* GetKeyframe(int _index) const;
+        const Keyframe* GetCurrentKeyframe() const;
+        const Keyframe* AnimationStart() const;
+        const Keyframe* AnimationEnd() const;
 
         void SetAnimationLength(const double& _duration);
         void SetFrameCount(const int& _frameCount);
         void SetKeyframes(const std::vector<Keyframe>& _frames);
         void SetKeyframes(const Keyframe* _frames, size_t numOfKeyframes);
+        void SetCurrentFrameTo(int _index);
 
-        void Playback(double deltaTime);
+        const Keyframe* Playback(double deltaTime);
+        void StartPlayback();
+        void StopPlayback();
+        void FrameStepForward();
+        void FrameStepBack();
+        void ResetCurrentFrame();
+
+        bool IsPlaying() const;
 
         std::vector<Keyframe> Frames;
 
     private:
+        Time Timer;
+        double TimeElapsed = 0;
         double Duration = 0;
         int FrameCount = 0;
-
-        
+        int CurrentFrame = 0;
+        bool isPlaying = false;
     };
 }
 

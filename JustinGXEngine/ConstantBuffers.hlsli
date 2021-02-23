@@ -117,7 +117,7 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
     
     // Specular Component
     float4 ReflectedLight = 0;
-    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 20.0f, 0.8f);
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 10.0f, 0.8f);
     
     float ambientTerm = 1.0f;
     //float4 ambientColor = lColor * ambientTerm;
@@ -142,7 +142,7 @@ float4 CalcPointLight(float4 lPos, float4 lColor, float lRadius, float4 sPos, fl
     
     // Specular Component
     float4 ReflectedLight = 0;
-    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 10.0f, 0.8f);
+    ReflectedLight = CalcSpecularComponent(lColor, lightDir, sPos.xyz, sNormal, camPos.xyz, 10.0f, 0.5f);
     ReflectedLight *= specDiffuse;
     
     float ambientTerm = 0.0f;

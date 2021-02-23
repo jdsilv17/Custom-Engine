@@ -831,12 +831,6 @@ HRESULT InitContent()
     BattleMage = Mesh<VERTEX>(myDevice, immediateContext, vertices.data(), vertices.size(), 
         indexList.data(), indexList.size(), D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    AnimClip clip;
-
-    load_binary::Load_FBXAnim_blob("./Assets/Animations/Run.anim",
-        clip.frames, clip.duration, clip.frameCount);
-
-    
     double _duration;
     int _frameCount;
     load_binary::Load_FBXAnim_blob("./Assets/Animations/Run.anim",
@@ -850,17 +844,15 @@ HRESULT InitContent()
         for (size_t j = 0; j < jointCount; ++j)
         {
             run_anim.Frames[frame].joints[j].jointObject.SetWorld(run_anim.GetKeyframes()[frame].joints[j].global_xform);
-            run_anim.Frames[frame].joints[j].jointObject.SetWorld(
-                XMMatrixScaling(0.2f, 0.2f, 0.2f) * run_anim.Frames[frame].joints[j].jointObject.GetWorldMatrix());
             XMMATRIX mat = run_anim.Frames[frame].joints[j].jointObject.GetWorldMatrix();
-            mat.r[3].m128_f32[2] += 5.0f;
+            mat.r[3].m128_f32[2] += 2.5f;
             run_anim.Frames[frame].joints[j].jointObject.SetWorld(mat);
         }
     }
 
     // initialize camera
-    cam.SetPosition(0.0f, 5.0f, -5.0f);
-    //cam.SetRotation(35.0f * (XM_PI / 180.0f), 0.0f, 0.0f);
+    cam.SetPosition(0.0f, 5.0f, 5.0f);
+    cam.SetRotation(0.0f, XM_PI, 0.0f);
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
@@ -868,7 +860,7 @@ HRESULT InitContent()
     dirLight.SetLightColor(0.75f, 0.75f, 0.75f, 1.0f);
     dirLight.SetAmbientTerm(0.3f);
     // initialize Point Light
-    pntLight.SetPosition(-5.0f, 3.0f, -1.0f);
+    pntLight.SetPosition(0.0f, 4.0f, 1.0f);
     pntLight.SetLightColor(1.0f, 1.0f, 1.0f, 1.0f);
     pntLight.SetAmbientTerm(0.9f);
     pntLight.SetPointRadius(35.0f);
@@ -959,38 +951,45 @@ void CatchInput()
 
     const float cameraSpeed = 0.002f;
 
+    #pragma region OLD CAMERA ROTATION
     //POINT curr_point = { 0,0 };
     //POINT delta_point = { 0,0 };
-
+    //
     //GetCursorPos(&curr_point); // grab the curr every frame
-
+    //
     //static POINT prev_point = curr_point; // initialize once
-
+    //
     //// calc delta of mouse pos with the pos of the previous frame
     //delta_point.x = curr_point.x - prev_point.x;
     //delta_point.y = curr_point.y - prev_point.y;
-
+    //
     //prev_point = curr_point; // keep the current pos of the current frame to use in the next frame
-
+    //
     //if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) // Right mouse button
     //{
     //    cam.UpdateRotation(static_cast<float>(delta_point.y) * 0.005f, static_cast<float>(delta_point.x) * 0.005f, 0.0f);
     //}
+#pragma endregion
+
     if (bits[0]) // up arrow
     {
-        Gizmos[0].UpdatePosition(Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        //Gizmos[0].UpdatePosition(Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        pntLight.UpdatePosition(0.0f, 0.002f * (float)uTimer.deltaTime, 0.0f);
     }
     if (bits[1]) // down arrow
     {
-        Gizmos[0].UpdatePosition(-Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        //Gizmos[0].UpdatePosition(-Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        pntLight.UpdatePosition(0.0f, -0.002f * (float)uTimer.deltaTime, 0.0f);
     }
     if (bits[2]) // left arrow
     {
-        Gizmos[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        //Gizmos[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        pntLight.UpdatePosition(-0.002f * (float)uTimer.deltaTime, 0.0f, 0.0f);
     }
     if (bits[3]) // right arrow
     {
-        Gizmos[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        //Gizmos[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        pntLight.UpdatePosition(0.002f * (float)uTimer.deltaTime, 0.0f, 0.0f);
     }
     if (bits[4]) // W
     {
@@ -1023,6 +1022,21 @@ void CatchInput()
     if (bits[11] || GetAsyncKeyState('G') & 0x0001)
     {
         DrawGrid = !DrawGrid;
+    }
+    //if (bits[12]) // < (,)
+    //{
+    //    run_anim.FrameStepBack();
+    //}
+    //if (bits[13]) // > (.)
+    //{
+    //    run_anim.FrameStepForward();
+    //}
+    if (bits[14]) // R
+    {
+        if (run_anim.IsPlaying())
+            run_anim.StopPlayback();
+
+        run_anim.ResetCurrentFrame();
     }
 }
 
@@ -1108,6 +1122,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             bits.set(9);
         }
+        if (wParam == VK_OEM_COMMA) // Step Back through animation
+        {
+            run_anim.FrameStepBack();
+            //bits.set(12);
+        }
+        if (wParam == VK_OEM_PERIOD) // Step Forward through animation
+        {
+            run_anim.FrameStepForward();
+            //bits.set(13);
+        }
+        if (wParam == 'R') // reset Animation to frame 0
+        {
+            bits.set(14);
+        }
+        if (wParam == 'P') // start/stop animation playback
+        {
+            if (!run_anim.IsPlaying())
+                run_anim.StartPlayback();
+            else
+                run_anim.StopPlayback();
+        }
         break;
     }
     case WM_KEYUP:
@@ -1151,6 +1186,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (wParam == 'X')
         {
             bits.set(9, false);
+        }
+        if (wParam == VK_OEM_COMMA)
+        {
+            bits.set(12, false);
+        }
+        if (wParam == VK_OEM_PERIOD)
+        {
+            bits.set(13, false);
+        }
+        if (wParam == 'R')
+        {
+            bits.set(14, false);
         }
         break;
     }
@@ -1790,6 +1837,17 @@ void DrawDebugScene()
     immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
     BattleMage.Draw();
 
+    // Draw Point Light
+    solid_PS.Bind(immediateContext);
+    cb.mWorld = XMMatrixTranspose(XMMatrixScaling(0.05f, 0.05f, 0.05f) * pntLight.GetWorldMatrix());
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
+    BattleMage.Draw();
+
     // change 1 to 0 vsync
     bool vysnc = true;
     swapChain->Present(vysnc, 0);
@@ -2150,16 +2208,21 @@ void Update()
         end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
 
-    // Draw Joints
-    size_t joint_count = run_anim.Frames[0].joints.size();
+    // Draw Joints in a Keyframe
+    const Animation::Keyframe* frame = nullptr;
+    if (run_anim.IsPlaying())
+        frame = run_anim.Playback(gTimer.deltaTime);
+    else
+        frame = run_anim.GetCurrentKeyframe();
+    size_t joint_count = frame->joints.size();
     for (size_t i = 0; i < joint_count; ++i)
     {
-        XMVECTOR x = run_anim.Frames[0].joints[i].jointObject.GetWorldMatrix().r[0] 
-            + run_anim.Frames[0].joints[i].jointObject.GetPositionVector();
-        XMVECTOR y = run_anim.Frames[0].joints[i].jointObject.GetWorldMatrix().r[1] 
-            + run_anim.Frames[0].joints[i].jointObject.GetPositionVector();
-        XMVECTOR z = run_anim.Frames[0].joints[i].jointObject.GetWorldMatrix().r[2] 
-            + run_anim.Frames[0].joints[i].jointObject.GetPositionVector();
+        XMVECTOR x = frame->joints[i].jointObject.GetWorldMatrix().r[0] * 0.2f
+            + frame->joints[i].jointObject.GetPositionVector();
+        XMVECTOR y = frame->joints[i].jointObject.GetWorldMatrix().r[1] * 0.2f
+            + frame->joints[i].jointObject.GetPositionVector();
+        XMVECTOR z = frame->joints[i].jointObject.GetWorldMatrix().r[2] * 0.2f
+            + frame->joints[i].jointObject.GetPositionVector();
         XMFLOAT4 xAxis;
         XMStoreFloat4(&xAxis, x);
         XMFLOAT4 yAxis;
@@ -2168,31 +2231,26 @@ void Update()
         XMStoreFloat4(&zAxis, z);
 
         // x-axis
-        end::debug_renderer::add_line(run_anim.Frames[0].joints[i].jointObject.GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+        end::debug_renderer::add_line(frame->joints[i].jointObject.GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
         // y-axis
-        end::debug_renderer::add_line(run_anim.Frames[0].joints[i].jointObject.GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+        end::debug_renderer::add_line(frame->joints[i].jointObject.GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
         // z-axis
-        end::debug_renderer::add_line(run_anim.Frames[0].joints[i].jointObject.GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+        end::debug_renderer::add_line(frame->joints[i].jointObject.GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
 
-    // draw a line from a joints position to its parents position
-    // bottom up
-    //
-    //for (size_t frame = 0; frame < run_anim.GetFrameCount(); ++frame)
+    // draw Bones
+    for (size_t j = 0; j < joint_count; j++)
     {
-        size_t jointCount = run_anim.Frames[0].joints.size();
-        for (size_t j = 0; j < jointCount; j++)
+        const Animation::Joint* child = &frame->joints[j];
+        if (child->parent_index != -1)
         {
-            Animation::Joint* child = &run_anim.Frames[0].joints[j];
-            if (child->parent_index != -1)
-            {
-                Animation::Joint* parent = &run_anim.Frames[0].joints[child->parent_index];
-                end::debug_renderer::add_line(child->jointObject.GetPositionFloat4(), parent->jointObject.GetPositionFloat4(),
-                    XMFLOAT4(Colors::HotPink), XMFLOAT4(Colors::White));
-            }
+            const Animation::Joint* parent = &frame->joints[child->parent_index];
+            end::debug_renderer::add_line(child->jointObject.GetPositionFloat4(), parent->jointObject.GetPositionFloat4(),
+                XMFLOAT4(Colors::HotPink), XMFLOAT4(Colors::White));
         }
     }
-
+    if (run_anim.IsPlaying())
+        delete frame;
 
     #pragma region FRUSTUM CULLING
     //// Create View Frustum
