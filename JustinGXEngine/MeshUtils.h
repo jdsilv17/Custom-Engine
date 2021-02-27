@@ -5,7 +5,7 @@
 #include <vector>
 
 // wrap in a namespace
-struct VERTEX
+struct alignas(16) VERTEX
 {
     DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
     DirectX::XMFLOAT4 color = { 0, 0, 0, 0 };
@@ -26,6 +26,31 @@ struct VERTEX
     VERTEX(float x, float y, float z, float w, float r, float g, float b, float a, float nx, float ny, float nz, float u, float v)
         : pos(x, y, z, w), color(r, g, b, a), normals(nx, ny, nz), uv(u, v) {}
 
+};
+
+struct VERTEX_ANIM
+{
+    DirectX::XMFLOAT4 pos = { 0, 0, 0, 0 };
+    DirectX::XMFLOAT4 color = { 0, 0, 0, 0 };
+    int joint_indices[4] = { 0, 0, 0, 0 };
+    float weights[4] = { 0, 0, 0, 0 };
+    DirectX::XMFLOAT3 normals = { 0, 0, 0 };
+    DirectX::XMFLOAT2 uv = { 0, 0 };
+
+
+    VERTEX_ANIM() {}
+    VERTEX_ANIM(const DirectX::XMFLOAT4& _pos)
+        : pos(_pos) {}
+    VERTEX_ANIM(const DirectX::XMFLOAT3& _norm)
+        : normals(_norm) {}
+    VERTEX_ANIM(const DirectX::XMFLOAT2& _uv)
+        : uv(_uv) {}
+    VERTEX_ANIM(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT4& _col)
+        : pos(_pos), color(_col) {}
+    VERTEX_ANIM(const DirectX::XMFLOAT4& _pos, const DirectX::XMFLOAT4& _col, const DirectX::XMFLOAT3& _norm, const DirectX::XMFLOAT2& _uv)
+        : pos(_pos), color(_col), normals(_norm), uv(_uv) {}
+    VERTEX_ANIM(float x, float y, float z, float w, float r, float g, float b, float a, float nx, float ny, float nz, float u, float v)
+        : pos(x, y, z, w), color(r, g, b, a), normals(nx, ny, nz), uv(u, v) {}
 };
 
 struct COLORED_VERTEX
@@ -81,6 +106,16 @@ const D3D11_INPUT_ELEMENT_DESC vertexInputLayoutDesc[] =
     {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0},
+};
+
+const D3D11_INPUT_ELEMENT_DESC animInputLayoutDesc[] =
+{
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"JOINT_INDICES", 0, DXGI_FORMAT_R32G32B32A32_SINT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"WEIGHTS", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 64, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 76, D3D11_INPUT_PER_VERTEX_DATA, 0}
 };
 
 const D3D11_INPUT_ELEMENT_DESC coloredVertexLayoutDesc[] =

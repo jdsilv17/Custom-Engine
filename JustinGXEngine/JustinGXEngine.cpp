@@ -76,6 +76,8 @@ namespace
         XMFLOAT4X4 sWorld;
         XMFLOAT4X4 sView;
         XMFLOAT4X4 sProjection;
+        XMFLOAT4X4 SkinMat[28];
+        //XMFLOAT4X4 SkinNoramlMat[28];
         XMFLOAT4 LightPos[3];
         XMFLOAT4 LightDir[3];
         XMFLOAT4 LightColor[3];
@@ -197,7 +199,7 @@ namespace
     std::vector<XMFLOAT4> terrain_centroids;
     std::vector<end::bvh_node_t> BVH;
 
-    Mesh<VERTEX> BattleMage;
+    Mesh<VERTEX_ANIM> BattleMage;
     Animation::Animation run_anim;
 
 
@@ -205,10 +207,12 @@ namespace
     Shaders::VertexShader default_VS;
     Shaders::VertexShader skybox_VS;
     Shaders::VertexShader gs_VS;
+    Shaders::VertexShader anim_VS;
     Shaders::PixelShader advanced_PS;
     Shaders::PixelShader solid_PS;
     Shaders::PixelShader skybox_PS;
     Shaders::PixelShader default_PS;
+    Shaders::PixelShader anim_PS;
 
     Shaders::VertexShader HUD_VS;
     Shaders::VertexShader Smoke_VS;
@@ -510,21 +514,36 @@ HRESULT InitContent()
 {
     HRESULT hr = S_OK;
 
+    // Create Constant Buffer
+    ComPtr<ID3D11Buffer> constantBuffer = nullptr;
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.ByteWidth = sizeof(WVP);
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    bd.MiscFlags = 0;
+
+    hr = myDevice->CreateBuffer(&bd, nullptr, constantBuffer.GetAddressOf());
+
     // write, compile & load our shaders
     hr = advanced_VS.Initialize(myDevice, "./MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
-
+    advanced_VS.ShaderConstantBuffer = constantBuffer;
     hr = default_VS.Initialize(myDevice, "./VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-
+    default_VS.ShaderConstantBuffer = constantBuffer;
+    hr = anim_VS.Initialize(myDevice, "./Anim_VS.cso", animInputLayoutDesc, ARRAYSIZE(animInputLayoutDesc), sizeof(WVP));
+    anim_VS.ShaderConstantBuffer = constantBuffer;
     hr = skybox_VS.Initialize(myDevice, "./SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
-
+    skybox_VS.ShaderConstantBuffer = constantBuffer;
     hr = gs_VS.Initialize(myDevice, "./Geo_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-
+    gs_VS.ShaderConstantBuffer = constantBuffer;
     hr = HUD_VS.Initialize(myDevice, "./HUD_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-
+    HUD_VS.ShaderConstantBuffer = constantBuffer;
     hr = Smoke_VS.Initialize(myDevice, "./HUD_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
+    Smoke_VS.ShaderConstantBuffer = constantBuffer;
 
     hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", sizeof(WVP));
-    solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
+    solid_PS.ShaderConstantBuffer = constantBuffer;
 
     // read FBX materials
     using Path = std::array<char, 260>;
@@ -538,9 +557,9 @@ HRESULT InitContent()
         in_paths[i] = ".\\Assets\\Textures\\";
         in_paths[i].append(paths[i].data());
     }
-    hr = default_PS.Initialize(myDevice, "./Default_PS.cso", sizeof(WVP));
-    hr = default_PS.InitShaderResources(myDevice, in_paths, 1);
-    default_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer;
+    hr = anim_PS.Initialize(myDevice, "./Anim_PS.cso", sizeof(WVP));
+    hr = anim_PS.InitShaderResources(myDevice, in_paths, 1);
+    anim_PS.ShaderConstantBuffer = anim_VS.ShaderConstantBuffer;
 
     hr = skybox_PS.Initialize(myDevice, "./SkyBox_PS.cso", sizeof(WVP)); // change to include texture
     hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/SunsetSkybox.dds");
@@ -826,9 +845,9 @@ HRESULT InitContent()
 
     // Load BattleMage.fbx
     std::vector<int> indexList;
-    std::vector<VERTEX> vertices;
-    load_binary::Load_FBXMesh_blob("./Assets/headers/BattleMageRun.mesh", indexList, vertices);
-    BattleMage = Mesh<VERTEX>(myDevice, immediateContext, vertices.data(), vertices.size(), 
+    std::vector<VERTEX_ANIM> vertices;
+    load_binary::Load_FBXMesh_blob("./Assets/headers/Run.mesh", indexList, vertices);
+    BattleMage = Mesh<VERTEX_ANIM>(myDevice, immediateContext, vertices.data(), vertices.size(),
         indexList.data(), indexList.size(), D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     double _duration;
@@ -844,9 +863,6 @@ HRESULT InitContent()
         for (size_t j = 0; j < jointCount; ++j)
         {
             run_anim.Frames[frame].joints[j].jointObject.SetWorld(run_anim.GetKeyframes()[frame].joints[j].global_xform);
-            XMMATRIX mat = run_anim.Frames[frame].joints[j].jointObject.GetWorldMatrix();
-            mat.r[3].m128_f32[2] += 2.5f;
-            run_anim.Frames[frame].joints[j].jointObject.SetWorld(mat);
         }
     }
 
@@ -1746,6 +1762,16 @@ void DrawDebugScene()
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
     //wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
+    auto jointSize = run_anim.GetCurrentKeyframe()->joints.size();
+    for (size_t i = 0; i < jointSize; ++i)
+    {
+        XMFLOAT4X4 matrix;
+        DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&run_anim.GetCurrentKeyframe()->joints[i].global_xform);
+        DirectX::XMMATRIX invMat = DirectX::XMLoadFloat4x4(&run_anim.Frames[0].joints[i].inv_xform);
+        XMStoreFloat4x4(&matrix, invMat * mat);
+        //wvp.SkinMat[i] = run_anim.GetCurrentKeyframe()->joints[i].inv_xform;
+        wvp.SkinMat[i] = matrix;
+    }
 
     //======================================================================================================================
 
@@ -1790,6 +1816,33 @@ void DrawDebugScene()
         immediateContext->OMSetDepthStencilState(nullptr, 0);
     }
 
+    // Draw fbx mesh
+    //default_PS.Bind(immediateContext);
+    //default_PS.BindShaderResources(immediateContext);
+    anim_VS.Bind(immediateContext);
+    anim_PS.Bind(immediateContext);
+    anim_PS.BindShaderResources(immediateContext);
+
+    cb.mWorld = XMMatrixTranspose(BattleMage.GetWorldMatrix());
+
+    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0);
+    BattleMage.Draw();
+
+    // Draw Point Light
+    //solid_PS.Bind(immediateContext);
+    //cb.mWorld = XMMatrixTranspose(XMMatrixScaling(0.05f, 0.05f, 0.05f) * pntLight.GetWorldMatrix());
+
+    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //// send to Card
+    //hr = immediateContext->Map((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    //immediateContext->Unmap((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0);
+    //BattleMage.Draw();
+
 
     default_VS.Bind(immediateContext);
     solid_PS.Bind(immediateContext);
@@ -1806,8 +1859,9 @@ void DrawDebugScene()
         immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
         grid.Draw();
     }
-
     // Draw Debug_renderer ========================================
+    //immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
+
     Mesh<VERTEX> temp = Mesh<VERTEX>(myDevice, immediateContext,
         end::debug_renderer::get_line_verts(),
         (int)end::debug_renderer::get_line_vert_capacity(),
@@ -1824,29 +1878,9 @@ void DrawDebugScene()
 
     end::debug_renderer::clear_lines();
     immediateContext->RSSetState(nullptr);
+    //immediateContext->OMSetDepthStencilState(nullptr, 0);
 
-    // Draw fbx mesh
-    default_PS.Bind(immediateContext);
-    default_PS.BindShaderResources(immediateContext);
-    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity()/*XMMatrixScaling(0.5f, 0.5f, 0.5f)*/);
 
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-    BattleMage.Draw();
-
-    // Draw Point Light
-    solid_PS.Bind(immediateContext);
-    cb.mWorld = XMMatrixTranspose(XMMatrixScaling(0.05f, 0.05f, 0.05f) * pntLight.GetWorldMatrix());
-
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    // send to Card
-    hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-    BattleMage.Draw();
 
     // change 1 to 0 vsync
     bool vysnc = true;
@@ -2200,18 +2234,18 @@ void Update()
         XMFLOAT4 zAxis;
         XMStoreFloat4(&zAxis, z);
 
-        // x-axis
-        end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
-        // y-axis
-        end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
-        // z-axis
-        end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+        //// x-axis
+        //end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+        //// y-axis
+        //end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+        //// z-axis
+        //end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
     }
 
     // Draw Joints in a Keyframe
     const Animation::Keyframe* frame = nullptr;
     if (run_anim.IsPlaying())
-        frame = run_anim.Playback(gTimer.deltaTime);
+        frame = run_anim.Playback();
     else
         frame = run_anim.GetCurrentKeyframe();
     size_t joint_count = frame->joints.size();

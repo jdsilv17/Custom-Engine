@@ -11,6 +11,7 @@ namespace Animation
     struct Joint
     {
         DirectX::XMFLOAT4X4 global_xform;
+        DirectX::XMFLOAT4X4 inv_xform;
 
         int parent_index;
 
@@ -49,7 +50,7 @@ namespace Animation
         void SetKeyframes(const Keyframe* _frames, size_t numOfKeyframes);
         void SetCurrentFrameTo(int _index);
 
-        const Keyframe* Playback(double deltaTime);
+        const Keyframe* Playback();
         void StartPlayback();
         void StopPlayback();
         void FrameStepForward();

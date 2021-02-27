@@ -3,6 +3,8 @@ cbuffer ConstantBuffer : register(b0) // b for buffer
     float4x4 World;
     float4x4 View;
     float4x4 Projection;
+    float4x4 SkinMats[28];
+    //float4x4 SkinNormalMats[6];
     float4 LightPos[3];
     float4 LightDir[3];
     float4 LightColor[3];
@@ -32,6 +34,16 @@ struct VS_DEFAULT_INPUT
     float2 UV : TEXCOORD;
 };
 
+struct VS_ANIM_INPUT
+{
+    float4 Pos : POSITION;
+    float4 Color : COLOR;
+    int4 Joints : JOINT_INDICES;
+    float4 Weights : WEIGHTS;
+    float3 Normal : NORMAL;
+    float2 UV : TEXCOORD;
+};
+
 struct VS_COLOR_INPUT
 {
     float4 Pos : POSITION;
@@ -51,6 +63,17 @@ struct PS_DEFAULT_INPUT
     float4 Pos : SV_POSITION;
     float4 wPos : POSITION;
     float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float2 UV : TEXCOORD;
+};
+
+struct PS_ANIM_INPUT
+{
+    float4 Pos : SV_POSITION;
+    float4 wPos : POSITION;
+    float4 Color : COLOR;
+    int4 Joints : JOINT_INDICES;
+    float4 Weights : WEIGHTS;
     float3 Normal : NORMAL;
     float2 UV : TEXCOORD;
 };
@@ -89,8 +112,7 @@ float4 CalcSpecularComponent(float4 lColor, float3 lDir, float3 sPos, float3 sNo
 
 
 float4 PS_MultiTexturing(PS_INPUT input, Texture2D tex[2], SamplerState samplerState);
-float4 PS_SingleTexture(PS_INPUT input, Texture2D tex, SamplerState samplerState);
-float4 PS_SingleTexture(PS_DEFAULT_INPUT input, Texture2D tex, SamplerState samplerState);
+float4 PS_SingleTexture(float2 uv, Texture2D tex, SamplerState samplerState);
 float4 PS_Solid(PS_INPUT input);
 
 float4 CalcDirectinalLight(float3 lDir, float4 lColor, float3 sNormal, float4 tDiffuse)
@@ -222,15 +244,9 @@ float4 PS_MultiTexturing(PS_INPUT input, Texture2D tex[2], SamplerState samplerS
     return finalColor;
 }
 
-float4 PS_SingleTexture(PS_INPUT input, Texture2D tex, SamplerState samplerState)
+float4 PS_SingleTexture(float2 uv, Texture2D tex, SamplerState samplerState)
 {
-    float4 baseColor = tex.Sample(samplerState, input.UVW.xy);
-    return baseColor;
-}
-
-float4 PS_SingleTexture(PS_DEFAULT_INPUT input, Texture2D tex, SamplerState samplerState)
-{
-    float4 baseColor = tex.Sample(samplerState, input.UV);
+    float4 baseColor = tex.Sample(samplerState, uv);
     return baseColor;
 }
 

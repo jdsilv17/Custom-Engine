@@ -66,7 +66,7 @@ void Animation::Animation::SetCurrentFrameTo(int _index)
 	this->CurrentFrame = _index;
 }
 
-const Animation::Keyframe* Animation::Animation::Playback(double deltaTime)
+const Animation::Keyframe* Animation::Animation::Playback()
 {
 	this->Timer.Start();
 	this->TimeElapsed += this->Timer.GetElapsedMilliseconds() / 1000.0;
@@ -136,7 +136,7 @@ const Animation::Keyframe* Animation::Animation::Playback(double deltaTime)
 		}
 	}
 
-	// handle condition when curr is last frame and next is first frame // added abs() maybe take that out idk yet
+	// handle condition when curr is last frame and next is first frame
 	if (curr && next)
 	{
 		double ratio = abs(this->TimeElapsed - curr->time) / abs(next->time - curr->time); // ratio
@@ -154,6 +154,7 @@ const Animation::Keyframe* Animation::Animation::Playback(double deltaTime)
 			DirectX::XMVECTOR lerpPos = DirectX::XMVectorLerp(curr->joints[i].jointObject.GetPositionVector(),
 				next->joints[i].jointObject.GetPositionVector(), (float)ratio);
 			tweenMat.r[3] = lerpPos;
+
 			tween->joints[i].jointObject.SetWorld(tweenMat);
 		}
 	}

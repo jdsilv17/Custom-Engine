@@ -10,7 +10,7 @@ float4 main(PS_DEFAULT_INPUT input) : SV_TARGET
     float4 tex[3]; // diffuse, emissive, specular
     for (int i = 0; i < 3; ++i)
     {
-        tex[i] = PS_SingleTexture(input, textures[i], samplerState);
+        tex[i] = PS_SingleTexture(input.UV.xy, textures[i], samplerState);
     }
     finalColor = tex[0] * amientColor + tex[1];
     finalColor += CalcDirectinalLight(LightDir[0].xyz, LightColor[0], input.Normal, tex[0]);

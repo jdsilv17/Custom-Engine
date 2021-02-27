@@ -10,6 +10,8 @@
 #include "MeshUtils.h"
 #endif // MeshUtils_h_
 
+#include "Animation.h"
+
 namespace load_binary
 {
 	inline std::vector<uint8_t> load_binary_blob(const char* path)
@@ -61,8 +63,8 @@ namespace load_binary
 
 		return std::move(pos);
 	}
-
-	inline void Load_FBXMesh_blob(const char* path, std::vector<int>& indices_list, std::vector<VERTEX>& vertex_list)
+	template <typename InVertex>
+	inline void Load_FBXMesh_blob(const char* path, std::vector<int>& indices_list, std::vector<InVertex>& vertex_list)
 	{
 		uint32_t index_count = 0;
 		uint32_t vertex_count = 0;
@@ -83,7 +85,7 @@ namespace load_binary
 			// read positions
 			file.read((char*)&vertex_count, sizeof(uint32_t));
 			vertex_list.resize(vertex_count);
-			file.read((char*)vertex_list.data(), sizeof(VERTEX) * vertex_count);
+			file.read((char*)vertex_list.data(), sizeof(InVertex) * vertex_count);
 		}
 
 		file.close();
@@ -91,10 +93,7 @@ namespace load_binary
 		for (auto& vert : vertex_list)
 		{
 			vert.pos.x = -vert.pos.x;
-			//vert.pos.z = -vert.pos.z;
 			vert.normals.x = -vert.normals.x;
-			//vert.normals.z = -vert.normals.z;
-			//vert.uv.x = 1.0f - vert.uv.x;
 			vert.uv.y = 1.0f - vert.uv.y;
 		}
 
@@ -135,8 +134,8 @@ namespace load_binary
 		file.close();
 	}
 
-	template <typename Keyframe>
-	inline void Load_FBXAnim_blob(char const* path, std::vector<Keyframe>& frames, double& in_duration, int& in_frameCount)
+	//template <typename Keyframe>
+	inline void Load_FBXAnim_blob(char const* path, std::vector<Animation::Keyframe>& frames, double& in_duration, int& in_frameCount)
 	{
 		std::fstream file(path, std::ios_base::in | std::ios_base::binary);
 
@@ -161,9 +160,16 @@ namespace load_binary
 				for (size_t j = 0; j < size; ++j)
 				{
 					file.read((char*)&frames[i].joints[j].global_xform, sizeof(DirectX::XMFLOAT4X4));
+					file.read((char*)&frames[i].joints[j].inv_xform, sizeof(DirectX::XMFLOAT4X4));
 					file.read((char*)&frames[i].joints[j].parent_index, sizeof(int));
+
+					//DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&frames[i].joints[j].global_xform);
+					//DirectX::XMMATRIX invMat = DirectX::XMMatrixInverse(nullptr, mat);
+					////invMat = invMat * mat;
+					//DirectX::XMStoreFloat4x4(&frames[i].joints[j].inv_xform, invMat);
 				}
 			}
+
 		}
 
 		file.close();

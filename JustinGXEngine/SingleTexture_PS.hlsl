@@ -7,7 +7,7 @@ SamplerState samplerState : register(s0);
 float4 main(PS_INPUT input) : SV_TARGET
 {
     
-    float4 texColor = PS_SingleTexture(input, textures, samplerState);
+    float4 texColor = PS_SingleTexture(input.UVW.xy, textures, samplerState);
     float4 ambientLight = float4(0.3f, 0.3f, 0.3f, 1.0f);
     float4 finalColor = ambientLight;
     finalColor = CalcDirectinalLight(LightDir[0].xyz, LightColor[0], input.Normal, texColor);
