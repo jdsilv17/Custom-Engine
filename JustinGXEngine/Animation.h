@@ -60,6 +60,7 @@ namespace Animation
         bool IsPlaying() const;
 
         std::vector<Keyframe> Frames;
+        std::vector<Joint> TweenJoints;
 
     private:
         Time Timer;

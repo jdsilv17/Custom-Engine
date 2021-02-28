@@ -92,19 +92,19 @@ namespace load_binary
 
 		for (auto& vert : vertex_list)
 		{
-			vert.pos.x = -vert.pos.x;
-			vert.normals.x = -vert.normals.x;
+			//vert.pos.x = -vert.pos.x;
+			//vert.normals.x = -vert.normals.x;
 			vert.uv.y = 1.0f - vert.uv.y;
 		}
 
-		int tri_count = (int)(indices_list.size() / 3);
-		for (size_t i = 0; i < tri_count; ++i)
-		{
-			int* tri = indices_list.data() + i * 3;
-			int temp = tri[0];
-			tri[0] = tri[2];
-			tri[2] = temp;
-		}
+		//int tri_count = (int)(indices_list.size() / 3);
+		//for (size_t i = 0; i < tri_count; ++i)
+		//{
+		//	int* tri = indices_list.data() + i * 3;
+		//	int temp = tri[0];
+		//	tri[0] = tri[2];
+		//	tri[2] = temp;
+		//}
 	}
 
 	template<typename Mat, typename Path>
@@ -162,11 +162,15 @@ namespace load_binary
 					file.read((char*)&frames[i].joints[j].global_xform, sizeof(DirectX::XMFLOAT4X4));
 					file.read((char*)&frames[i].joints[j].inv_xform, sizeof(DirectX::XMFLOAT4X4));
 					file.read((char*)&frames[i].joints[j].parent_index, sizeof(int));
+					//frames[0].joints[j].global_xform.m[3][0] = -frames[0].joints[j].global_xform.m[3][0];
 
-					//DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&frames[i].joints[j].global_xform);
-					//DirectX::XMMATRIX invMat = DirectX::XMMatrixInverse(nullptr, mat);
-					////invMat = invMat * mat;
-					//DirectX::XMStoreFloat4x4(&frames[i].joints[j].inv_xform, invMat);
+					if (i == 0)
+					{
+						DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&frames[0].joints[j].global_xform);
+						DirectX::XMMATRIX invMat = DirectX::XMMatrixInverse(nullptr, mat);
+						//invMat = invMat * mat;
+						DirectX::XMStoreFloat4x4(&frames[i].joints[j].inv_xform, invMat);
+					}
 				}
 			}
 

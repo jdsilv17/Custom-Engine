@@ -154,8 +154,10 @@ namespace
     ID3D11DepthStencilView* zBufferView = nullptr;
 
     ID3D11DepthStencilState* DSLessEqual = nullptr; // used to make sure skybox is always behind all the other geometry
+    ID3D11DepthStencilState* DSNoDepth = nullptr; // turns depth off;
     ID3D11RasterizerState* RSCullNone = nullptr; // used to disable backface-culling
     ID3D11RasterizerState* RSAALLines = nullptr; // used to enable anti-aliased lines
+
     ID3D11BlendState* blendState = nullptr;
 
 #ifdef _DEBUG
@@ -230,8 +232,6 @@ namespace
     Shaders::PixelShader moon_PS;
     Shaders::PixelShader talon_PS;
     Shaders::GeometryShader pntToQuad_GS;
-
-    Shaders::PixelShader BattleMage_PS;
 
     bool DrawQuad = false;
     bool DrawGrid = false;
@@ -905,6 +905,10 @@ HRESULT InitContent()
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
     hr = myDevice->CreateDepthStencilState(&depthStencilDesc, &DSLessEqual);
+    depthStencilDesc.DepthEnable = false;
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+    hr = myDevice->CreateDepthStencilState(&depthStencilDesc, &DSNoDepth);
 
     // Blending =====================================================================
     D3D11_RENDER_TARGET_BLEND_DESC rtbd;
@@ -950,6 +954,7 @@ void CleanUp()
     if (RSAALLines) RSAALLines->Release();
     if (RSCullNone) RSCullNone->Release();
     if (DSLessEqual) DSLessEqual->Release();
+    if (DSNoDepth) DSNoDepth->Release();
     if (blendState) blendState->Release();
     if (swapChain) swapChain->Release();
     if (immediateContext) immediateContext->Release();
@@ -1762,15 +1767,17 @@ void DrawDebugScene()
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
     //wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
-    auto jointSize = run_anim.GetCurrentKeyframe()->joints.size();
+    auto jointSize = (run_anim.IsPlaying()) ? run_anim.TweenJoints.size() : run_anim.GetCurrentKeyframe()->joints.size();
     for (size_t i = 0; i < jointSize; ++i)
     {
-        XMFLOAT4X4 matrix;
-        DirectX::XMMATRIX mat = DirectX::XMLoadFloat4x4(&run_anim.GetCurrentKeyframe()->joints[i].global_xform);
-        DirectX::XMMATRIX invMat = DirectX::XMLoadFloat4x4(&run_anim.Frames[0].joints[i].inv_xform);
-        XMStoreFloat4x4(&matrix, invMat * mat);
-        //wvp.SkinMat[i] = run_anim.GetCurrentKeyframe()->joints[i].inv_xform;
-        wvp.SkinMat[i] = matrix;
+        DirectX::XMMATRIX mat;
+        if (run_anim.IsPlaying())
+            mat = XMLoadFloat4x4(&run_anim.TweenJoints[i].global_xform);
+        else
+            mat = XMLoadFloat4x4(&run_anim.GetCurrentKeyframe()->joints[i].global_xform);
+        DirectX::XMMATRIX invMat = XMLoadFloat4x4(&run_anim.Frames[0].joints[i].inv_xform);
+        invMat = XMMatrixTranspose(invMat * mat);
+        XMStoreFloat4x4(&wvp.SkinMat[i], invMat);
     }
 
     //======================================================================================================================
@@ -1848,7 +1855,7 @@ void DrawDebugScene()
     solid_PS.Bind(immediateContext);
     // Draw Grid ========================================
     immediateContext->RSSetState(RSAALLines);
-    if (DrawGrid)
+    if (!DrawGrid)
     {
         cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
 
@@ -1860,8 +1867,7 @@ void DrawDebugScene()
         grid.Draw();
     }
     // Draw Debug_renderer ========================================
-    //immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
-
+    immediateContext->OMSetDepthStencilState(DSNoDepth, 0);
     Mesh<VERTEX> temp = Mesh<VERTEX>(myDevice, immediateContext,
         end::debug_renderer::get_line_verts(),
         (int)end::debug_renderer::get_line_vert_capacity(),
@@ -1878,7 +1884,7 @@ void DrawDebugScene()
 
     end::debug_renderer::clear_lines();
     immediateContext->RSSetState(nullptr);
-    //immediateContext->OMSetDepthStencilState(nullptr, 0);
+    immediateContext->OMSetDepthStencilState(nullptr, 0);
 
 
 
@@ -2211,7 +2217,7 @@ void Update()
 
     CatchInput();
 
-    if (!DrawGrid)
+    if (false /*!DrawGrid*/)
         end::MakeColorGrid(20.0f, 24, dt * 0.5f); // creates grid that changes color overtime
 
     //SortedPoolParticle(dt);

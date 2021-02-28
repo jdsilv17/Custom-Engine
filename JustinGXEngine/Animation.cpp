@@ -76,6 +76,7 @@ const Animation::Keyframe* Animation::Animation::Playback()
 	{
 		this->SetCurrentFrameTo(1);
 		this->TimeElapsed = this->GetCurrentKeyframe()->time;
+		this->TweenJoints.clear();
 	}
 
 	Keyframe* tween = new Keyframe();
@@ -158,7 +159,7 @@ const Animation::Keyframe* Animation::Animation::Playback()
 			tween->joints[i].jointObject.SetWorld(tweenMat);
 		}
 	}
-
+	this->TweenJoints = tween->joints;
 	return tween;
 }
 
