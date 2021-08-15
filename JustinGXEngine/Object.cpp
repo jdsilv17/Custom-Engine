@@ -185,11 +185,11 @@ void Object::SetTurnTo(const DirectX::XMMATRIX& mat, const DirectX::XMVECTOR& ta
 	DirectX::XMVECTOR dotX = DirectX::XMVector3Dot(Z, mat.r[0]);
 	DirectX::XMVECTOR dotY = DirectX::XMVector3Dot(Z, mat.r[1]);
 	// turn right
-	float rot_Y_rad = dotX.m128_f32[0] * deltaTime /** (DirectX::XM_PI / 180.0f)*/;
-	float rot_X_rad = dotY.m128_f32[0] * deltaTime /** (DirectX::XM_PI / 180.0f)*/;
+	float rot_Y_deg = dotX.m128_f32[0] * deltaTime /** (DirectX::XM_PI / 180.0f)*/;	// get yaw angle
+	float rot_X_deg = dotY.m128_f32[0] * deltaTime /** (DirectX::XM_PI / 180.0f)*/; // get pitch angle
 
 	// after turn, pass z to lookat algo to orthonormalize it
-	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationX(-rot_X_rad) * DirectX::XMMatrixRotationY(rot_Y_rad) * mat;
+	DirectX::XMMATRIX TurnTo = DirectX::XMMatrixRotationX(-rot_X_deg) * DirectX::XMMatrixRotationY(rot_Y_deg) * mat;
 	this->SetLookAt(TurnTo.r[2], this->UP);
 }
 

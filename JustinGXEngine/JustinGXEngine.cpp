@@ -273,8 +273,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    _CrtSetBreakAlloc(227);
+    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(227);
 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -994,22 +994,22 @@ void CatchInput()
 
     if (bits[0]) // up arrow
     {
-        //Gizmos[0].UpdatePosition(Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdatePosition(Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
         pntLight.UpdatePosition(0.0f, 0.002f * (float)uTimer.deltaTime, 0.0f);
     }
     if (bits[1]) // down arrow
     {
-        //Gizmos[0].UpdatePosition(-Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdatePosition(-Gizmos[0].GetWorldMatrix().r[2] * 0.002f * (float)uTimer.deltaTime);
         pntLight.UpdatePosition(0.0f, -0.002f * (float)uTimer.deltaTime, 0.0f);
     }
     if (bits[2]) // left arrow
     {
-        //Gizmos[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdateRotation(0.0f, -XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
         pntLight.UpdatePosition(-0.002f * (float)uTimer.deltaTime, 0.0f, 0.0f);
     }
     if (bits[3]) // right arrow
     {
-        //Gizmos[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
+        Gizmos[0].UpdateRotation(0.0f, XM_PI * 0.02f, 0.0f * (float)uTimer.deltaTime);
         pntLight.UpdatePosition(0.002f * (float)uTimer.deltaTime, 0.0f, 0.0f);
     }
     if (bits[4]) // W
@@ -2223,30 +2223,30 @@ void Update()
     //SortedPoolParticle(dt);
     //FreeListParticle(dt);
 
-    // Create the Target, LooAt, and TurnTo Gizmos
-    Gizmos[1].SetLookAt(Gizmos[1].GetPositionVector(), Gizmos[0].GetPositionVector(), Gizmos[1].UP);
-    Gizmos[2].SetTurnTo(Gizmos[2].GetWorldMatrix(), Gizmos[0].GetPositionVector(), dt * 0.5f);
-    // Draw Gizmos
-    size_t gizmo_count = Gizmos.size();
-    for (size_t i = 0; i < gizmo_count; ++i)
-    {
-        XMVECTOR x = Gizmos[i].GetWorldMatrix().r[0] + Gizmos[i].GetPositionVector();
-        XMVECTOR y = Gizmos[i].GetWorldMatrix().r[1] + Gizmos[i].GetPositionVector();
-        XMVECTOR z = Gizmos[i].GetWorldMatrix().r[2] + Gizmos[i].GetPositionVector();
-        XMFLOAT4 xAxis;
-        XMStoreFloat4(&xAxis, x);
-        XMFLOAT4 yAxis;
-        XMStoreFloat4(&yAxis, y);
-        XMFLOAT4 zAxis;
-        XMStoreFloat4(&zAxis, z);
+    //// Create the Target, LooAt, and TurnTo Gizmos
+    //Gizmos[1].SetLookAt(Gizmos[1].GetPositionVector(), Gizmos[0].GetPositionVector(), Gizmos[1].UP);
+    //Gizmos[2].SetTurnTo(Gizmos[2].GetWorldMatrix(), Gizmos[0].GetPositionVector(), dt * 0.5f);
+    //// Draw Gizmos
+    //size_t gizmo_count = Gizmos.size();
+    //for (size_t i = 0; i < gizmo_count; ++i)
+    //{
+    //    XMVECTOR x = Gizmos[i].GetWorldMatrix().r[0] + Gizmos[i].GetPositionVector();
+    //    XMVECTOR y = Gizmos[i].GetWorldMatrix().r[1] + Gizmos[i].GetPositionVector();
+    //    XMVECTOR z = Gizmos[i].GetWorldMatrix().r[2] + Gizmos[i].GetPositionVector();
+    //    XMFLOAT4 xAxis;
+    //    XMStoreFloat4(&xAxis, x);
+    //    XMFLOAT4 yAxis;
+    //    XMStoreFloat4(&yAxis, y);
+    //    XMFLOAT4 zAxis;
+    //    XMStoreFloat4(&zAxis, z);
 
-        //// x-axis
-        //end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
-        //// y-axis
-        //end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
-        //// z-axis
-        //end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
-    }
+    //    // x-axis
+    //    end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+    //    // y-axis
+    //    end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+    //    // z-axis
+    //    end::debug_renderer::add_line(Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+    //}
 
     // Draw Joints in a Keyframe
     const Animation::Keyframe* frame = nullptr;
@@ -2295,7 +2295,7 @@ void Update()
     #pragma region FRUSTUM CULLING
     //// Create View Frustum
     //end::frustum_t frustum;
-    //end::calculate_frustum(frustum, Gizmo[0].GetWorldMatrix(), aspectRatio);
+    //end::calculate_frustum(frustum, Gizmos[0].GetWorldMatrix(), aspectRatio);
     //    
     //end::debug_renderer::add_line(frustum.corners[0], frustum.corners[1], XMFLOAT4(Colors::Fuchsia)); // FTL, FTR
     //end::debug_renderer::add_line(frustum.corners[1], frustum.corners[3], XMFLOAT4(Colors::Fuchsia)); // FTR, FBR
@@ -2350,10 +2350,10 @@ void Update()
 
     //end::aabb_t player_aabb;
     //XMVECTOR extents = { 1.0f, 2.0f, 1.0f }/*Gizmo[0].GetWorldMatrix().r[0] + Gizmo[0].GetWorldMatrix().r[1] + Gizmo[0].GetWorldMatrix().r[2]*/;
-    //XMStoreFloat3(&player_aabb.center, Gizmo[0].GetPositionVector());
+    //XMStoreFloat3(&player_aabb.center, Gizmos[0].GetPositionVector());
     //XMStoreFloat3(&player_aabb.extents, extents);
     //Create_AABB(player_aabb, XMFLOAT4(Colors::Blue));
-    //
+    
     //Create_AABB(AABB_Bounds_from_Triangle(terrain_tri_indices[0]), XMFLOAT4(Colors::Red));
     //size_t size = terrain_triangles.size();
     //for (size_t i = 0; i < size; ++i)
