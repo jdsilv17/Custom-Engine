@@ -132,6 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -154,6 +155,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -188,6 +190,7 @@
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="frustum_culling.h" />
+    <ClInclude Include="Graphics.h" />
     <ClInclude Include="JustinGXEngine.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Mesh.h" />
@@ -201,6 +204,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="WICTextureLoader\WICTextureLoader.h" />
+    <ClInclude Include="WindowContainer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation.cpp" />
@@ -209,13 +213,16 @@
     <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="debug_renderer.cpp" />
     <ClCompile Include="Emitter.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="JustinGXEngine.cpp" />
     <ClCompile Include="Light.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Particle.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="WICTextureLoader\WICTextureLoader.cpp" />
+    <ClCompile Include="WindowContainer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="JustinGXEngine.rc" />

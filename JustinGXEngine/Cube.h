@@ -10,7 +10,7 @@ public:
 	~Cube() {}
 	//Cube(const Cube& that);
 	//Cube& operator=(const Cube& that);
-	Mesh<VERTEX_BASIC> cube_mesh;
+	Mesh<VERTEX_BASIC> Mesh;
 
 	std::vector<VERTEX_BASIC> _vertexList = 
 	{

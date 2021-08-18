@@ -135,6 +135,13 @@ HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const void* shade
     return hr;
 }
 
+/// <summary>
+/// Init Shaders for binding
+/// </summary>
+/// <param name="device"></param>
+/// <param name="texFileNames"></param>
+/// <param name="loadType"> 0 = DDS Texture file. 1 = WIC Texture file. </param>
+/// <returns></returns>
 HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, const std::vector<std::string>& texFileNames, int loadType)
 {
     HRESULT hr = S_OK;
@@ -167,6 +174,13 @@ HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, const st
     return hr;
 }
 
+/// <summary>
+/// Init Shaders to be ready for binding
+/// </summary>
+/// <param name="device"></param>
+/// <param name="texFilename"></param>
+/// <param name="loadType"> 0 = DDS Texture file. 1 = WIC Texture file. </param>
+/// <returns></returns>
 HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::string texFilename, int loadType)
 {
     HRESULT hr = S_OK;

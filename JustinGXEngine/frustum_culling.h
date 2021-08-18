@@ -23,7 +23,7 @@ namespace end
     };
 
 	// Calculates the plane of a triangle from three points.
-	plane_t calculate_plane(DirectX::XMFLOAT3 a, DirectX::XMFLOAT3 b, DirectX::XMFLOAT3 c)
+	inline plane_t calculate_plane(DirectX::XMFLOAT3 a, DirectX::XMFLOAT3 b, DirectX::XMFLOAT3 c)
 	{
 		plane_t plane;
 		const DirectX::XMVECTOR origin = { 0.0f, 0.0f, 0.0f };
@@ -52,7 +52,7 @@ namespace end
 	// 
 	// Calculate the frustum planes.
 	// Use your debug renderer to draw the plane normals as line segments.
-	void calculate_frustum(frustum_t& frustum, const DirectX::XMMATRIX& view, float& aspectRatio)
+    inline void calculate_frustum(frustum_t& frustum, const DirectX::XMMATRIX& view, float& aspectRatio)
 	{
         XMFLOAT4 NTL;   //Near - Top - Left(NTL)
         XMFLOAT4 NTR;   //Near - Top - Right(NTR)
@@ -149,7 +149,7 @@ namespace end
 	// Returns -1 if the sphere is completely behind the plane.
 	// Returns 1 if the sphere is completely in front of the plane.
 	// Otherwise returns 0 (Sphere overlaps the plane)
-	int classify_sphere_to_plane(const sphere_t& sphere, const plane_t& plane)
+    inline int classify_sphere_to_plane(const sphere_t& sphere, const plane_t& plane)
 	{
         XMVECTOR s_Center = XMLoadFloat3(&sphere.center);
         XMVECTOR p_Normal = XMLoadFloat3(&plane.normal);
@@ -169,7 +169,7 @@ namespace end
 	// Returns 1 if the aabb is completely in front of the plane.
 	// Otherwise returns 0 (aabb overlaps the plane)
 	// MUST BE IMPLEMENTED UsING THE PROJECTED RADIUS TEST
-	int classify_aabb_to_plane(const aabb_t& aabb, const plane_t& plane)
+    inline int classify_aabb_to_plane(const aabb_t& aabb, const plane_t& plane)
 	{
         XMVECTOR a_Extents = XMLoadFloat3(&aabb.extents);
         XMVECTOR p_Normal = XMVectorAbs(XMLoadFloat3(&plane.normal));
@@ -187,7 +187,7 @@ namespace end
 	//
 	// Returns false if the aabb is completely behind any plane.
 	// Otherwise returns true.
-	bool aabb_to_frustum(const aabb_t& aabb, const frustum_t& frustum)
+    inline bool aabb_to_frustum(const aabb_t& aabb, const frustum_t& frustum)
 	{
         for (size_t i = 0; i < 6; ++i)
         {
