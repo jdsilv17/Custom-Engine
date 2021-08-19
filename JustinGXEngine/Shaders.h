@@ -16,9 +16,9 @@ namespace Shaders
 	{
 	public:
 		HRESULT Initialize(ID3D11Device* device, const char* filename,
-			const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, UINT byteWidth);
+			const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, ID3D11Buffer* constantBuffer);
 		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode,
-			const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, UINT byteWidth);
+			const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, ID3D11Buffer* constantBuffer);
 		void Bind(ID3D11DeviceContext* deviceContext);
 
 		const ID3D11VertexShader* GetShader() const;
@@ -41,12 +41,12 @@ namespace Shaders
 	{
 	public:
 		// remake for use of multiple textures
-		HRESULT Initialize(ID3D11Device* device, const char* filename, UINT byteWidth);
-		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth);
+		HRESULT Initialize(ID3D11Device* device, const char* filename, ID3D11Buffer* constantBuffer);
+		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode, ID3D11Buffer* constantBuffer);
 		HRESULT InitShaderResources(ID3D11Device* device, const std::vector<std::string>& texFileNames, int loadType = 0);
 		HRESULT InitShaderResources(ID3D11Device* device, std::string texFilename, int loadType = 0);
-		HRESULT Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType = 0);
-		HRESULT Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType = 0);
+		HRESULT Initialize_ALL(ID3D11Device* device, const char* filename, ID3D11Buffer* constantBuffer, const std::vector<std::string>& texFileNames, int loadType = 0);
+		HRESULT Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, ID3D11Buffer* constantBuffer, const std::vector<std::string>& texFileNames, int loadType = 0);
 		void Bind(ID3D11DeviceContext* deviceContext);
 		void BindShaderResources(ID3D11DeviceContext* deviceContext);
 		void BindShaderResources_1(ID3D11DeviceContext* deviceContext);
@@ -77,8 +77,8 @@ namespace Shaders
 	class GeometryShader
 	{
 	public:
-		HRESULT Initialize(ID3D11Device* device, const char* filename, UINT byteWidth);
-		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth);
+		HRESULT Initialize(ID3D11Device* device, const char* filename, ID3D11Buffer* constantBuffer);
+		HRESULT Initialize(ID3D11Device* device, const void* shaderByteCode, ID3D11Buffer* constantBuffer);
 		void Bind(ID3D11DeviceContext* deviceContext);
 
 		const ID3D11GeometryShader* GetShader() const;

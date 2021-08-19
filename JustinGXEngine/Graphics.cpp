@@ -364,20 +364,20 @@ bool Graphics::InitShaders()
     if (FAILED(hr)) return false;
 
     // write, compile & load our shaders
-    hr = advanced_VS.Initialize(myDevice, "./MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), sizeof(WVP));
-    advanced_VS.ShaderConstantBuffer = constantBuffer;
+    hr = advanced_VS.Initialize(myDevice, "./MeshVertexShader.cso", objLayoutDesc, ARRAYSIZE(objLayoutDesc), constantBuffer.Get());
+    //advanced_VS.ShaderConstantBuffer = constantBuffer;
     if (FAILED(hr)) return false;
-    hr = default_VS.Initialize(myDevice, "./VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-    default_VS.ShaderConstantBuffer = constantBuffer;
+    hr = default_VS.Initialize(myDevice, "./VertexShader.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), constantBuffer.Get());
+    //default_VS.ShaderConstantBuffer = constantBuffer;
     if (FAILED(hr)) return false;
-    hr = anim_VS.Initialize(myDevice, "./Anim_VS.cso", animInputLayoutDesc, ARRAYSIZE(animInputLayoutDesc), sizeof(WVP));
-    anim_VS.ShaderConstantBuffer = constantBuffer;
+    hr = anim_VS.Initialize(myDevice, "./Anim_VS.cso", animInputLayoutDesc, ARRAYSIZE(animInputLayoutDesc), constantBuffer.Get());
+    //anim_VS.ShaderConstantBuffer = constantBuffer;
     if (FAILED(hr)) return false;
-    hr = skybox_VS.Initialize(myDevice, "./SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), sizeof(WVP));
-    skybox_VS.ShaderConstantBuffer = constantBuffer;
+    hr = skybox_VS.Initialize(myDevice, "./SkyBox_VS.cso", cubeLayoutDesc, ARRAYSIZE(cubeLayoutDesc), constantBuffer.Get());
+    //skybox_VS.ShaderConstantBuffer = constantBuffer;
     if (FAILED(hr)) return false;
-    hr = gs_VS.Initialize(myDevice, "./Geo_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
-    gs_VS.ShaderConstantBuffer = constantBuffer;
+    hr = gs_VS.Initialize(myDevice, "./Geo_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), constantBuffer.Get());
+    //gs_VS.ShaderConstantBuffer = constantBuffer;
     if (FAILED(hr)) return false;
     //hr = HUD_VS.Initialize(myDevice, "./HUD_VS.cso", vertexInputLayoutDesc, ARRAYSIZE(vertexInputLayoutDesc), sizeof(WVP));
     //HUD_VS.ShaderConstantBuffer = constantBuffer;
@@ -386,8 +386,8 @@ bool Graphics::InitShaders()
     //Smoke_VS.ShaderConstantBuffer = constantBuffer;
     //if (FAILED(hr)) return false;
 
-    hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", sizeof(WVP));
-    solid_PS.ShaderConstantBuffer = constantBuffer;
+    hr = solid_PS.Initialize(myDevice, "./PS_Solid.cso", constantBuffer.Get());
+    //solid_PS.ShaderConstantBuffer = constantBuffer;
     if (FAILED(hr)) return false;
 
     // read FBX materials
@@ -402,21 +402,22 @@ bool Graphics::InitShaders()
         in_paths[i] = ".\\Assets\\Textures\\";
         in_paths[i].append(paths[i].data());
     }
-    hr = anim_PS.Initialize(myDevice, "./Anim_PS.cso", sizeof(WVP));
+    hr = anim_PS.Initialize_ALL(myDevice, "./Anim_PS.cso", constantBuffer.Get(), in_paths, 1);
     if (FAILED(hr)) return false;
-    hr = anim_PS.InitShaderResources(myDevice, in_paths, 1);
-    if (FAILED(hr)) return false;
-    anim_PS.ShaderConstantBuffer = anim_VS.ShaderConstantBuffer;
+    //hr = anim_PS.InitShaderResources(myDevice, in_paths, 1);
+    //if (FAILED(hr)) return false;
+    //anim_PS.ShaderConstantBuffer = anim_VS.ShaderConstantBuffer;
 
-    hr = skybox_PS.Initialize(myDevice, "./SkyBox_PS.cso", sizeof(WVP)); // change to include texture
+    // Note: change Initialize_ALL to be more versatile
+    hr = skybox_PS.Initialize(myDevice, "./SkyBox_PS.cso", constantBuffer.Get());
     if (FAILED(hr)) return false;
     hr = skybox_PS.InitShaderResources(myDevice, "./Assets/Textures/SunsetSkybox.dds");
     if (FAILED(hr)) return false;
-    skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
+    //skybox_PS.ShaderConstantBuffer = skybox_VS.ShaderConstantBuffer;
 
-    hr = pntToQuad_GS.Initialize(myDevice, "./PointToQuad_GS.cso", sizeof(WVP));
+    hr = pntToQuad_GS.Initialize(myDevice, "./PointToQuad_GS.cso", constantBuffer.Get());
     if (FAILED(hr)) return false;
-    pntToQuad_GS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
+    //pntToQuad_GS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
 
 
 #pragma region Dwarf Shaders

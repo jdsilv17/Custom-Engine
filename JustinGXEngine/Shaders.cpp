@@ -1,6 +1,6 @@
 #include "Shaders.h"
 
-HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const char* filename, const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, UINT byteWidth)
+HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const char* filename, const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, ID3D11Buffer* constantBuffer)
 {
     HRESULT hr = S_OK;
 
@@ -8,45 +8,55 @@ HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const char* file
 
     // Create the vertex Shader
     hr = device->CreateVertexShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
 
     // Create the Input Layout
     hr = device->CreateInputLayout(layoutDesc, numElements, blob.data(), blob.size(), this->InputLayout.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
 
-    // Create Constant Buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = byteWidth;
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    this->ShaderConstantBuffer = constantBuffer;
 
-    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+    //// Create Constant Buffer
+    //D3D11_BUFFER_DESC bd;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = byteWidth;
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
+    //hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
 
 
     return hr;
 }
 
-HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const void* shaderByteCode, const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, UINT byteWidth)
+HRESULT Shaders::VertexShader::Initialize(ID3D11Device* device, const void* shaderByteCode, const D3D11_INPUT_ELEMENT_DESC* layoutDesc, UINT numElements, ID3D11Buffer* constantBuffer)
 {
     HRESULT hr = S_OK;
 
     // Create the vertex Shader
     hr = device->CreateVertexShader(shaderByteCode, sizeof(shaderByteCode), nullptr, this->Shader.GetAddressOf());
+    if (FAILED(hr)) 
+        return hr;
 
     // Create the Input Layout
     hr = device->CreateInputLayout(layoutDesc, numElements, shaderByteCode, sizeof(shaderByteCode), this->InputLayout.GetAddressOf());
+    if (FAILED(hr)) 
+        return hr;
 
-    // Create Constant Buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = byteWidth;
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    this->ShaderConstantBuffer = constantBuffer;
 
-    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+    //// Create Constant Buffer
+    //D3D11_BUFFER_DESC bd;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = byteWidth;
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
+    //hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
 
 
     return hr;
@@ -89,7 +99,7 @@ const ID3D11Buffer* Shaders::VertexShader::GetConstantBuffer() const
 // Pixel Shader Functions ====================================================================
 //
 
-HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const char* filename, UINT byteWidth)
+HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const char* filename, ID3D11Buffer* constantBuffer)
 {
     HRESULT hr = S_OK;
 
@@ -97,39 +107,45 @@ HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const char* filen
 
     // Create the vertex Shader
     hr = device->CreatePixelShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
 
-    // Create Constant Buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = byteWidth;
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    this->ShaderConstantBuffer = constantBuffer;
 
-    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+    //// Create Constant Buffer
+    //D3D11_BUFFER_DESC bd;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = byteWidth;
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
+    //hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
 
 
     return hr;
 }
 
-HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth)
+HRESULT Shaders::PixelShader::Initialize(ID3D11Device* device, const void* shaderByteCode, ID3D11Buffer* constantBuffer)
 {
     HRESULT hr = S_OK;
 
     // Create the vertex Shader
     hr = device->CreatePixelShader(shaderByteCode, sizeof(shaderByteCode), nullptr, this->Shader.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
 
-    // Create Constant Buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = byteWidth;
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    this->ShaderConstantBuffer = constantBuffer;
 
-    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+    //// Create Constant Buffer
+    //D3D11_BUFFER_DESC bd;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = byteWidth;
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
+    //hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
 
 
     return hr;
@@ -205,20 +221,20 @@ HRESULT Shaders::PixelShader::InitShaderResources(ID3D11Device* device, std::str
     return hr;
 }
 
-HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const char* filename, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType)
+HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const char* filename, ID3D11Buffer* constantBuffer, const std::vector<std::string>& texFileNames, int loadType)
 {
     HRESULT hr;
-    hr = this->Initialize(device, filename, byteWidth);
+    hr = this->Initialize(device, filename, constantBuffer);
 
     hr = this->InitShaderResources(device, texFileNames, loadType);
 
     return hr;
 }
 
-HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth, const std::vector<std::string>& texFileNames, int loadType)
+HRESULT Shaders::PixelShader::Initialize_ALL(ID3D11Device* device, const void* shaderByteCode, ID3D11Buffer* constantBuffer, const std::vector<std::string>& texFileNames, int loadType)
 {
     HRESULT hr;
-    hr = this->Initialize(device, shaderByteCode, byteWidth);
+    hr = this->Initialize(device, shaderByteCode, constantBuffer);
 
     hr = this->InitShaderResources(device, texFileNames, loadType);
 
@@ -308,7 +324,7 @@ const ID3D11SamplerState* Shaders::PixelShader::GetSamplerState() const
 // GEOMETRY SHADER FUNCTIONS =========================================================================
 //
 
-HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const char* filename, UINT byteWidth)
+HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const char* filename, ID3D11Buffer* constantBuffer)
 {
     HRESULT hr = S_OK;
 
@@ -316,39 +332,45 @@ HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const char* fi
 
     // Create the vertex Shader
     hr = device->CreateGeometryShader(blob.data(), blob.size(), nullptr, this->Shader.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
 
-    // Create Constant Buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = byteWidth;
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    this->ShaderConstantBuffer = constantBuffer;
 
-    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+    //// Create Constant Buffer
+    //D3D11_BUFFER_DESC bd;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = byteWidth;
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
+    //hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
 
 
     return hr;
 }
 
-HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const void* shaderByteCode, UINT byteWidth)
+HRESULT Shaders::GeometryShader::Initialize(ID3D11Device* device, const void* shaderByteCode, ID3D11Buffer* constantBuffer)
 {
     HRESULT hr = S_OK;
 
     // Create the vertex Shader
     hr = device->CreateGeometryShader(shaderByteCode, sizeof(shaderByteCode), nullptr, this->Shader.GetAddressOf());
+    if (FAILED(hr))
+        return hr;
 
-    // Create Constant Buffer
-    D3D11_BUFFER_DESC bd;
-    ZeroMemory(&bd, sizeof(bd));
-    bd.ByteWidth = byteWidth;
-    bd.Usage = D3D11_USAGE_DYNAMIC;
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    bd.MiscFlags = 0;
+    this->ShaderConstantBuffer = constantBuffer;
 
-    hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
+    //// Create Constant Buffer
+    //D3D11_BUFFER_DESC bd;
+    //ZeroMemory(&bd, sizeof(bd));
+    //bd.ByteWidth = byteWidth;
+    //bd.Usage = D3D11_USAGE_DYNAMIC;
+    //bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    //bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    //bd.MiscFlags = 0;
+    //hr = device->CreateBuffer(&bd, nullptr, this->ShaderConstantBuffer.GetAddressOf());
 
 
     return hr;
