@@ -31,8 +31,8 @@ void Engine::Update()
     if (false /*!DrawGrid*/)
         end::MakeColorGrid(20.0f, 24, dt * 0.5f); // creates grid that changes color overtime
 
-    //SortedPoolParticle(dt);
-    //FreeListParticle(dt);
+    //this->SortedPoolParticle(dt);
+    this->FreeListParticle(dt);
 
     //// Create the Target, LookAt, and TurnTo this->GFX.Gizmos
     //this->GFX.Gizmos[1].SetLookAt(this->GFX.Gizmos[1].GetPositionVector(), this->GFX.Gizmos[0].GetPositionVector(), this->GFX.Gizmos[1].UP);

@@ -188,60 +188,60 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="MeshVertexShader.hlsl">
+    <FxCompile Include="Shaders\MeshVertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="PixelShader.hlsl">
+    <FxCompile Include="Shaders\PixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="VertexShader.hlsl">
+    <FxCompile Include="Shaders\VertexShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="PS_Solid.hlsl">
+    <FxCompile Include="Shaders\PS_Solid.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="SkyBox_VS.hlsl">
+    <FxCompile Include="Shaders\SkyBox_VS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="SkyBox_PS.hlsl">
+    <FxCompile Include="Shaders\SkyBox_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="SingleTexture_PS.hlsl">
+    <FxCompile Include="Shaders\SingleTexture_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Geo_VS.hlsl">
+    <FxCompile Include="Shaders\Geo_VS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="PointToQuad_GS.hlsl">
+    <FxCompile Include="Shaders\PointToQuad_GS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Specular_PS.hlsl">
+    <FxCompile Include="Shaders\Specular_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="SkyBoxReflection_PS.hlsl">
+    <FxCompile Include="Shaders\SkyBoxReflection_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="HUD_VS.hlsl">
+    <FxCompile Include="Shaders\HUD_VS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="HUD_PS.hlsl">
+    <FxCompile Include="Shaders\HUD_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Smoke_PS.hlsl">
+    <FxCompile Include="Shaders\Smoke_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Default_PS.hlsl">
+    <FxCompile Include="Shaders\Default_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Anim_VS.hlsl">
+    <FxCompile Include="Shaders\Anim_VS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Anim_PS.hlsl">
+    <FxCompile Include="Shaders\Anim_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ConstantBuffers.hlsli">
+    <None Include="Shaders\ConstantBuffers.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
