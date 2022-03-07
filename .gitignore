@@ -10,6 +10,6 @@ Documentation
 *.opensdf
 *.user
 .vs
-/JustinGXEngine/*.cso
-/JustinGXEngine/*.csh
-/JustinGXEngine/*.aps
+*.csh
+*.cso
+*.aps
