@@ -239,6 +239,9 @@
     <FxCompile Include="Shaders\Anim_PS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\ViewportTEST_GS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\ConstantBuffers.hlsli">
