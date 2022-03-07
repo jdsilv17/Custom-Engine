@@ -11,25 +11,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    Engine* eng = new Engine();
+    // Get Engine and Initialize
+    Engine* eng = Engine::Get();
     if (!eng->Initialize(hInstance, nCmdShow))
         return FALSE;
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_JUSTINGXENGINE));
 
     MSG msg = { 0 };
-
-    //RAWINPUTDEVICE rid;
-    //rid.usUsagePage = 0x01;
-    //rid.usUsage = 0x02;
-    //rid.dwFlags = 0;
-    //rid.hwndTarget = NULL;
-
-    //if (RegisterRawInputDevices(&rid, 1, sizeof(rid)) == FALSE)
-    //{
-    //    // uh-oh
-    //    return 0;
-    //}
 
     // Main message loop:
     while (msg.message != WM_QUIT) //GetMessage(&msg, nullptr, 0, 0)) waits for message
@@ -47,7 +36,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
     // release all our D3D11 interfaces
     eng->CleanUp();
-    delete eng;
+
     //#ifdef _DEBUG
     //    debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
     //    debug->Release();
