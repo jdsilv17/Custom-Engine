@@ -23,15 +23,15 @@
 #include <random> // for std::mt19937 g(rand()); Dont think I need this anymore
 #pragma comment(lib, "d3d11.lib")
 
-struct ConstantBuffer
-{
-    DirectX::XMMATRIX mWorld;
-    DirectX::XMMATRIX mView;
-    DirectX::XMMATRIX mProjection;
-    DirectX::XMFLOAT4 LightPos[3];
-    DirectX::XMFLOAT4 LightDir[3];
-    DirectX::XMFLOAT4 LightColor[3];
-};
+//struct ConstantBuffer
+//{
+//    DirectX::XMMATRIX mWorld;
+//    DirectX::XMMATRIX mView;
+//    DirectX::XMMATRIX mProjection;
+//    DirectX::XMFLOAT4 LightPos[3];
+//    DirectX::XMFLOAT4 LightDir[3];
+//    DirectX::XMFLOAT4 LightColor[3];
+//};
 
 //storage value for math
 struct WVP
@@ -202,6 +202,7 @@ public: // temp
     //Shaders::PixelShader moon_PS;
     //Shaders::PixelShader talon_PS;
     Shaders::GeometryShader pntToQuad_GS;
+    Shaders::GeometryShader viewportTEST_GS;
 
     bool DrawQuad = false;
     bool DrawGrid = false;

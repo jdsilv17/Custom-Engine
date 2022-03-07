@@ -50,7 +50,17 @@ void Graphics::RenderFrame()
         // IA (Input Assembler)
         // VS (Vertex Shader)
         // RS (Rasterizer Stage)
-    immediateContext->RSSetViewports(1, &vPort);
+
+    //ID3D10EffectScalarVariable* pActiveViewport;
+
+    D3D11_VIEWPORT vPort_2;
+    vPort_2.Width = vPort.Width / 3.0f;
+    vPort_2.Height = vPort.Height / 3.0f;
+    vPort_2.TopLeftX = vPort_2.TopLeftY = 15.0f;
+    vPort_2.MinDepth = 0;
+    vPort_2.MaxDepth = 1;
+    D3D11_VIEWPORT vPorts[] = { vPort, vPort_2 };
+    immediateContext->RSSetViewports(2, vPorts);
     // PS (Pixel Shader)
     // OM (Output Merger)
     immediateContext->OMSetRenderTargets(1, &RTV, zBufferView);
@@ -61,17 +71,10 @@ void Graphics::RenderFrame()
     D3D11_MAPPED_SUBRESOURCE gpuBuffer;
     HRESULT hr;
 
-    ConstantBuffer cb = {};
-
-    cb.mView = XMMatrixTranspose(cam.GetViewMatrix());
-
-    cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f);
-    cb.mProjection = XMMatrixTranspose(cam.GetProjectionMatrix());
-
     WVP wvp = {};
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    XMStoreFloat4x4(&wvp.sView, cb.mView);
-    XMStoreFloat4x4(&wvp.sProjection, cb.mProjection);
+    XMStoreFloat4x4(&wvp.sWorld, XMMatrixTranspose(XMMatrixIdentity()));
+    XMStoreFloat4x4(&wvp.sView, XMMatrixTranspose(cam.GetViewMatrix()));
+    XMStoreFloat4x4(&wvp.sProjection, XMMatrixTranspose(cam.GetProjectionMatrix()));
 
     XMMATRIX temp_LtRotY = XMMatrixRotationY(-0.01f);
     //pntLight.SetPosition(XMVector3Transform(pntLight.GetPositionVector(), temp_LtRotY));
@@ -91,6 +94,9 @@ void Graphics::RenderFrame()
     XMStoreFloat4(&wvp.LightColor[2], sptLight.GetLightColorVector());
     XMStoreFloat4(&wvp.CamPos, cam.GetPositionVector());
     //wvp.totalTime.x = (float)gTimer.deltaTime / 1000.0f;
+
+    
+
     auto jointSize = (run_anim.IsPlaying()) ? run_anim.TweenJoints.size() : run_anim.GetCurrentKeyframe()->joints.size();
     for (size_t i = 0; i < jointSize; ++i)
     {
@@ -109,13 +115,11 @@ void Graphics::RenderFrame()
     // Draw Point to Quad ==================================
     if (DrawQuad)
     {
-        solid_PS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
         gs_VS.Bind(immediateContext);
         solid_PS.Bind(immediateContext);
-        pntToQuad_GS.Bind(immediateContext);
-        cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
-
-        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        pntToQuad_GS.Bind(immediateContext); // shader signatures are incompatible
+        //cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+        XMStoreFloat4x4(&wvp.sWorld, XMMatrixTranspose(XMMatrixIdentity()));
         // send to Card
         hr = immediateContext->Map((ID3D11Resource*)gs_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
         memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
@@ -123,20 +127,19 @@ void Graphics::RenderFrame()
 
         point.Draw();
         immediateContext->GSSetShader(nullptr, nullptr, 0);
-        solid_PS.ShaderConstantBuffer = default_VS.ShaderConstantBuffer; // for grid and others
     }
+
 
     // Draw Skybox =====================================
     if (true)
     {
         immediateContext->RSSetState(RSCullNone); // turn back face culling off
         immediateContext->OMSetDepthStencilState(DSLessEqual, 0); // draw skybox everywhere that is not drawn on
-        skybox_PS.Bind(immediateContext);
         skybox_VS.Bind(immediateContext);
+        skybox_PS.Bind(immediateContext);
         skybox_PS.BindShaderResources_1(immediateContext);
-        cb.mWorld = XMMatrixTranspose(XMMatrixTranslationFromVector(cam.GetPositionVector()));
-
-        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        XMMATRIX m_skybox = XMMatrixTranspose(XMMatrixTranslationFromVector(cam.GetPositionVector()));
+        XMStoreFloat4x4(&wvp.sWorld, m_skybox);
         // send to Card
         hr = immediateContext->Map((ID3D11Resource*)skybox_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
         memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
@@ -148,15 +151,11 @@ void Graphics::RenderFrame()
     }
 
     // Draw fbx mesh
-    //default_PS.Bind(immediateContext);
-    //default_PS.BindShaderResources(immediateContext);
     anim_VS.Bind(immediateContext);
     anim_PS.Bind(immediateContext);
     anim_PS.BindShaderResources(immediateContext);
-
-    cb.mWorld = XMMatrixTranspose(BattleMage.GetWorldMatrix());
-
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //cb.mWorld = XMMatrixTranspose(BattleMage.GetWorldMatrix());
+    XMStoreFloat4x4(&wvp.sWorld, XMMatrixTranspose(BattleMage.GetWorldMatrix()));
     // send to Card
     hr = immediateContext->Map((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
@@ -166,53 +165,51 @@ void Graphics::RenderFrame()
     // Draw Point Light
     //solid_PS.Bind(immediateContext);
     //cb.mWorld = XMMatrixTranspose(XMMatrixScaling(0.05f, 0.05f, 0.05f) * pntLight.GetWorldMatrix());
-
-    //XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
-    //// send to Card
-    //hr = immediateContext->Map((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
-    //memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
-    //immediateContext->Unmap((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0);
-    //BattleMage.Draw();
+    XMStoreFloat4x4(&wvp.sWorld, XMMatrixTranspose(XMMatrixScaling(0.05f, 0.05f, 0.05f) * pntLight.GetWorldMatrix()));
+    // send to Card
+    hr = immediateContext->Map((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
+    memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
+    immediateContext->Unmap((ID3D11Resource*)anim_VS.GetConstantBuffer(), 0);
+    BattleMage.Draw();
 
 
     default_VS.Bind(immediateContext);
+    viewportTEST_GS.Bind(immediateContext); // used to have multiple viewports
     solid_PS.Bind(immediateContext);
     // Draw Grid ========================================
     immediateContext->RSSetState(RSAALLines);
     if (!DrawGrid)
     {
-        cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
-
-        XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+        //cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+        XMStoreFloat4x4(&wvp.sWorld, XMMatrixTranspose(XMMatrixIdentity()));
         // send to Card
         hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
         memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
         immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
         grid.Draw();
     }
+
     // Draw Debug_renderer ========================================
     immediateContext->OMSetDepthStencilState(DSNoDepth, 0);
-    Mesh<VERTEX> temp = Mesh<VERTEX>(myDevice, immediateContext,
+    Mesh<VERTEX> debug_lines = Mesh<VERTEX>(myDevice, immediateContext,
         end::debug_renderer::get_line_verts(),
         (int)end::debug_renderer::get_line_vert_capacity(),
         D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
-    cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
-
-    XMStoreFloat4x4(&wvp.sWorld, cb.mWorld);
+    //cb.mWorld = XMMatrixTranspose(XMMatrixIdentity());
+    XMStoreFloat4x4(&wvp.sWorld, XMMatrixTranspose(XMMatrixIdentity()));
     // send to Card
     hr = immediateContext->Map((ID3D11Resource*)default_VS.GetConstantBuffer(), 0, D3D11_MAP_WRITE_DISCARD, 0, &gpuBuffer);
     memcpy(gpuBuffer.pData, &wvp, sizeof(WVP));
     immediateContext->Unmap((ID3D11Resource*)default_VS.GetConstantBuffer(), 0);
-    temp.Draw();
+    debug_lines.Draw();
 
     end::debug_renderer::clear_lines();
+
+    immediateContext->GSSetShader(nullptr, nullptr, NULL);
     immediateContext->RSSetState(nullptr);
     immediateContext->OMSetDepthStencilState(nullptr, 0);
 
-
-
-    // change 1 to 0 vsync
     bool vysnc = true;
     swapChain->Present(vysnc, 0);
 }
@@ -296,7 +293,7 @@ bool Graphics::InitDirectX(HWND hWnd)
     //    //hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
     //#endif
 
-        // Create Render Target View
+    // Create Render Target View
     ID3D11Resource* backbuffer = nullptr;
     hr = swapChain->GetBuffer(0, __uuidof(backbuffer), reinterpret_cast<void**>(&backbuffer));
     if (FAILED(hr))
@@ -418,6 +415,9 @@ bool Graphics::InitShaders()
     hr = pntToQuad_GS.Initialize(myDevice, "./Shaders/PointToQuad_GS.cso", constantBuffer.Get());
     if (FAILED(hr)) return false;
     //pntToQuad_GS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
+
+    hr = viewportTEST_GS.Initialize(myDevice, "./Shaders/ViewportTEST_GS.cso", constantBuffer.Get());
+    if (FAILED(hr)) return false;
 
 
 #pragma region Dwarf Shaders
@@ -781,6 +781,7 @@ bool Graphics::InitScene()
     // initialize camera
     cam.SetPosition(0.0f, 5.0f, 5.0f);
     cam.SetRotation(0.0f, XM_PI, 0.0f);
+    cam.SetProjectionMatrix(45.0f, aspectRatio, 0.1f, 1000.0f); // add functionality to adjust camera settings
 
     // initialize Directional Light
     dirLight.SetPosition(-20.0f, 20.0f, 0.0f);
