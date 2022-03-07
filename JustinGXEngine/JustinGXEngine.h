@@ -13,7 +13,11 @@ public:
     // temp
     void CleanUp();
 
+public:
+    static Engine* Get(); // makes this class a singleton
+
 private:
+    Engine() {};
     void CatchInput();
     // temp
     void SortedPoolParticle(float dt);

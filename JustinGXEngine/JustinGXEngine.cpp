@@ -32,32 +32,32 @@ void Engine::Update()
         end::MakeColorGrid(20.0f, 24, dt * 0.5f); // creates grid that changes color overtime
 
     //this->SortedPoolParticle(dt);
-    this->FreeListParticle(dt);
+    //this->FreeListParticle(dt);
 
-    //// Create the Target, LookAt, and TurnTo this->GFX.Gizmos
-    //this->GFX.Gizmos[1].SetLookAt(this->GFX.Gizmos[1].GetPositionVector(), this->GFX.Gizmos[0].GetPositionVector(), this->GFX.Gizmos[1].UP);
-    //this->GFX.Gizmos[2].SetTurnTo(this->GFX.Gizmos[2].GetWorldMatrix(), this->GFX.Gizmos[0].GetPositionVector(), dt * 0.5f);
-    //// Draw this->GFX.Gizmos
-    //size_t gizmo_count = this->GFX.Gizmos.size();
-    //for (size_t i = 0; i < gizmo_count; ++i)
-    //{
-    //    XMVECTOR x = this->GFX.Gizmos[i].GetWorldMatrix().r[0] + this->GFX.Gizmos[i].GetPositionVector();
-    //    XMVECTOR y = this->GFX.Gizmos[i].GetWorldMatrix().r[1] + this->GFX.Gizmos[i].GetPositionVector();
-    //    XMVECTOR z = this->GFX.Gizmos[i].GetWorldMatrix().r[2] + this->GFX.Gizmos[i].GetPositionVector();
-    //    XMFLOAT4 xAxis;
-    //    XMStoreFloat4(&xAxis, x);
-    //    XMFLOAT4 yAxis;
-    //    XMStoreFloat4(&yAxis, y);
-    //    XMFLOAT4 zAxis;
-    //    XMStoreFloat4(&zAxis, z);
+    // Create the Target, LookAt, and TurnTo this->GFX.Gizmos
+    this->GFX.Gizmos[1].SetLookAt(this->GFX.Gizmos[1].GetPositionVector(), this->GFX.Gizmos[0].GetPositionVector(), this->GFX.Gizmos[1].UP);
+    this->GFX.Gizmos[2].SetTurnTo(this->GFX.Gizmos[2].GetWorldMatrix(), this->GFX.Gizmos[0].GetPositionVector(), dt * 0.5f);
+    // Draw this->GFX.Gizmos
+    size_t gizmo_count = this->GFX.Gizmos.size();
+    for (size_t i = 0; i < gizmo_count; ++i)
+    {
+        // Get Local X vector
+        XMVECTOR x = this->GFX.Gizmos[i].GetWorldMatrix().r[0] + this->GFX.Gizmos[i].GetPositionVector();
+        // Get Local Y vector
+        XMVECTOR y = this->GFX.Gizmos[i].GetWorldMatrix().r[1] + this->GFX.Gizmos[i].GetPositionVector();
+        // Get Local Z vector
+        XMVECTOR z = this->GFX.Gizmos[i].GetWorldMatrix().r[2] + this->GFX.Gizmos[i].GetPositionVector();
+        XMFLOAT4 xAxis; XMStoreFloat4(&xAxis, x);
+        XMFLOAT4 yAxis; XMStoreFloat4(&yAxis, y);
+        XMFLOAT4 zAxis; XMStoreFloat4(&zAxis, z);
 
-    //    // x-axis
-    //    end::debug_renderer::add_line(this->GFX.Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
-    //    // y-axis
-    //    end::debug_renderer::add_line(this->GFX.Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
-    //    // z-axis
-    //    end::debug_renderer::add_line(this->GFX.Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
-    //}
+        // x-axis
+        end::debug_renderer::add_line(this->GFX.Gizmos[i].GetPositionFloat4(), xAxis, { 1.0f, 0.0f, 0.0f, 1.0f });
+        // y-axis
+        end::debug_renderer::add_line(this->GFX.Gizmos[i].GetPositionFloat4(), yAxis, { 0.0f, 1.0f, 0.0f, 1.0f });
+        // z-axis
+        end::debug_renderer::add_line(this->GFX.Gizmos[i].GetPositionFloat4(), zAxis, { 0.0f, 0.0f, 1.0f, 1.0f });
+    }
 
     // Draw Joints in a Keyframe
     const Animation::Keyframe* frame = nullptr;
@@ -239,6 +239,13 @@ void Engine::CleanUp()
 {
     this->Timer.Stop();
     this->GFX.CleanUp();
+}
+
+Engine* Engine::Get()
+{
+    static Engine eng;
+
+    return &eng;
 }
 
 /// <summary>
