@@ -14,7 +14,7 @@
 
 namespace load_binary
 {
-	inline std::vector<uint8_t> load_binary_blob(const char* path)
+	static std::vector<uint8_t> load_binary_blob(const char* path)
 	{
 		std::vector<uint8_t> blob;
 
@@ -34,7 +34,7 @@ namespace load_binary
 		return std::move(blob);
 	}
 
-	inline std::vector<DirectX::XMFLOAT3> load_terrain_blob(const char* path)
+	static std::vector<DirectX::XMFLOAT3> load_terrain_blob(const char* path)
 	{
 		std::fstream file{ path, std::ios_base::in | std::ios_base::binary };
 		std::vector<DirectX::XMFLOAT3> pos;
@@ -64,7 +64,7 @@ namespace load_binary
 		return std::move(pos);
 	}
 	template <typename InVertex>
-	inline void Load_FBXMesh_blob(const char* path, std::vector<int>& indices_list, std::vector<InVertex>& vertex_list)
+	static void Load_FBXMesh_blob(const char* path, std::vector<int>& indices_list, std::vector<InVertex>& vertex_list)
 	{
 		uint32_t index_count = 0;
 		uint32_t vertex_count = 0;
@@ -108,7 +108,7 @@ namespace load_binary
 	}
 
 	template<typename Mat, typename Path>
-	inline void Load_FBXMat_blob(char const* path, std::vector<Mat>& in_mats, std::vector<Path>& in_paths)
+	static void Load_FBXMat_blob(char const* path, std::vector<Mat>& in_mats, std::vector<Path>& in_paths)
 	{
 		size_t mat_count = 0;
 		size_t path_count = 0;
@@ -135,7 +135,7 @@ namespace load_binary
 	}
 
 	//template <typename Keyframe>
-	inline void Load_FBXAnim_blob(char const* path, std::vector<Animation::Keyframe>& frames, double& in_duration, int& in_frameCount)
+	static void Load_FBXAnim_blob(char const* path, std::vector<Animation::Keyframe>& frames, double& in_duration, int& in_frameCount)
 	{
 		std::fstream file(path, std::ios_base::in | std::ios_base::binary);
 
