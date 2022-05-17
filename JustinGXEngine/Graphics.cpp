@@ -113,7 +113,7 @@ void Graphics::RenderFrame()
     //======================================================================================================================
 
     // Draw Point to Quad ==================================
-    if (DrawQuad)
+    if (false /*DrawQuad*/)
     {
         gs_VS.Bind(immediateContext);
         solid_PS.Bind(immediateContext);
@@ -174,7 +174,7 @@ void Graphics::RenderFrame()
 
 
     default_VS.Bind(immediateContext);
-    viewportTEST_GS.Bind(immediateContext); // used to have multiple viewports
+    //viewportTEST_GS.Bind(immediateContext); // used to have multiple viewports
     solid_PS.Bind(immediateContext);
     // Draw Grid ========================================
     immediateContext->RSSetState(RSAALLines);
@@ -250,6 +250,13 @@ bool Graphics::InitDirectX(HWND hWnd)
     UINT width = rc.right - rc.left;
     UINT height = rc.bottom - rc.top;
     aspectRatio = width / float(height);
+
+    // Setup viewport
+    vPort.Width = static_cast<FLOAT>(width);
+    vPort.Height = static_cast<FLOAT>(height);
+    vPort.TopLeftX = vPort.TopLeftY = 0;
+    vPort.MinDepth = 0;
+    vPort.MaxDepth = 1;
 
     // attach d3d11 to window
     D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
@@ -328,13 +335,6 @@ bool Graphics::InitDirectX(HWND hWnd)
     hr = myDevice->CreateDepthStencilView(zBuffer, nullptr, &zBufferView);
     if (FAILED(hr))
         return false;
-
-    // Setup viewport
-    vPort.Width = static_cast<FLOAT>(width);
-    vPort.Height = static_cast<FLOAT>(height);
-    vPort.TopLeftX = vPort.TopLeftY = 0;
-    vPort.MinDepth = 0;
-    vPort.MaxDepth = 1;
 
     //#ifdef _DEBUG
     //    hr = debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
@@ -416,8 +416,8 @@ bool Graphics::InitShaders()
     if (FAILED(hr)) return false;
     //pntToQuad_GS.ShaderConstantBuffer = gs_VS.ShaderConstantBuffer;
 
-    hr = viewportTEST_GS.Initialize(myDevice, "./Shaders/ViewportTEST_GS.cso", constantBuffer.Get());
-    if (FAILED(hr)) return false;
+    //hr = viewportTEST_GS.Initialize(myDevice, "./Shaders/ViewportTEST_GS.cso", constantBuffer.Get());
+    //if (FAILED(hr)) return false;
 
 
 #pragma region Dwarf Shaders
